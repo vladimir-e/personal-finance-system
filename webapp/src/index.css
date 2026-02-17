@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-page:     248 250 252;
+    --color-surface:  255 255 255;
+    --color-elevated: 226 232 240;
+    --color-hover:    203 213 225;
+
+    --color-edge:        226 232 240;
+    --color-edge-strong: 203 213 225;
+
+    --color-heading: 15 23 42;
+    --color-body:    30 41 59;
+    --color-muted:   100 116 139;
+    --color-faint:   203 213 225;
+
+    --color-positive: 22 163 74;
+    --color-negative: 220 38 38;
+    --color-warning:  217 119 6;
+    --color-accent:   37 99 235;
+
+    --surface-positive: rgb(240 253 244);
+    --surface-negative: rgb(254 242 242);
+    --surface-accent:   rgb(219 234 254);
+  }
+
+  .dark {
+    --color-page:     2 6 23;
+    --color-surface:  15 23 42;
+    --color-elevated: 30 41 59;
+    --color-hover:    51 65 85;
+
+    --color-edge:        30 41 59;
+    --color-edge-strong: 51 65 85;
+
+    --color-heading: 241 245 249;
+    --color-body:    226 232 240;
+    --color-muted:   148 163 184;
+    --color-faint:   71 85 105;
+
+    --color-positive: 74 222 128;
+    --color-negative: 248 113 113;
+    --color-warning:  251 191 36;
+    --color-accent:   37 99 235;
+
+    --surface-positive: rgb(20 83 45 / 0.3);
+    --surface-negative: rgb(127 29 29 / 0.3);
+    --surface-accent:   rgb(30 58 138 / 0.3);
+  }
+
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Keyboard focus ring — never remove, financial data is tab-navigated */
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background: rgb(59 130 246 / 0.3);
+  }
+}

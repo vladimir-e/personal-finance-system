@@ -1,0 +1,25 @@
+{
+  "name": "pfs",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": ["lib", "server", "webapp", "website"],
+  "scripts": {
+    "dev": "concurrently --names \"server,webapp\" --prefix-colors \"blue,green\" \"npm run dev -w server\" \"npm run dev -w webapp\"",
+    "start": "concurrently --names \"server,webapp\" --prefix-colors \"blue,green\" \"npm run start -w server\" \"npm run start -w webapp\"",
+    "build": "npm run build -w lib && npm run build -w server && npm run build -w webapp",
+    "test": "npm run test -w lib && npm run test -w server && npm run test -w webapp",
+    "test:coverage": "npm run test:coverage -w lib && npm run test:coverage -w server && npm run test:coverage -w webapp",
+    "test:watch": "concurrently \"npm run test:watch -w lib\" \"npm run test:watch -w server\" \"npm run test:watch -w webapp\"",
+    "typecheck": "npm run typecheck -w lib && npm run typecheck -w server && npm run typecheck -w webapp",
+    "ci:test": "npm run test:coverage -w lib && npm run test:coverage -w server && npm run test:coverage -w webapp",
+    "website:dev": "npm run dev -w website",
+    "website:build": "npm run build -w website"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

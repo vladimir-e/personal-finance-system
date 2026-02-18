@@ -2,9 +2,9 @@
 
 ## Overview
 
-PFS is a local-first personal finance tracker. It runs entirely on the user's machine from a `git clone` or zip download -- no cloud account, no hosted backend. The system is designed around a layered architecture where each layer has a single responsibility and communicates through well-defined interfaces.
+PFS is a local-first personal finance tracker. It runs entirely on the user's machine from a `git clone` or zip download — no cloud account, no hosted backend required. The system is built around a layered architecture where each layer has a single responsibility and communicates through well-defined interfaces.
 
-## System layers
+## System Layers
 
 ```
 +-----------+     +-----------+     +-----------+
@@ -18,72 +18,74 @@ PFS is a local-first personal finance tracker. It runs entirely on the user's ma
                                    |  Adapters   |
                                    +-------------+
                                    | memory | csv | mongodb |
-                                   +--------+-----+--------+
+                                   +--------+-----+---------+
 ```
 
-**webapp** -- React SPA with Tailwind CSS. Communicates with server via `/api` proxy (Vite dev server proxies to port 3001; in production, server serves the built webapp).
+**webapp** — React SPA with Tailwind CSS. Holds the active `DataStore` in browser memory. Communicates with the server via `/api`. Budget configurations and adapter credentials live in `localStorage` only — never sent to the server. See `specs/CLIENT_ARCHITECTURE.md`.
 
-**server** -- Hono HTTP server. Stateless request handler. Receives a `StorageAdapter` instance at startup and passes it to route handlers. No business logic lives here -- it translates HTTP to lib calls.
+**server** — Hono HTTP server. Stateless between requests. Receives mutations, validates via shared Zod schemas, persists via the storage adapter, returns the updated entity. No business logic lives here — it translates HTTP to lib calls.
 
-**lib** -- Core business logic and type definitions. Pure functions: data in, data out. The `StorageAdapter` interface and its implementations live here. This is the only package that touches stored data.
+**lib** — Core business logic and type definitions. Pure functions operating on `DataStore`. The `StorageAdapter` interface and its implementations live here. See `specs/STORAGE.md`.
 
-**Storage adapters** -- Implementations of the `StorageAdapter` interface. Each adapter handles a different persistence mechanism:
-- `memory` -- In-memory arrays. Production-quality, not a mock. Used for storageless mode (demos, testing, zero-config startup).
-- `csv` -- Flat CSV files on disk (planned).
-- `mongodb` -- MongoDB database (planned).
+**Storage adapters** — Implementations of `StorageAdapter`, one per persistence mechanism. See `specs/STORAGE.md`.
 
-## Adapter pattern
+## Budget Model
 
-Callers never import a concrete adapter directly. Instead, they call `createAdapter(config)` from `pfs-lib`, which returns the appropriate `StorageAdapter` implementation based on `config.type`.
+A **budget** is a named workspace: a display name, a currency, and an adapter config pointing to where its data lives. Users may have multiple budgets (e.g. "Personal", "Business").
 
-```
-createAdapter({ type: 'memory' })  -->  MemoryAdapter
-createAdapter({ type: 'csv', ... })  -->  CsvAdapter (future)
-```
+Budget configurations live in two places — never on the server:
+1. **Browser `localStorage`** — user-created and previously opened budgets, including adapter credentials.
+2. **`budgets.json`** at the project root — optional server-provided presets, exposed via `GET /api/budgets/presets`, always `readonly: true`.
 
-The `StorageAdapter` interface is the central contract everything depends on. Adapters are the one exception to the functional style: lifecycle methods (`connect`, `disconnect`) are inherently stateful, and OO patterns are the right fit.
+See `specs/DATA_MODEL.md` for the Budget entity shape.
 
-## Storageless mode
+## Validation
 
-The default startup mode. When `STORAGE_TYPE=memory` (or unset), PFS runs entirely in-memory. Data does not persist across restarts. This is intentional:
-- Zero configuration for first run
-- Safe for demos and testing
-- Verifies the system works without external dependencies
+Zod schemas are defined in `pfs-lib` and imported by both the server (request validation) and the webapp (form validation). One schema, zero drift between client and server.
 
-## Monorepo structure
+## Monorepo Structure
 
 ```
 pfs/
-  lib/       -- pfs-lib: types, business logic, storage adapters
-  server/    -- pfs-server: Hono REST API
-  webapp/    -- pfs-webapp: React SPA
-  website/   -- pfs-website: Astro static promo site (independent)
-  specs/     -- living specifications (this folder)
+  lib/         pfs-lib: types, business logic, storage adapters, Zod schemas
+  server/      pfs-server: Hono REST API (port 3001)
+  webapp/      pfs-webapp: React SPA + Tailwind (port 5173)
+  website/     pfs-website: Astro static promo site (port 4321, independent)
+  specs/       living specifications (this folder)
+  budgets.json (optional) server-provided budget presets
 ```
 
-npm workspaces manage dependencies. No Turborepo or Lerna -- unnecessary at this scale.
+npm workspaces manage dependencies. No Turborepo or Lerna — unnecessary at this scale. The `website` package is fully independent: no shared types or components with app packages.
 
-The website package is fully independent: no shared types or components with the app packages. It deploys separately.
+## Functional Style
 
-## Functional style
-
-Business logic in `pfs-lib` leans functional:
-- Prefer `const` functions over classes
+Business logic in `pfs-lib` is functional:
 - Pure functions: data in, data out
 - Immutability: return new objects, never mutate inputs
 - No `this` outside adapter implementations
-- Functions over service objects: `applyTransaction(account, tx): Account` not `new AccountService().apply(tx)`
+- Functions over service objects: `applyTransaction(store, tx): DataStore` not `new AccountService().apply(tx)`
 
-Storage adapters are exempt -- adapter lifecycle is inherently stateful.
+Storage adapters and the AI client are exempt — their lifecycles are inherently stateful.
 
-## Port assignments
+## Port Assignments
 
 | Service | Dev port | Notes |
 |---------|----------|-------|
 | webapp  | 5173     | Vite dev server |
 | server  | 3001     | Hono + @hono/node-server |
-| website | 4321     | Astro dev server (separate from app) |
+| website | 4321     | Astro dev server (independent) |
 
-## Plugin seam
+## Plugin Considerations
 
-The `AdapterConfig` type reserves an index signature (`[key: string]: unknown`) for future plugin-specific configuration. See `specs/PLUGIN_SYSTEM.md` for the design direction. No plugin infrastructure exists yet -- just the seam that prevents us from designing ourselves into a corner.
+Plugins are not being built yet. The consideration is a design mindset: when designing a new feature or component, ask whether it's a natural extension point — and if so, prefer the design that leaves the door open without adding complexity now.
+
+See `specs/PLUGIN_SYSTEM.md` for known candidates and current thinking.
+
+## Further Reading
+
+- `specs/DATA_MODEL.md` — entity definitions, relationships, money representation
+- `specs/STORAGE.md` — adapter pattern, CSV/MongoDB persistence, backup, DataStore lifecycle
+- `specs/CLIENT_ARCHITECTURE.md` — browser DataStore, optimistic updates, undo/redo
+- `specs/AI_ASSISTANT.md` — import assistant, AIClient interface, import workflow
+- `specs/API.md` — REST endpoint contracts
+- `specs/FEATURES.md` — prioritized feature backlog

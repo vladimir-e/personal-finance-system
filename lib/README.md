@@ -6,7 +6,6 @@ Core library for PFS (Personal Finance System). Contains domain types, storage a
 
 - **Functional style**: pure functions for business logic, data in / data out
 - **Adapter pattern**: `StorageAdapter` interface with swappable implementations
-- **No `this`** outside adapter implementations
 
 ## Storage Adapters
 

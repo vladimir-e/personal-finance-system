@@ -1,37 +1,22 @@
 # Plugin System
 
-**Status: Stub -- seam only, not implemented.**
+**Status: Not being built yet.**
 
-## Intent
+## Philosophy
 
-PFS core ships with accounts, categories, transactions, and budgets. Plugins extend the system with additional capabilities and their own settings, following an Obsidian-style model where the core stays clean and extensible.
+As we design and build features, we ask: is this a natural extension point where a plugin could reasonably hook in? If yes, we prefer the design that leaves the door open — clean interfaces, no hardcoded assumptions — without adding plugin infrastructure prematurely.
 
-## Current Seam
+This is a design mindset, not a deliverable.
 
-The `AdapterConfig` type includes an index signature:
+## Known Plugin Candidates
 
-```typescript
-interface AdapterConfig {
-  type: 'memory' | 'csv' | 'mongodb';
-  [key: string]: unknown;
-}
-```
+Features that are intentionally out of scope for core but should be possible to add later:
 
-This reserves a path for plugin-specific configuration without constraining the design prematurely. When plugins are implemented, their configuration will flow through this interface rather than requiring a redesign.
+- **Multi-currency** — exchange rate feeds, per-account currency override, cross-currency reporting
+- **Crypto** — wallet balance tracking, price feeds (BTC, ETH, SOL)
+- **Stocks / investments** — portfolio tracking, brokerage account integration
+- **Alternative AI providers** — swap Claude for GPT-4, Gemini, or a local model in the import assistant
 
 ## Not Yet Decided
 
-- Plugin loading mechanism (dynamic import, manifest, registry)
-- Sandboxing and permission model
-- Plugin API surface (which lifecycle hooks are available)
-- UI extension points (sidebar panels, settings pages, custom views)
-- Plugin distribution and installation workflow
-
-## What Does NOT Exist Yet
-
-- No `/plugins` folder in the monorepo
-- No plugin type definitions beyond the `AdapterConfig` index signature
-- No plugin registry or loader
-- No plugin configuration UI
-
-The seam exists so that core design decisions -- especially around configuration and adapter interfaces -- don't accidentally make plugins impossible later.
+How plugins would actually work — loading, sandboxing, API surface, UI extension points, distribution — is entirely open. These decisions will be driven by a concrete use case when the time comes.

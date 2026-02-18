@@ -6,48 +6,15 @@ All endpoints are prefixed with `/api`. In development, the webapp proxies `/api
 
 ## Authentication
 
-None for v1. PFS is a local-first application running on the user's own machine. Authentication adds complexity without value when the only user is the machine owner.
+None for v1. PFS is a local-first application — the only user is the machine owner or someone with network access.
 
-## Response envelope
+## Response Format
 
-All API responses follow a consistent envelope:
+Responses use standard HTTP status codes. 
 
-```json
-{
-  "data": <payload>,
-  "error": null,
-  "meta": {}
-}
-```
+`code` is UPPER_SNAKE_CASE and machine-readable. `message` is human-readable.
 
-**Success responses** populate `data` and leave `error` as `null`.
-
-**Error responses** populate `error` and leave `data` as `null`:
-
-```json
-{
-  "data": null,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Transaction not found"
-  },
-  "meta": {}
-}
-```
-
-`meta` is reserved for pagination, timing, or other cross-cutting concerns. Empty object `{}` when unused.
-
-## Error format
-
-| Field | Type | Description |
-|-------|------|-------------|
-| code | string | Machine-readable error code (UPPER_SNAKE_CASE) |
-| message | string | Human-readable description |
-
-Standard error codes:
-- `VALIDATION_ERROR` -- Invalid request data (400)
-- `NOT_FOUND` -- Resource does not exist (404)
-- `INTERNAL_ERROR` -- Unexpected server failure (500)
+Standard error codes: `VALIDATION_ERROR` (400) · `NOT_FOUND` (404) · `CONFLICT` (409) · `INTERNAL_ERROR` (500)
 
 ---
 
@@ -55,47 +22,62 @@ Standard error codes:
 
 ### GET /api/health
 
-Health check. Returns server status and active storage type.
-
-**Response** `200 OK`
-
-```json
-{
-  "status": "ok",
-  "storage": "memory"
-}
-```
-
-The `storage` field reflects the current `STORAGE_TYPE` configuration value.
-
-Note: The health endpoint does not use the response envelope -- it returns a flat object for simplicity and compatibility with standard health check tooling.
+Returns server status and active storage adapter type. Flat response for compatibility with standard health check tooling.
 
 ---
 
-### Transactions
+### GET /api/budgets/presets
 
-> Placeholder -- endpoints will be defined when transaction CRUD is implemented.
-
-Expected endpoints:
-- `GET /api/transactions` -- List transactions (with query filters)
-- `POST /api/transactions` -- Create a transaction
-- `GET /api/transactions/:id` -- Get a single transaction
-- `PUT /api/transactions/:id` -- Update a transaction
-- `DELETE /api/transactions/:id` -- Delete a transaction
-
-Currently returns `[]` from the stub route.
+Returns server-provided budget presets from `budgets.json` at the project root. Returns an empty array if the file doesn't exist. Preset budgets are always `readonly: true`.
 
 ---
 
 ### Accounts
 
-> Placeholder -- endpoints will be defined when account management is implemented.
+- `GET /api/accounts` — list accounts; supports `?includeHidden=true`; includes derived `balance` on each account
+- `GET /api/accounts/:id` — single account with derived balance
+- `POST /api/accounts` — create account
+- `PUT /api/accounts/:id` — update account (partial)
+- `DELETE /api/accounts/:id` — delete; returns `409` if account has transactions
+- `POST /api/accounts/:id/hide` — toggle hidden; returns `409` if derived balance is non-zero
 
-Expected endpoints:
-- `GET /api/accounts` -- List accounts
-- `POST /api/accounts` -- Create an account
-- `GET /api/accounts/:id` -- Get a single account
-- `PUT /api/accounts/:id` -- Update an account
-- `DELETE /api/accounts/:id` -- Delete an account
+---
 
-Currently returns `[]` from the stub route.
+### Transactions
+
+- `GET /api/transactions` — list transactions; supports `?accountId`, `?from`, `?to` (YYYY-MM-DD), `?categoryId`, `?type`, `?limit`, `?offset`; sorted by date descending
+- `GET /api/transactions/:id` — single transaction
+- `POST /api/transactions` — create transaction; for transfers, include `transferToAccountId` and the server creates both legs atomically
+- `PUT /api/transactions/:id` — update; propagates `amount`/`date` changes to transfer pair automatically
+- `DELETE /api/transactions/:id` — delete; cascades to transfer pair if `transferPairId` is set
+
+---
+
+### Categories
+
+- `GET /api/categories` — list categories; supports `?includeHidden=true`
+- `GET /api/categories/:id` — single category
+- `POST /api/categories` — create category
+- `PUT /api/categories/:id` — update category (partial)
+- `DELETE /api/categories/:id` — delete; clears `categoryId` on referencing transactions
+
+---
+
+### Budget
+
+- `GET /api/budget?month=YYYY-MM` — monthly budget summary: per-category spending vs assigned, grouped by group, with totals. Defaults to current month.
+
+---
+
+### AI Assistant
+
+- `POST /api/ai/import` — submit files or text for analysis; returns an import plan for user review before committing
+- `POST /api/ai/import/confirm` — execute a previously generated import plan; triggers backup first
+
+> Placeholders — interface to be defined when AI assistant is implemented.
+
+---
+
+### Backup
+
+- `POST /api/backup` — copy current data files to timestamped backups (CSV adapter); no-op for other adapters

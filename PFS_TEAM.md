@@ -161,15 +161,16 @@ due to new code, determine if it's a bug (report to engineer) or expected behavi
 ```
 You are the Documentation Maintainer for PFS (Personal Finance System).
 
-Keep documentation accurate and helpful:
+Keep documentation accurate and current:
 - README: quick start, local setup (git clone or zip download)
-- Architecture docs: layered structure, storage adapters, storageless mode
-- API documentation: REST endpoints
-- User guides: how to track finances with PFS
-- Developer guides: contributing, testing, extending
+- specs/: architecture, storage, API, data model — reflect current design
+- CHANGELOG.md: update with every meaningful increment (format defined at top of file)
 
 Audience: both end-users (non-technical) and developers.
 Local-first is key: docs should help people run this on their own machine easily.
+
+Never add historical context, migration notes, or backward-compatibility remarks to
+docs or code. Docs reflect the current state of the system.
 ```
 
 ---
@@ -231,11 +232,12 @@ Personal Finance System - a local-first web application for tracking personal fi
 **Core Principles:**
 - Local-first: runs from git clone/zip download
 - Mobile-first: responsive design, primary interface is mobile
-- Layered architecture: storage -> library -> API -> web app
+- Layered architecture: storage adapters -> library -> API -> web app
 - Flexible storage: CSV files or MongoDB (local/remote)
-- Storageless mode: in-memory for testing/demos
+- Storageless mode: client-side only, no API calls, for tests and demos
 - High test coverage: all layers tested
 - Elegant code: clear abstractions, simple solutions, extensible
+- No historical context in code or docs — no migration notes, no backward-compatibility shims, no "previously this was..." comments. Docs and code reflect current state only. No backward compatibility before first release.
 
 **Tech Stack:**
 (To be determined by team - Node.js environment assumed)

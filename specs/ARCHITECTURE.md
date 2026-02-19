@@ -17,15 +17,15 @@ PFS is a local-first personal finance tracker. It runs entirely on the user's ma
                                    |  Storage    |
                                    |  Adapters   |
                                    +-------------+
-                                   | memory | csv | mongodb |
-                                   +--------+-----+---------+
+                                   | csv | mongodb |
+                                   +-----+---------+
 ```
 
-**webapp** — React SPA with Tailwind CSS. Holds the active `DataStore` in browser memory. Communicates with the server via `/api`. Budget configurations and adapter credentials live in `localStorage` only — never sent to the server. See `specs/CLIENT_ARCHITECTURE.md`.
+**webapp** — React SPA with Tailwind CSS. Holds the active `DataStore` in browser memory. Communicates with the server via `/api`. Budget configurations live in `localStorage`. A storageless budget type is available for demos and tests — the client behaves normally but makes no API calls. See `specs/CLIENT_ARCHITECTURE.md`.
 
 **server** — Hono HTTP server. Stateless between requests. Receives mutations, validates via shared Zod schemas, persists via the storage adapter, returns the updated entity. No business logic lives here — it translates HTTP to lib calls.
 
-**lib** — Core business logic and type definitions. Pure functions operating on `DataStore`. The `StorageAdapter` interface and its implementations live here. See `specs/STORAGE.md`.
+**lib** — Core business logic and type definitions. Pure functions operating on individual entities. The `StorageAdapter` interface and its implementations live here. See `specs/STORAGE.md`.
 
 **Storage adapters** — Implementations of `StorageAdapter`, one per persistence mechanism. See `specs/STORAGE.md`.
 
@@ -33,11 +33,17 @@ PFS is a local-first personal finance tracker. It runs entirely on the user's ma
 
 A **budget** is a named workspace: a display name, a currency, and an adapter config pointing to where its data lives. Users may have multiple budgets (e.g. "Personal", "Business").
 
-Budget configurations live in two places — never on the server:
-1. **Browser `localStorage`** — user-created and previously opened budgets, including adapter credentials.
-2. **`budgets.json`** at the project root — optional server-provided presets, exposed via `GET /api/budgets/presets`, always `readonly: true`.
+On load, the webapp fetches two lists and merges them into the budget selector:
+1. **Local budgets** — discovered by the server scanning `./data` for existing CSV budget folders (`GET /api/budgets/local`). Saved to `localStorage` when opened.
+2. **Presets** — from `budgets.json` at the project root, served via `GET /api/budgets/presets`, always `readonly: true`.
+
+When presets are present, budget creation and custom path entry are hidden — the user selects from the preset list only. MongoDB and storageless budgets are only available via presets; users cannot configure them directly.
 
 See `specs/DATA_MODEL.md` for the Budget entity shape.
+
+## Money
+
+All monetary amounts are stored as integers in the currency's minor unit (cents, pence, yen). No floats anywhere in the stack. See `specs/DATA_MODEL.md` for the full representation including sign convention and crypto precision.
 
 ## Validation
 

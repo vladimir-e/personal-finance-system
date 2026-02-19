@@ -60,13 +60,21 @@ Undo history is scoped to the browser session and is not persisted.
 
 ## Budget Configuration
 
-Budget configurations (`{ id, name, currency, adapter }`) live in `localStorage`, never in server state. On app load:
+On app load, the webapp fetches two lists in parallel and merges them:
 
-1. Read budgets from `localStorage`
-2. Fetch `GET /api/budgets/presets` and merge (presets flagged `readonly: true`)
-3. Show budget selector
+1. `GET /api/budgets/local` — CSV budget folders found in `./data` on the server
+2. `GET /api/budgets/presets` — preset budgets from `budgets.json` (always `readonly: true`)
 
-Adapter credentials (CSV file path, MongoDB URL) are included in the adapter config and stored in `localStorage` only. They are passed to the server when a budget is opened so the server can initialize the correct adapter, but they are not stored server-side.
+Previously opened budgets are also stored in `localStorage` and merged into the list (covers budgets opened from custom paths).
+
+**When presets are present**, the create and open-by-path controls are hidden. The user selects from the preset list only.
+
+**When no presets exist**, the user can:
+- Select a budget discovered under `./data`
+- Enter a custom path to a budget folder elsewhere on the machine
+- Create a new budget (defaults to `./data/<name>`, path configurable under Advanced)
+
+Budget configurations (`{ id, name, currency, adapter }`) are saved to `localStorage` when a budget is opened. All data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
 
 ## Shared Validation
 

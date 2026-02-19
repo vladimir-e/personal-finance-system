@@ -13,7 +13,7 @@ On load, display a list of configured budgets from two sources merged together:
 
 When a user has no budgets configured and `./data` contains budget folders, offer to open them. Each budget config is `{ name, currency, adapter }`. Creating a budget prompts for a name, currency, and storage adapter choice (default: CSV files).
 
-Adapter settings (CSV path, MongoDB URL) are stored in localStorage only — never sent to the server.
+Adapter settings (CSV base path, MongoDB URL) are stored in localStorage and sent to the server once when opening a budget.
 
 ### Account management
 Create and manage financial accounts. Account types: `cash`, `checking`, `savings`, `credit_card`, `loan`, `asset`, `crypto`.

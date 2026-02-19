@@ -11,21 +11,13 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) to use the app.
+Open [http://localhost:5173](http://localhost:5173) to use the app. On first run you'll be prompted to create a budget — choose a name and a storage backend (CSV is the default, no extra setup needed).
 
-## Configuration
+## Storage Backends
 
-PFS runs in-memory by default -- no setup required. Data resets on restart.
-
-To persist data, copy the server environment file and configure a storage backend:
-
-```bash
-cp server/.env.example server/.env
-```
-
-- **Memory** (default) -- in-memory, no persistence
-- **CSV** -- flat file storage on disk (set `STORAGE_TYPE=csv`)
-- **MongoDB** -- database storage (set `STORAGE_TYPE=mongodb`)
+- **CSV** (default) — flat files stored in `./data/<budget-id>/` at the project root
+- **MongoDB** — provide a connection URL when creating the budget
+- **Storageless** — data lives in browser memory only, not selectable by users; available via server-provided budget presets for demos and testing
 
 ## Project Structure
 
@@ -34,8 +26,16 @@ lib/       Core types, business logic, and storage adapters
 server/    REST API server (Hono, port 3001)
 webapp/    Web application (React + Vite, port 5173)
 website/   Promotional website (Astro, port 4321)
-specs/     Architecture and API documentation
+specs/     Architecture, API, and data model documentation
+specs/tasks/  Implemented task files (for auditability) and pending tasks for future work.
+              See specs/tasks/00-template for the task format.
 ```
+
+## How this project is documented
+
+`specs/` contains the full system design — architecture, data model, API contracts, storage, and feature backlog. These describe the intended system, including features not yet implemented.
+
+`CHANGELOG.md` tracks what has actually been built to date. It's the gap-closer between the specs and the current state of the code.
 
 ## Running Tests
 
@@ -43,7 +43,7 @@ specs/     Architecture and API documentation
 npm test
 ```
 
-Runs test suites across lib, server, and webapp. Coverage reports:
+Coverage reports:
 
 ```bash
 npm run test:coverage

@@ -18,7 +18,7 @@ A named workspace: a display name, a currency, and a pointer to where its data l
 | `adapter` | AdapterConfig | Storage backend configuration |
 | `readonly` | boolean | `true` when loaded from server presets — cannot be edited or deleted from the UI |
 
-Budget configurations live in browser `localStorage` or in the optional `budgets.json` server preset file. They are never stored server-side. See `specs/ARCHITECTURE.md` for the budget model.
+Budget configurations live in browser `localStorage` or in the optional `budgets.json` server preset file. See `specs/ARCHITECTURE.md` for the budget model.
 
 ---
 
@@ -128,13 +128,13 @@ Budget 1 ──< Account 1 ──< Transaction >── 1 Category
 
 ## Money Representation
 
-All amounts are **integers in the currency's minor unit** (no floats).
+All amounts are **integers scaled by the currency's precision** (no floats). Precision is the number of decimal places — it determines the divisor for display.
 
-| Currency | Minor unit | Example |
-|----------|-----------|---------|
-| USD, EUR, GBP | cents (÷100) | `1050` = $10.50 |
-| JPY, KRW | yen/won (÷1) | `1050` = ¥1,050 |
-| BTC, ETH, SOL | satoshis (÷10⁸) | `100000000` = 1 BTC |
+| Precision | Example currencies | Example |
+|-----------|-------------------|---------|
+| 0 | JPY, KRW | `1050` = ¥1,050 |
+| 2 | USD, EUR, GBP | `1050` = $10.50 |
+| 8 | BTC, ETH, SOL | `100000000` = 1 BTC |
 
 **Sign convention:** negative = outflow (expense, debit), positive = inflow (income, credit).
 
@@ -157,7 +157,7 @@ Use `Intl.NumberFormat` with the currency code for display — never store the f
 
 ```typescript
 interface AdapterConfig {
-  type: 'memory' | 'csv' | 'mongodb';
+  type: 'csv' | 'mongodb';
   [key: string]: unknown;
 }
 ```

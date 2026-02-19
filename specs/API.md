@@ -8,9 +8,17 @@ All endpoints are prefixed with `/api`. In development, the webapp proxies `/api
 
 None for v1. PFS is a local-first application — the only user is the machine owner or someone with network access.
 
+## Budget Context
+
+All data endpoints require a `Budget-Id` header identifying which budget to operate on. The budget ID is a filesystem-safe string (lowercase letters, digits, hyphens — e.g. `personal`, `business-2024`). It doubles as the directory name for CSV-backed budgets.
+
+```
+Budget-Id: <budget-id>
+```
+
 ## Response Format
 
-Responses use standard HTTP status codes. 
+Responses use standard HTTP status codes.
 
 `code` is UPPER_SNAKE_CASE and machine-readable. `message` is human-readable.
 
@@ -26,9 +34,17 @@ Returns server status and active storage adapter type. Flat response for compati
 
 ---
 
+### GET /api/budgets/local
+
+Scans the `./data` directory and returns a list of budget folders found there. Each entry includes the folder name (budget ID) and whether the directory contains the expected CSV files. Used by the webapp on first load to discover existing budgets without requiring manual path entry.
+
+Returns an empty array if `./data` does not exist.
+
+---
+
 ### GET /api/budgets/presets
 
-Returns server-provided budget presets from `budgets.json` at the project root. Returns an empty array if the file doesn't exist. Preset budgets are always `readonly: true`.
+Returns server-provided budget presets from `budgets.json` at the project root. Returns an empty array if the file doesn't exist. Preset budgets are always `readonly: true`. When presets are present, the client hides budget creation and custom path entry — the user can only select from the provided list.
 
 ---
 
@@ -80,4 +96,5 @@ Returns server-provided budget presets from `budgets.json` at the project root. 
 
 ### Backup
 
-- `POST /api/backup` — copy current data files to timestamped backups (CSV adapter); no-op for other adapters
+- `POST /api/backup` — create timestamped backup files server-side; returns list of created file paths
+- `POST /api/backup?download=true` — same, but returns the backup files as a zip download instead of a path list

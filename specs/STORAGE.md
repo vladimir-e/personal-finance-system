@@ -5,71 +5,58 @@
 All persistence goes through the `StorageAdapter` interface. Callers (the server) never import a concrete adapter directly — they use the `createAdapter(config)` factory from `pfs-lib`:
 
 ```
-createAdapter({ type: 'memory' })            -->  MemoryAdapter
-createAdapter({ type: 'csv', path: '...' })  -->  CsvAdapter
-createAdapter({ type: 'mongodb', url: '...' })--> MongoAdapter
+createAdapter({ type: 'csv', path: '...' })   -->  CsvAdapter
+createAdapter({ type: 'mongodb', url: '...' }) -->  MongoAdapter
 ```
 
-The interface:
+The interface exposes granular operations per entity type rather than bulk load/save:
 
 ```typescript
 interface StorageAdapter {
   connect(): Promise<void>
   disconnect(): Promise<void>
   isConnected(): boolean
-  load(): Promise<DataStore>
-  save(store: DataStore): Promise<void>
+
+  // Accounts
+  getAccounts(): Promise<Account[]>
+  createAccount(account: Account): Promise<Account>
+  updateAccount(id: string, patch: Partial<Account>): Promise<Account>
+  deleteAccount(id: string): Promise<void>
+
+  // Transactions
+  getTransactions(filter?: TransactionFilter): Promise<Transaction[]>
+  createTransaction(tx: Transaction): Promise<Transaction>
+  updateTransaction(id: string, patch: Partial<Transaction>): Promise<Transaction>
+  deleteTransaction(id: string): Promise<void>
+
+  // Categories
+  getCategories(): Promise<Category[]>
+  createCategory(cat: Category): Promise<Category>
+  updateCategory(id: string, patch: Partial<Category>): Promise<Category>
+  deleteCategory(id: string): Promise<void>
+
   backup(): Promise<BackupResult>
 }
 ```
 
-`load()` returns the full `DataStore`. `save()` persists the full `DataStore`. Business logic never calls the adapter directly — only the server's request handlers do, at the edges of each mutation.
-
 Adapters are the one exception to the functional style rule: their lifecycle (`connect`, `disconnect`) is inherently stateful.
-
-## DataStore Lifecycle
-
-```
-Server startup:
-  createAdapter(config) → adapter.connect()
-
-Per mutation request:
-  store = await adapter.load()
-  newStore = libFunction(store, args)   // pure, no I/O
-  await adapter.save(newStore)
-  return updatedEntity
-
-Server shutdown:
-  adapter.disconnect()
-```
-
-For the memory adapter, `load()` returns the in-memory state and `save()` updates it — no I/O. For CSV and MongoDB, `load()` reads from disk/network and `save()` writes back.
-
-## Memory Adapter
-
-Production-quality in-memory implementation. Used for:
-- Storageless mode (zero-config first run, CI)
-- Testing (no file system or network needed)
-- Demos
-
-`backup()` is a no-op. Data does not persist across server restarts.
 
 ## CSV Adapter
 
-Each budget is a directory containing three files:
+Each budget is a directory named after the budget ID (a filesystem-safe string, e.g. `personal`, `business`) under a user-configured base path. The default base path is `./data` relative to the project root:
 
 ```
-<path>/
+<base-path>/<budget-id>/
   accounts.csv
   transactions.csv
   categories.csv
 ```
 
-**Parsing:** uses `papaparse` for robust CSV parsing — handles quoted fields, commas in values, encoding edge cases that a naive split would get wrong.
+Example with defaults: `data/personal/accounts.csv`.
 
-**Writing:** full file rewrite on every `save()`. Simple and correct. At personal finance scale (thousands of rows, not millions) this is fast enough — a 10K-row transactions file rewrites in single-digit milliseconds.
+**Parsing:** uses `papaparse` for robust CSV parsing — handles quoted fields, commas in values, and encoding edge cases.
 
-**Future path:** if rewrite latency becomes a problem at very large scale (100K+ rows), the upgrade is an append-only log format where mutations are appended as new rows and the last entry per ID wins on load. The `StorageAdapter` interface stays identical — it's an internal implementation detail of `CsvAdapter`. Periodic compaction collapses the log back to a snapshot.
+**Writing:** each mutating operation rewrites the relevant file in full. At personal finance scale this is fast enough — a 10K-row file rewrites in single-digit milliseconds.
 
 **`backup()`:** copies all three CSV files to timestamped copies in the same directory:
 ```
@@ -78,25 +65,24 @@ accounts.backup.2024-01-15T143022.csv
 categories.backup.2024-01-15T143022.csv
 ```
 
-Returns the list of created backup files.
+Returns the list of created backup file paths.
 
 ## MongoDB Adapter
 
-Uses the budget's `url` connection string (stored in browser `localStorage`, passed to server when opening a budget).
+Uses the `url` connection string from the budget preset config. The connection is established at server startup and held open for the lifetime of the process.
 
-`load()` fetches all documents from the three collections (`accounts`, `transactions`, `categories`) and assembles them into a `DataStore`. `save()` performs a diff against the loaded state and issues individual insert/update/delete operations — MongoDB does not need full-collection rewrites.
+Each entity type maps to a collection (`accounts`, `transactions`, `categories`). Granular adapter operations map directly to individual document insert/update/delete — no collection-level rewrites.
 
-`backup()` is a no-op by default. MongoDB has its own backup mechanisms (mongodump, Atlas snapshots).
+`backup()` exports each collection to a timestamped JSON file alongside the data, making record-level restoration straightforward without relying on full database backup tooling.
 
 ## Backup
 
-Backup is a first-class operation, not an afterthought. The AI assistant triggers a backup automatically before any mass import. Users can also trigger it manually via `POST /api/backup`.
+Backup is a first-class operation. The AI assistant triggers one automatically before any mass import. Users can also trigger it manually.
 
-The backup result includes the files created and a timestamp, so the user can reference them if they need to restore.
+`POST /api/backup` creates backup files server-side and returns the list of paths. To download the backup, pass `?download=true` — the server returns the files as a zip attachment instead. See `specs/API.md`.
 
 ## Storageless Mode
 
-When no budget is selected or `STORAGE_TYPE=memory`, the server uses `MemoryAdapter`. Data does not persist across restarts. This is intentional:
-- Zero configuration for first run
-- Safe for CI and testing
-- Verifies the full stack works without external dependencies
+A budget can be configured as storageless. From the client's perspective it is a normal budget — same UI, same DataStore, same mutations. The difference is that all persistence calls are swallowed: no API requests are made and changes exist only in browser memory for the session.
+
+Used for the public demo (deployed as a static site with no server) and for client-side unit and component tests. End-to-end tests that require the full stack use a real server with a CSV adapter pointed at a temp directory.

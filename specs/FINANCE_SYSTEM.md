@@ -159,16 +159,32 @@ Hidden accounts are excluded.
 
 ## Reconciliation
 
-The system maintains two balance concepts per account:
+Reconciliation is a **periodic checkup** — the user looks at their real bank balances and verifies PFS agrees. It is not an always-on state or a workflow that drives other behavior.
 
-- **Derived balance** — computed by summing all transactions. This is the "truth according to PFS."
-- **Reported balance** — manually entered by the user from a bank statement or app. This is the "truth according to the bank."
+### The process
 
-When these two numbers match, the account is reconciled. When they diverge, something is off — a missing transaction, a duplicate entry, or a data entry error.
+1. **User checks their bank.** They open their banking app and see their actual balances.
+2. **User enters reported balance.** For each account they want to verify, they enter the bank's number into the `reportedBalance` field.
+3. **PFS shows the discrepancy.** The difference between derived balance (sum of transactions) and reported balance tells the user how much is unaccounted for.
+4. **User resolves the gap.** Either by importing missing transactions, or by creating a balancing transaction (see below).
 
-The `reconciledAt` timestamp records when the user last confirmed the balances matched. This is informational, not a system constraint — PFS does not lock or flag transactions before the reconciliation date.
+### Auto-reset
 
-Reconciliation is a manual, lightweight process: compare, investigate discrepancies, update `reportedBalance` when satisfied.
+When the derived balance matches the reported balance — whether because the user imported the missing transactions or because a balancing transaction closed the gap — `reportedBalance` automatically resets (clears to `null`) and `reconciledAt` updates to the current timestamp.
+
+This prevents stale reported balances from lingering. The reported balance is a temporary checkpoint, not a permanent field. If it's set, it means "I'm in the middle of a checkup." If it's clear, the account was last reconciled at `reconciledAt`.
+
+### Balancing transaction
+
+When the discrepancy is small or the user doesn't want to track down the exact missing transactions, they can create a **balancing transaction** — a one-tap action that generates an uncategorized transaction for the difference amount. This closes the gap immediately.
+
+This is especially useful for minor amounts (rounding differences, small fees, cash spending that wasn't tracked). The transaction is uncategorized so it's visible as "unresolved" but doesn't pollute any budget category.
+
+### What reconciliation is not
+
+- `reportedBalance` does not appear on the main account sidebar or drive any filtering/sorting behavior. It only matters during a checkup.
+- There is no "reconciled" vs "unreconciled" transaction state. PFS does not lock transactions before a reconciliation date.
+- `reconciledAt` is informational — it tells the user when they last verified this account, nothing more.
 
 ---
 

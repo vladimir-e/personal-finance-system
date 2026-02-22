@@ -32,14 +32,14 @@ A financial account that holds transactions. All accounts in a budget share the 
 | `name` | string | Human-readable label (e.g. "Chase Checking") |
 | `type` | AccountType | One of the account types below |
 | `institution` | string | Bank or provider name (may be `""`) |
-| `reportedBalance` | integer | User-entered balance in minor units, for reconciliation comparison only |
-| `reconciledAt` | string | ISO 8601 date of last reconciliation, or `""` |
+| `reportedBalance` | integer \| null | User-entered bank balance in minor units, or `null` when not in a checkup. Auto-resets to `null` when derived balance matches. |
+| `reconciledAt` | string | ISO 8601 timestamp of last successful reconciliation, or `""` |
 | `hidden` | boolean | Soft-hide flag — see referential integrity rules |
 | `createdAt` | string | ISO 8601 timestamp |
 
 **Account types:** `cash` · `checking` · `savings` · `credit_card` · `loan` · `asset` · `crypto`
 
-**Live balance is derived**, not stored — the sum of all transactions for the account. `reportedBalance` is what the bank statement says and is only used to flag reconciliation discrepancies.
+**Live balance is derived**, not stored — the sum of all transactions for the account. `reportedBalance` is a temporary checkpoint entered during reconciliation — it auto-clears when the derived balance matches. See `specs/FINANCE_SYSTEM.md` for the full reconciliation process.
 
 ---
 

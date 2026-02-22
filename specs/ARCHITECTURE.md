@@ -90,8 +90,9 @@ See `specs/PLUGIN_SYSTEM.md` for known candidates and current thinking.
 ## Further Reading
 
 - `specs/DATA_MODEL.md` — entity definitions, relationships, money representation
-- `specs/STORAGE.md` — adapter pattern, CSV/MongoDB persistence, backup, DataStore lifecycle
-- `specs/CLIENT_ARCHITECTURE.md` — browser DataStore, optimistic updates, undo/redo
+- `specs/STORAGE.md` — adapter pattern, CSV/MongoDB persistence, backup
+- `specs/CLIENT_ARCHITECTURE.md` — browser DataStore, optimistic updates, undo/redo, design conventions
+- `specs/TESTING.md` — test strategy, layers, commands, rules
 - `specs/AI_ASSISTANT.md` — import assistant, AIClient interface, import workflow
 - `specs/API.md` — REST endpoint contracts
 - `specs/FEATURES.md` — prioritized feature backlog

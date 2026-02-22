@@ -16,7 +16,7 @@ interface DataStore {
 }
 ```
 
-All reads (derived balances, budget summaries, filtered transaction lists) are computed directly from this in-memory store — no additional API calls needed for display. The store is replaced atomically when mutations are confirmed.
+All reads (derived balances, budget summaries, filtered transaction lists) are computed directly from this in-memory store — no additional API calls needed for display. Individual records are updated in place when mutations are confirmed.
 
 ## Optimistic Updates
 
@@ -76,11 +76,20 @@ Previously opened budgets are also stored in `localStorage` and merged into the 
 
 Budget configurations (`{ id, name, currency, adapter }`) are saved to `localStorage` when a budget is opened. All data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
 
+## Design Conventions
+
+- **Mobile-first.** Layout and interactions designed for small screens first, enhanced for larger ones.
+- **Touch-friendly.** 44px minimum touch targets (WCAG 2.5.5). No hover-only interactions — everything must work on touch.
+- **Tablet / large screen.** Tables and data-heavy views should use available width; avoid constraining to a narrow column on wide viewports.
+- **Trust through clarity.** Finance apps require confidence. Prefer clear labels, unambiguous numbers, and explicit confirmation for destructive actions.
+- **Semantic color tokens.** Use `text-positive`/`text-negative` for amounts, never raw color values. Tokens are defined in `webapp/src/index.css`.
+- **Tabular figures.** All financial amounts use `font-variant-numeric: tabular-nums` for digit alignment.
+
 ## Shared Validation
 
 Zod schemas are defined in `pfs-lib` and used in both layers:
 
-- **Server**: validates incoming request bodies, returns `400 VALIDATION_ERROR` on failure
+- **Server**: validates incoming request bodies, returns `422` on failure
 - **Client**: validates form input before optimistic update, shows inline errors
 
 This guarantees that anything the client accepts, the server will also accept — the optimistic update will never be rejected for a validation reason.

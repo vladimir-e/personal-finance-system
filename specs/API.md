@@ -22,7 +22,7 @@ Responses use standard HTTP status codes.
 
 `code` is UPPER_SNAKE_CASE and machine-readable. `message` is human-readable.
 
-Standard error codes: `VALIDATION_ERROR` (400) · `NOT_FOUND` (404) · `CONFLICT` (409) · `INTERNAL_ERROR` (500)
+Standard HTTP status codes: `422` validation error · `404` not found · `409` conflict · `500` internal error
 
 ---
 

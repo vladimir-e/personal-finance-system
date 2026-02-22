@@ -5,6 +5,7 @@ Local-first personal finance tracker. Runs from `git clone`, no cloud required.
 ## Start here
 
 Read `specs/ARCHITECTURE.md` for the full system design before doing anything.
+When user mentions team, see descriptions of the roles in `PFS_TEAM.md`
 
 Key specs:
 - `specs/DATA_MODEL.md` — entity definitions and money representation

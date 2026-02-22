@@ -24,7 +24,7 @@ interface StorageAdapter {
   deleteAccount(id: string): Promise<void>
 
   // Transactions
-  getTransactions(filter?: TransactionFilter): Promise<Transaction[]>
+  getTransactions(): Promise<Transaction[]>
   createTransaction(tx: Transaction): Promise<Transaction>
   updateTransaction(id: string, patch: Partial<Transaction>): Promise<Transaction>
   deleteTransaction(id: string): Promise<void>
@@ -38,6 +38,8 @@ interface StorageAdapter {
   backup(): Promise<BackupResult>
 }
 ```
+
+Adapters return full datasets. All filtering, sorting, and pagination happens client-side against the in-memory DataStore.
 
 Adapters are the one exception to the functional style rule: their lifecycle (`connect`, `disconnect`) is inherently stateful.
 
@@ -73,7 +75,7 @@ Uses the `url` connection string from the budget preset config. The connection i
 
 Each entity type maps to a collection (`accounts`, `transactions`, `categories`). Granular adapter operations map directly to individual document insert/update/delete — no collection-level rewrites.
 
-`backup()` exports each collection to a timestamped JSON file alongside the data, making record-level restoration straightforward without relying on full database backup tooling.
+`backup()` exports each collection to a timestamped JSON file in a `backups/` directory, making record-level restoration straightforward without relying on full database backup tooling.
 
 ## Backup
 
@@ -86,3 +88,5 @@ Backup is a first-class operation. The AI assistant triggers one automatically b
 A budget can be configured as storageless. From the client's perspective it is a normal budget — same UI, same DataStore, same mutations. The difference is that all persistence calls are swallowed: no API requests are made and changes exist only in browser memory for the session.
 
 Used for the public demo (deployed as a static site with no server) and for client-side unit and component tests. End-to-end tests that require the full stack use a real server with a CSV adapter pointed at a temp directory.
+
+Storageless mode is not a storage adapter type. It is a client-side flag that tells the webapp to skip all API calls. The `AdapterConfig.type` union is `'csv' | 'mongodb'` — there is no `'memory'` type. The server uses an in-memory adapter internally for tests, but this is not exposed as a configurable storage type.

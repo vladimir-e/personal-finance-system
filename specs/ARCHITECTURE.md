@@ -23,9 +23,9 @@ PFS is a local-first personal finance tracker. It runs entirely on the user's ma
 
 **webapp** — React SPA with Tailwind CSS. Holds the active `DataStore` in browser memory. Communicates with the server via `/api`. Budget configurations live in `localStorage`. A storageless budget type is available for demos and tests — the client behaves normally but makes no API calls. See `specs/CLIENT_ARCHITECTURE.md`.
 
-**server** — Hono HTTP server. Stateless between requests. Receives mutations, validates via shared Zod schemas, persists via the storage adapter, returns the updated entity. No business logic lives here — it translates HTTP to lib calls.
+**server** — Hono HTTP server. Stateless between requests. Receives mutations, validates via shared Zod schemas, persists via the storage adapter, returns the updated entity. No business logic lives here — it translates HTTP to lib calls. Computed endpoints (like budget summaries) call lib functions that do the aggregation.
 
-**lib** — Core business logic and type definitions. Pure functions operating on individual entities. The `StorageAdapter` interface and its implementations live here. See `specs/STORAGE.md`.
+**lib** — Core business logic, type definitions, and derived computations. Pure functions operating on entities. All domain types live here — both stored entities (Account, Transaction, Category) and derived types (MonthlySummary). Aggregation logic (budget math, summaries) is implemented as pure lib functions, not in the server. The `StorageAdapter` interface and its implementations live here. See `specs/STORAGE.md`.
 
 **Storage adapters** — Implementations of `StorageAdapter`, one per persistence mechanism. See `specs/STORAGE.md`.
 

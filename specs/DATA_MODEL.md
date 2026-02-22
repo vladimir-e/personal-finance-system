@@ -67,6 +67,10 @@ A single financial event: money flowing in or out of an account.
 - `expense` — negative outflow (purchase, bill, etc.)
 - `transfer` — one leg of an account-to-account move; always created in pairs
 
+**Transfer validation:** Transfer transactions must have `categoryId = ""`. This is enforced by the Zod schema — transfers cannot be assigned to a category. This prevents transfers from polluting budget math.
+
+**Type changes:** A transaction's type can be changed between `income` and `expense`. Changing to or from `transfer` is not allowed — delete and recreate instead.
+
 **Transfer pairs:** creating a transfer generates two linked transactions simultaneously — an outflow leg (negative, source account) and an inflow leg (positive, destination account) — with mutual `transferPairId` references. Deleting one leg cascades to delete the other.
 
 ---
@@ -81,15 +85,18 @@ A classification for transactions, used to aggregate spending against a monthly 
 | `name` | string | Category label (e.g. "Groceries") |
 | `group` | string | Grouping bucket (e.g. "Daily Living") |
 | `assigned` | integer | Static monthly budget target in minor units |
+| `sortOrder` | integer | Display position within the group |
 | `hidden` | boolean | Soft-hide flag |
 
 **`assigned` is a static monthly target** — users set it once. The budget screen compares each month's actual spending against it. There is no per-month assignment history.
 
 **Budget math:**
 ```
-spent     = sum of transaction amounts for this category this month  // negative
+spent     = sum of transaction amounts for this category this month  // negative for net spending
 available = assigned + spent
 ```
+
+Transfers are excluded (they always have `categoryId = ""`). Income-type transactions in expense categories (e.g., refunds) contribute positively, reducing net spending.
 
 **Default categories** (seeded on first run):
 
@@ -163,6 +170,43 @@ interface AdapterConfig {
 ```
 
 The index signature accommodates adapter-specific fields (`path` for CSV, `url` for MongoDB) and future plugin-specific config without requiring interface changes. See `specs/STORAGE.md` for adapter config details.
+
+Note: the webapp's storageless mode is not an adapter type. It is a client-side concept where the browser skips all API calls and mutations exist only in memory. The server has no involvement in storageless mode. See `specs/CLIENT_ARCHITECTURE.md`.
+
+---
+
+## Derived Types
+
+Types that are computed from stored entities. Defined in `pfs-lib` alongside stored entity types, but not persisted.
+
+### MonthlySummary
+
+Computed by a lib function from accounts, transactions, and categories for a given month. Returned by `GET /api/budget/monthly`. See `specs/FINANCE_SYSTEM.md` for the budget math.
+
+```typescript
+interface MonthlySummary {
+  month: string;                    // YYYY-MM
+  availableToBudget: integer;       // spendable_balance - total_assigned
+  totalIncome: integer;             // sum of income transactions this month
+  totalAssigned: integer;           // sum of assigned across non-hidden, non-Income categories
+  groups: {
+    name: string;                   // group name
+    categories: {
+      id: string;
+      name: string;
+      assigned: integer;
+      spent: integer;               // sum of transaction amounts this month
+      available: integer;           // assigned + spent
+    }[];
+    totalAssigned: integer;
+    totalSpent: integer;
+    totalAvailable: integer;
+  }[];
+  uncategorized: {
+    spent: integer;                 // sum of uncategorized transaction amounts this month
+  };
+}
+```
 
 ---
 

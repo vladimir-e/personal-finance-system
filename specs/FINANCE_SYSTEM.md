@@ -36,7 +36,7 @@ For each category in a given month:
 
 ```
 assigned  = the category's static monthly target (set once, applies every month)
-spent     = sum of expense transaction amounts in this category this month (negative number)
+spent     = sum of transaction amounts for this category this month (negative for net spending)
 available = assigned + spent
 ```
 
@@ -48,7 +48,9 @@ available = assigned + spent
 
 An **overspent** category (negative available) means spending exceeded the plan. PFS highlights this but does not enforce it — the budget is advisory.
 
-**The Income group is excluded from budget math.** Income categories do not have meaningful `assigned`/`spent`/`available` values. Income feeds into "Available to Budget" directly (see below), not through the per-category budget calculation.
+**The Income group is excluded from budget math.** Income categories do not have meaningful `assigned`/`spent`/`available` values on the budget screen. The UI should not render assigned/spent/available columns for Income-group categories — instead, show total income for the month.
+
+**Refunds and income in expense categories:** An income-type transaction categorized under an expense category (e.g., a grocery refund under "Groceries") contributes positively to that category's `spent` figure, reducing net spending. This is correct behavior — a refund offsets previous spending in that category.
 
 ---
 
@@ -57,22 +59,24 @@ An **overspent** category (negative available) means spending exceeded the plan.
 The budget screen shows an "Available to Budget" figure at the top. This is the user's total liquid cash minus the total amount committed to budget envelopes — how much money is not spoken for by any category.
 
 ```
-available_to_budget = liquid_balance - total_assigned
+available_to_budget = spendable_balance - total_assigned
 ```
 
 Where:
-- `liquid_balance` = sum of derived balances across all non-hidden **liquid** accounts (`cash`, `checking`, `savings`)
+- `spendable_balance` = sum of derived balances across all non-hidden **spendable** accounts (`cash`, `checking`, `savings`, `credit_card`)
 - `total_assigned` = sum of `assigned` values for all non-hidden, non-Income categories
 
-**Excluded from liquid balance:** `loan`, `asset`, and `crypto` accounts. Loans are long-term debt, not spendable cash. Assets and crypto are illiquid — you can't pay rent with a property or a Bitcoin wallet.
+Credit card balances are included because credit card debt represents money already spent (or committed to be repaid) from the user's liquid cash. A user with $5,000 in checking and -$4,000 on a credit card has $1,000 truly available, not $5,000.
 
-This figure answers: "Of all the money I can actually spend, how much isn't earmarked for a budget category?"
+**Excluded from spendable balance:** `loan`, `asset`, and `crypto` accounts. Loans are long-term debt obligations, not short-term spending. Assets and crypto are illiquid — you can't pay rent with a property or a Bitcoin wallet.
 
-- **Positive** — liquid cash exceeds the budget plan. The surplus is unallocated.
-- **Zero** — every dollar of liquid cash has a category.
-- **Negative** — the budget plan promises more than available liquid cash. Envelopes are underfunded.
+This figure answers: "Of all the money I can actually spend (minus what I owe on credit cards), how much isn't earmarked for a budget category?"
 
-This is a **total position**, not a monthly flow. It reflects cumulative savings, not just this month's income. A user with $10,000 in checking and a $3,000 monthly budget has $7,000 available — that's their buffer beyond the plan.
+- **Positive** — spendable cash exceeds the budget plan. The surplus is unallocated.
+- **Zero** — every dollar of spendable cash has a category.
+- **Negative** — the budget plan promises more than available spendable cash. Envelopes are underfunded.
+
+This is a **total position**, not a monthly flow. It reflects cumulative savings minus credit card debt, not just this month's income. A user with $10,000 in checking, -$2,000 on a credit card, and a $3,000 monthly budget has $5,000 available — that's their buffer beyond the plan.
 
 ---
 
@@ -122,6 +126,15 @@ Common transfers:
 - Savings to Checking (accessing reserves)
 
 **Credit card payments** deserve special attention: when you pay your credit card bill (checking to credit card transfer), no budget category is affected because the *spending* was already recorded when the original purchase was made as an expense on the credit card account. The transfer just settles the debt — it moves money from checking to reduce the credit card's negative balance.
+
+### Credit Card Spending Lifecycle
+
+Credit card transactions follow a clear two-step pattern:
+
+1. **Purchase** — the user buys something with their credit card. This creates an `expense` transaction on the credit card account (negative amount, making the balance more negative). The budget category is impacted at purchase time.
+2. **Payment** — the user pays their credit card bill. This creates a `transfer` from checking to credit card (no budget impact). The checking balance decreases and the credit card balance moves toward zero.
+
+This is correct double-entry behavior: spending is recorded when it happens (step 1), and the debt settlement is a separate balance-sheet operation (step 2). Users new to budgeting often expect the payment to be the "spending" — the Help screen should clarify this.
 
 ---
 
@@ -185,6 +198,16 @@ This is especially useful for minor amounts (rounding differences, small fees, c
 - `reportedBalance` does not appear on the main account sidebar or drive any filtering/sorting behavior. It only matters during a checkup.
 - There is no "reconciled" vs "unreconciled" transaction state. PFS does not lock transactions before a reconciliation date.
 - `reconciledAt` is informational — it tells the user when they last verified this account, nothing more.
+
+---
+
+## Opening Balance
+
+When a user adds an existing account (e.g., their checking account with $5,000 already in it), the initial balance must be established through a transaction — since all balances are derived.
+
+On account creation, the user can optionally provide a starting balance. If provided, the system creates an `income` transaction dated to the account creation date with description "Opening Balance", categorized under the Income category. This establishes the correct derived balance from day one.
+
+If the starting balance not provided, a 0 starting balance transaction is created anyway.
 
 ---
 

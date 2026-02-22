@@ -48,7 +48,15 @@ Returns server-provided budget presets from `budgets.json` at the project root. 
 
 ---
 
+### Budgets
+
+- `POST /api/budgets` — create a new budget: `{ id, name, currency, adapter }`. Creates the directory/collections, seeds default categories, returns the budget config.
+
+---
+
 ### Accounts
+
+Request/response shapes match the Account entity in `specs/DATA_MODEL.md`. `POST /api/accounts` accepts an optional `startingBalance` (integer, minor units) — if provided, the server creates an "Opening Balance" income transaction.
 
 - `GET /api/accounts` — list accounts; supports `?includeHidden=true`; includes derived `balance` on each account
 - `GET /api/accounts/:id` — single account with derived balance
@@ -61,7 +69,9 @@ Returns server-provided budget presets from `budgets.json` at the project root. 
 
 ### Transactions
 
-- `GET /api/transactions` — list transactions; supports `?accountId`, `?from`, `?to` (YYYY-MM-DD), `?categoryId`, `?type`, `?limit`, `?offset`; sorted by date descending
+Request/response shapes match the Transaction entity in `specs/DATA_MODEL.md`. The client fetches all transactions on budget open and filters locally. Server-side query params are a convenience for partial fetches, not the primary data flow.
+
+- `GET /api/transactions` — list all transactions; sorted by date descending
 - `GET /api/transactions/:id` — single transaction
 - `POST /api/transactions` — create transaction; for transfers, include `transferToAccountId` and the server creates both legs atomically
 - `PUT /api/transactions/:id` — update; propagates `amount`/`date` changes to transfer pair automatically
@@ -70,6 +80,8 @@ Returns server-provided budget presets from `budgets.json` at the project root. 
 ---
 
 ### Categories
+
+Request/response shapes match the Category entity in `specs/DATA_MODEL.md`.
 
 - `GET /api/categories` — list categories; supports `?includeHidden=true`
 - `GET /api/categories/:id` — single category
@@ -81,16 +93,16 @@ Returns server-provided budget presets from `budgets.json` at the project root. 
 
 ### Budget
 
-- `GET /api/budget?month=YYYY-MM` — monthly budget summary: per-category spending vs assigned, grouped by group, with totals. Defaults to current month.
+- `GET /api/budget/monthly?month=YYYY-MM` — monthly budget summary. Defaults to current month. Returns `MonthlySummary` — a derived type computed by a `pfs-lib` function. See `specs/DATA_MODEL.md` for the type definition, `specs/FINANCE_SYSTEM.md` for the math.
 
 ---
 
 ### AI Assistant
 
-- `POST /api/ai/import` — submit files or text for analysis; returns an import plan for user review before committing
-- `POST /api/ai/import/confirm` — execute a previously generated import plan; triggers backup first
+- `POST /api/ai/import/run` — submit files or text for analysis; executes transform script, validates output, returns a preview (sample rows, count, validation errors). Nothing is written.
+- `POST /api/ai/import/confirm` — execute a previously generated import plan; triggers backup first, then commits to storage.
 
-> Placeholders — interface to be defined when AI assistant is implemented.
+> Placeholders — interface to be defined when AI assistant is implemented. See `specs/AI_ASSISTANT.md` for the full design.
 
 ---
 

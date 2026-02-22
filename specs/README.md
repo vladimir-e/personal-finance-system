@@ -32,4 +32,8 @@ Living specifications for PFS. These docs are the source of truth for how the sy
 | DATA_MODEL.md | Canonical entity definitions |
 | FEATURES.md | App capabilities catalog |
 | FINANCE_SYSTEM.md | Personal finance methodology and budget math |
+| STORAGE.md | Adapter pattern, CSV/MongoDB persistence, backup |
+| CLIENT_ARCHITECTURE.md | Browser DataStore, optimistic updates, design conventions |
+| TESTING.md | Test strategy, layers, commands, rules |
+| AI_ASSISTANT.md | Import assistant, AIClient interface, import workflow |
 | PLUGIN_SYSTEM.md | Plugin seam design (stub) |

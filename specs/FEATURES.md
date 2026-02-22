@@ -24,7 +24,7 @@ Each budget is independent: its own accounts, transactions, and categories.
 ## Accounts
 
 ### Account management
-Create, edit, hide, and delete financial accounts. Each account has a name, type, and optional institution.
+Create, edit, hide, and delete financial accounts. Each account has a name, type, and optional institution. On creation, the user can provide an optional starting balance — the system creates an "Opening Balance" income transaction to establish the correct derived balance. See `specs/FINANCE_SYSTEM.md`.
 
 **Account types:** `cash` · `checking` · `savings` · `credit_card` · `loan` · `asset` · `crypto`
 
@@ -75,7 +75,7 @@ View transactions for a selected account or across all accounts.
 View and manage monthly spending against budget targets. Navigate between months with prev/next controls.
 
 ### Available to budget
-Displays unbudgeted income remaining — the difference between total income for the month and total amount assigned across all categories. See `specs/FINANCE_SYSTEM.md` for the full calculation.
+Displays the total spendable balance (liquid accounts + credit cards) minus the total amount assigned across all categories — how much money is not earmarked for any budget category. This is a total position, not a monthly flow. See `specs/FINANCE_SYSTEM.md` for the full calculation.
 
 ### Category groups
 Categories are organized into groups that reflect spending patterns:
@@ -96,8 +96,11 @@ Each category shows three values for the selected month:
 
 The assigned amount is editable inline.
 
+### Uncategorized spending
+The budget screen shows an "Uncategorized" pseudo-row for transactions with no category assigned. It displays `spent` only (no `assigned` value). This surfaces forgotten categorization so the user can address it.
+
 ### Category management
-Create, edit, hide, and delete categories and category groups. Deleting a category clears the `categoryId` on all referencing transactions.
+Create, edit, hide, and delete categories and category groups. Deleting a category clears the `categoryId` on all referencing transactions. Categories have a `sortOrder` field for display positioning within their group.
 
 ---
 
@@ -107,10 +110,13 @@ Create, edit, hide, and delete categories and category groups. Deleting a catego
 Light, dark, and system-preference theme modes. Toggle available in the top navigation bar.
 
 ### Navigation
-Top-level navigation between three screens: Transactions, Budget, and Help.
+Three navigation tabs, consistent across mobile and desktop:
+- **Transactions** — transaction list + account sidebar/selector. Accounts live within this tab.
+- **Add Transaction** — quick-access button to open the add-transaction modal.
+- **Budget** — monthly budget view + category management. Categories live within this tab.
 
 ### Help screen
-In-app documentation covering core concepts: budgeting workflow, account types, transaction types, and how the budget math works.
+In-app documentation covering core concepts: budgeting workflow, account types, transaction types, and how the budget math works. Accessible from a secondary location (settings/more menu), not a primary navigation tab.
 
 ---
 
@@ -126,7 +132,7 @@ A side panel for uploading files (screenshots, CSVs, PDFs, bank exports) and con
 All mass imports require a preview (sample transactions, count, totals), offer a data backup, and need explicit user confirmation.
 
 ### Backup
-Copy data files before destructive operations. CSV adapter creates timestamped backups alongside data files. MongoDB adapter defers to MongoDB's own backup mechanisms.
+Copy data files before destructive operations. CSV adapter creates timestamped backups alongside data files. MongoDB adapter exports each collection to timestamped JSON files. See `specs/STORAGE.md`.
 
 ---
 
@@ -137,7 +143,25 @@ Export transactions (and optionally accounts and categories) to CSV for backup, 
 
 ---
 
+## Reconciliation
+
+A periodic checkup — the user checks their real bank balances and verifies PFS agrees.
+
+### Reconciliation flow
+1. User enters their bank's reported balance into the account's `reportedBalance` field.
+2. PFS shows the discrepancy between derived balance (sum of transactions) and reported balance.
+3. User resolves the gap by importing missing transactions or creating a balancing transaction.
+
+### Balancing transaction
+A one-tap action that generates an uncategorized transaction for the difference amount. Closes the gap immediately — useful for minor discrepancies (rounding, small fees, untracked cash spending).
+
+### Auto-reset
+When derived balance matches reported balance, `reportedBalance` automatically clears to `null` and `reconciledAt` updates. This prevents stale checkpoints — if `reportedBalance` is set, it means a checkup is in progress.
+
+See `specs/FINANCE_SYSTEM.md` for the full reconciliation design.
+
+---
+
 ## Future Capabilities
 
 - Financial reports and charts (spending trends, category breakdowns)
-- Reconciliation workflow (step-by-step comparison of derived vs reported balance)

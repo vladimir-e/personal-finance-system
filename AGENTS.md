@@ -13,6 +13,8 @@ Key specs:
 - `specs/CLIENT_ARCHITECTURE.md` — browser state, optimistic updates, design conventions
 - `specs/TESTING.md` — test strategy, layers, rules
 - `specs/FEATURES.md` — prioritized feature backlog
+- `specs/FINANCE_SYSTEM.md` — budgeting methodology, budget math, reconciliation
+- `specs/AI_ASSISTANT.md` — import assistant design
 
 ## Key commands
 

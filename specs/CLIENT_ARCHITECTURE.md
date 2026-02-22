@@ -84,6 +84,64 @@ Budget configurations (`{ id, name, currency, adapter }`) are saved to `localSto
 - **Trust through clarity.** Finance apps require confidence. Prefer clear labels, unambiguous numbers, and explicit confirmation for destructive actions.
 - **Semantic color tokens.** Use `text-positive`/`text-negative` for amounts, never raw color values. Tokens are defined in `webapp/src/index.css`.
 - **Tabular figures.** All financial amounts use `font-variant-numeric: tabular-nums` for digit alignment.
+- **Negative amounts.** Display with minus sign, not parentheses.
+
+## Navigation
+
+Three tabs, consistent across mobile and desktop:
+
+| Tab | Content |
+|-----|---------|
+| **Transactions** | Transaction list + account sidebar/selector. Accounts live within this tab. |
+| **Add Transaction** | Opens the add-transaction modal. Central quick-access action. |
+| **Budget** | Monthly budget view + category management. Categories live within this tab. |
+
+Help screen is accessible from a secondary location (settings/more menu), not a primary tab.
+
+## Responsive Layout
+
+**Account sidebar:**
+- Desktop: permanent sidebar alongside transaction list.
+- Tablet: collapsible sidebar.
+- Mobile: drawer (slide-in from left) or account selector in header.
+
+**Transaction list:**
+- Mobile: card/row layout — each transaction shows description/payee, amount, date, with category as muted subtext. Tap to open detail.
+- Desktop/tablet (768px+): full table with columns for date, account, category, description, amount.
+
+**Transaction editing:**
+- Mobile: tap a transaction to open a bottom sheet with editable fields.
+- Desktop/tablet: inline editing directly in the table cells.
+
+**Sorting:**
+- Desktop/tablet: clickable column headers with sort indicators.
+- Mobile: dropdown selector for sort field.
+
+**Budget month navigation:**
+- Prev/next buttons only. No horizontal swipe.
+
+**Pagination:**
+- Mobile: infinite scroll with 50-item batches.
+- Desktop: 500-row pages.
+
+## Interaction Patterns
+
+**Add-transaction modal:** segmented control for type (expense/income/transfer). Pre-selects the currently viewed account. After save, modal closes and returns to the list.
+
+**Confirmation dialogs** for destructive actions:
+- Delete transaction: if transfer, warn "This will also delete the matching transfer in [Account]."
+- Delete category: warn "This will remove the category from N transactions."
+- Delete account: blocked message if account has transactions. Instruct user to bring the balance to 0 and hide instead.
+- Hide account: blocked message if balance is non-zero.
+
+**Empty states:** each major view shows a clear empty state with a CTA:
+- No accounts → "Create your first account to start tracking."
+- No transactions → "Record your first transaction."
+- No filter matches → "No transactions match your filters."
+
+**Loading states:** skeleton/spinner during initial DataStore fetch when opening a budget. Individual mutations are optimistic (instant UI update).
+
+**Theme toggle:** 3-state cycle icon in nav bar (sun → moon → auto).
 
 ## Shared Validation
 

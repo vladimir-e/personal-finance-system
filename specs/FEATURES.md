@@ -1,80 +1,143 @@
 # Features
 
-Prioritized user-facing backlog. Items at the top are next; items at the bottom are future ideas. This is a living document — order reflects current thinking, not a fixed roadmap.
+Complete catalog of PFS capabilities. Each section describes what the system does — see individual specs for how.
+
+For the financial methodology (budgeting model, account types, budget math), see `specs/FINANCE_SYSTEM.md`.
 
 ---
 
-## Priority 1 — Core
+## Budget Workspace
 
-### Budget selector (app entry point)
-On load, display a list of configured budgets from two sources merged together:
-- **localStorage** — budgets the user has created or previously opened
-- **Server presets** — budgets from `budgets.json` at the project root, fetched from `GET /api/budgets/presets`, shown as read-only
+A **budget** is a named workspace: a display name, a currency, and a storage backend. Users may have multiple budgets (e.g. "Personal", "Business").
 
-When a user has no budgets configured and `./data` contains budget folders, offer to open them. Each budget config is `{ name, currency, adapter }`. Creating a budget prompts for a name, currency, and storage adapter choice (default: CSV files).
+On app load, the budget selector merges budgets from three sources:
+- **Previously opened** — saved in `localStorage`
+- **Local discovery** — CSV budget folders found under `./data`
+- **Server presets** — from `budgets.json`, always read-only
 
-Adapter settings (CSV base path, MongoDB URL) are stored in localStorage and sent to the server once when opening a budget.
+When presets are present, budget creation is hidden — the user picks from the list. When no presets exist, the user can create a new budget, select a discovered one, or enter a custom path.
+
+Each budget is independent: its own accounts, transactions, and categories.
+
+---
+
+## Accounts
 
 ### Account management
-Create and manage financial accounts. Account types: `cash`, `checking`, `savings`, `credit_card`, `loan`, `asset`, `crypto`.
+Create, edit, hide, and delete financial accounts. Each account has a name, type, and optional institution.
 
-Live balance is derived from transaction history. `reportedBalance` is a user-entered field for reconciliation comparison only.
+**Account types:** `cash` · `checking` · `savings` · `credit_card` · `loan` · `asset` · `crypto`
 
-Accounts can be hidden (soft-hide) when their derived balance is zero. Hidden accounts don't appear in the main view or net worth total.
+### Account sidebar
+Accounts are displayed in a sidebar, grouped for display: Cash, Checking, Savings, Credit, Investment (`asset` + `crypto`), Loans, and Closed (hidden accounts). Each group shows a subtotal. Each account shows its derived balance and a reconciliation status indicator.
 
-### Transaction entry (manual)
-Record income, expenses, and transfers with: amount, date, category, description, payee, and account. The fundamental operation — everything else depends on having transactions.
+An "All Accounts" option shows transactions across every account.
 
-**Transfers** create two linked transactions simultaneously (outflow leg + inflow leg with mutual `transferPairId`). Deleting one leg cascades to delete the other.
+### Derived balance
+Account balances are computed from transaction history — never stored. The `reportedBalance` field holds the user-entered bank statement balance for reconciliation comparison.
 
-### Transaction list with filtering
-View transactions for a selected account or across all accounts. Filter by date range (default: current month). Basic search by description/payee. Sort by date descending.
+### Hiding accounts
+Accounts with a zero derived balance can be hidden. Hidden accounts are excluded from the sidebar and net worth summary. Their transactions remain in the system.
 
-### Account balance and net worth
-Derived balances shown per-account and as a total net worth. Net worth excludes hidden accounts.
-
-### Monthly budget screen
-Aggregate monthly spending by category. Compare against each category's static `assigned` target. Show: spent, assigned, and available (= assigned + spent). Navigate between months. Highlight overspent categories.
+### Net worth
+Total net worth is the sum of all visible account balances. Hidden accounts are excluded.
 
 ---
 
-## Priority 2 — Data import
+## Transactions
 
-### AI assistant for data import
-A side panel where users can upload files (screenshots, CSVs, PDFs, bank exports in any format) and converse with an AI assistant to import transactions.
+### Transaction entry
+Record financial events with: amount, date, account, category, description, payee, and notes. Three transaction types:
 
-**Assistant behavior by input type:**
-- **Screenshot / small set of transactions** — AI creates transactions directly via API calls, then shows a summary for confirmation
-- **Well-structured CSV** — AI writes a mapping script, runs a dry-run preview (sample rows + summary), asks for confirmation, then executes mass import
-- **Other formats** — AI attempts best-effort extraction, always with a preview-before-commit step
+- **Expense** — money out (negative amount)
+- **Income** — money in (positive amount)
+- **Transfer** — move money between accounts (creates two linked transactions with mutual `transferPairId`)
 
-**Before any mass import:** AI presents a preview (sample transactions, count, total amounts), offers a data backup, and requires explicit user confirmation.
+The add-transaction modal has tabs for each type. Transfer creation simultaneously generates the outflow and inflow legs. Deleting one leg cascades to delete the other.
 
-**Model:** Defaults to Claude (uses user's API key or Max subscription quota). The AI client interface is model-agnostic to allow future provider options.
+### Transaction list
+View transactions for a selected account or across all accounts.
+
+**Table columns:** date, account, category, description, amount. Sortable by any column. Paginated at 500 transactions per page.
+
+**Inline editing** — click any field to edit it directly in the table. Delete transactions from the table.
+
+### Filtering
+- **Full-text search** — matches against description, payee, notes, category name, and account name
+- **Category filter** — dropdown to show only a specific category
+- **Date range picker** — filter transactions to a date window
+
+---
+
+## Monthly Budget
+
+### Budget screen
+View and manage monthly spending against budget targets. Navigate between months with prev/next controls.
+
+### Available to budget
+Displays unbudgeted income remaining — the difference between total income for the month and total amount assigned across all categories. See `specs/FINANCE_SYSTEM.md` for the full calculation.
+
+### Category groups
+Categories are organized into groups that reflect spending patterns:
+
+| Group | Purpose |
+|-------|---------|
+| Income | Income sources |
+| Fixed | Recurring obligations (housing, bills, subscriptions) |
+| Daily Living | Regular day-to-day spending (groceries, dining, transport) |
+| Personal | Discretionary and lifestyle (health, clothing, hobbies) |
+| Irregular | Infrequent or unpredictable (maintenance, travel, big purchases) |
+
+### Per-category budget view
+Each category shows three values for the selected month:
+- **Assigned** — the static monthly budget target
+- **Spent** — sum of transaction amounts for this category this month
+- **Available** — assigned + spent (positive = under budget, negative = overspent)
+
+The assigned amount is editable inline.
+
+### Category management
+Create, edit, hide, and delete categories and category groups. Deleting a category clears the `categoryId` on all referencing transactions.
+
+---
+
+## Theme and Navigation
+
+### Theme
+Light, dark, and system-preference theme modes. Toggle available in the top navigation bar.
+
+### Navigation
+Top-level navigation between three screens: Transactions, Budget, and Help.
+
+### Help screen
+In-app documentation covering core concepts: budgeting workflow, account types, transaction types, and how the budget math works.
+
+---
+
+## Data Import (Planned)
+
+### AI import assistant
+A side panel for uploading files (screenshots, CSVs, PDFs, bank exports) and conversing with an AI assistant to import transactions.
+
+- **Small inputs** (screenshots, few transactions) — AI creates transactions directly, shows summary for confirmation
+- **Structured CSVs** — AI writes a mapping, previews sample rows, imports on confirmation
+- **Other formats** — best-effort extraction with preview-before-commit
+
+All mass imports require a preview (sample transactions, count, totals), offer a data backup, and need explicit user confirmation.
 
 ### Backup
-A user- or agent-triggered action that copies the current data files before a destructive operation.
-
-For CSV adapter: copies data files to a timestamped backup (e.g. `transactions.backup.2024-01-15T143022.csv`). For MongoDB adapter: no-op (MongoDB has its own backup mechanisms). Backups are stored locally alongside the data files.
+Copy data files before destructive operations. CSV adapter creates timestamped backups alongside data files. MongoDB adapter defers to MongoDB's own backup mechanisms.
 
 ---
 
-## Priority 3 — Data portability
+## Data Export (Planned)
 
 ### CSV export
-Export transactions (and optionally accounts/categories) to CSV. Useful for backup, migration, or analysis in other tools.
+Export transactions (and optionally accounts and categories) to CSV for backup, migration, or analysis in external tools.
 
 ---
 
-## Future ideas
+## Future Capabilities
 
-- Multi-currency accounts within a single budget (plugin candidate)
-- Recurring transaction templates
 - Financial reports and charts (spending trends, category breakdowns)
-- Receipt/document attachment to transactions
-- Full-text search across all transactions
-- Reconciliation workflow (compare `reportedBalance` against derived balance, mark reconciled)
-- Sync between devices (requires adapter-level work)
-- Crypto and investment account tracking with price feeds (plugin candidate)
-- Stocks portfolio tracking (plugin candidate)
-- Per-month `assigned` overrides for seasonal budgeting
+- Reconciliation workflow (step-by-step comparison of derived vs reported balance)

@@ -7,7 +7,7 @@ Living specifications for PFS. These docs are the source of truth for how the sy
 - **Architecture decisions** that affect multiple packages
 - **API contracts** (endpoints, request/response shapes, error formats)
 - **Data model definitions** (canonical entity schemas)
-- **Feature specs** (user-facing backlog, prioritized)
+- **Feature specs** (capabilities catalog, domain methodology)
 - **System-level concerns** (plugin architecture, storage strategy)
 
 ## What does NOT belong here
@@ -30,5 +30,6 @@ Living specifications for PFS. These docs are the source of truth for how the sy
 | ARCHITECTURE.md | System architecture, layers, adapters, monorepo structure |
 | API.md | REST API contracts and conventions |
 | DATA_MODEL.md | Canonical entity definitions |
-| FEATURES.md | Prioritized user-facing backlog |
+| FEATURES.md | App capabilities catalog |
+| FINANCE_SYSTEM.md | Personal finance methodology and budget math |
 | PLUGIN_SYSTEM.md | Plugin seam design (stub) |

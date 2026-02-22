@@ -95,4 +95,5 @@ See `specs/PLUGIN_SYSTEM.md` for known candidates and current thinking.
 - `specs/TESTING.md` — test strategy, layers, commands, rules
 - `specs/AI_ASSISTANT.md` — import assistant, AIClient interface, import workflow
 - `specs/API.md` — REST endpoint contracts
-- `specs/FEATURES.md` — prioritized feature backlog
+- `specs/FEATURES.md` — app capabilities catalog
+- `specs/FINANCE_SYSTEM.md` — personal finance methodology and budget math

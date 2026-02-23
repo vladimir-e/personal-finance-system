@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useRef, useMemo, type ReactNode } from 'react';
 import type {
   DataStore,
   Account,
@@ -268,9 +268,12 @@ interface DataStoreProviderProps {
 export function DataStoreProvider({ initialState, children }: DataStoreProviderProps) {
   const [state, dispatch] = useReducer(storeReducer, initialState ?? createDefaultState());
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   const mutations = useMemo(
-    () => createMutations(() => state, dispatch),
-    [state],
+    () => createMutations(() => stateRef.current, dispatch),
+    [dispatch],
   );
 
   const value = useMemo<DataStoreContextValue>(

@@ -19,7 +19,7 @@ On app load, the budget selector merges two sources:
 **Budget operations:**
 - **Create** — name, currency, adapter type (CSV default, path defaults to `./data/<id>`). Creates the directory, writes `budget.json` meta, seeds default categories.
 - **Open** — point to an existing budget folder or MongoDB URL. Server validates the meta file is present, then registers a pointer.
-- **Edit** — update name or currency (writes to the budget's own meta file). Adapter and path are immutable.
+- **Edit** — update name or currency (writes to the budget's own meta file).
 - **Remove** — removes the pointer from `budgets.json`. Does not delete actual data.
 
 ---
@@ -56,7 +56,7 @@ Record financial events with: amount, date, account, category, description, paye
 - **Income** — money in (positive amount)
 - **Transfer** — move money between accounts (creates two linked transactions with mutual `transferPairId`)
 
-The add-transaction modal has tabs for each type. Transfer creation simultaneously generates the outflow and inflow legs. Deleting one leg cascades to delete the other.
+The add-transaction modal has a segmented control for type. Transfer creation simultaneously generates the outflow and inflow legs. Deleting one leg cascades to delete the other.
 
 ### Transaction list
 View transactions for a selected account or across all accounts.

@@ -61,8 +61,9 @@ Example with defaults: `data/personal/accounts.csv`.
 
 **Writing:** each mutating operation rewrites the relevant file in full. At personal finance scale this is fast enough — a 10K-row file rewrites in single-digit milliseconds.
 
-**`backup()`:** copies all three CSV files to timestamped copies in the same directory:
+**`backup()`:** copies all data files to timestamped copies in the same directory:
 ```
+budget.json.backup.2024-01-15T143022
 transactions.backup.2024-01-15T143022.csv
 accounts.backup.2024-01-15T143022.csv
 categories.backup.2024-01-15T143022.csv
@@ -86,8 +87,8 @@ Backup is a first-class operation. The AI assistant triggers one automatically b
 
 ## Storageless Mode
 
-A budget can be configured as storageless. From the client's perspective it is a normal budget — same UI, same DataStore, same mutations. The difference is that all persistence calls are swallowed: no API requests are made and changes exist only in browser memory for the session.
+Storageless mode is a global app mode enabled by a frontend environment variable. It disables the API layer entirely and runs a single budget in memory. From the client's perspective the UI is the same — same DataStore, same mutations — but all persistence calls are skipped and changes exist only in browser memory for the session.
 
 Used for the public demo (deployed as a static site with no server) and for client-side unit and component tests. End-to-end tests that require the full stack use a real server with a CSV adapter pointed at a temp directory.
 
-Storageless mode is not a storage adapter type. It is a client-side flag that tells the webapp to skip all API calls. The `AdapterConfig.type` union is `'csv' | 'mongodb'` — there is no `'memory'` type. The server uses an in-memory adapter internally for tests, but this is not exposed as a configurable storage type.
+Storageless mode is not a storage adapter type. It is a client-side environment variable that tells the webapp to skip all API calls. The `AdapterConfig.type` union is `'csv' | 'mongodb'` — there is no `'memory'` type.

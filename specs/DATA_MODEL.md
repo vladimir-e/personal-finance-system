@@ -229,7 +229,7 @@ interface MonthlySummary {
 
 ## Design Notes
 
-- **IDs are strings.** Adapters choose the generation strategy (UUID, sequential integer). Category IDs are sequential integers-as-strings by convention.
+- **IDs are client-generated UUIDs** (strings). The client generates IDs before the optimistic update, so no server round-trip is needed. Category IDs for default seeds are sequential integers-as-strings by convention.
 - **Dates are strings** (`YYYY-MM-DD` for transaction dates, ISO 8601 for timestamps). The lib layer avoids `Date` objects to sidestep timezone ambiguity.
 - **No `updatedAt`.** Simplicity over auditability at this stage.
 - **`archived` is an archive flag**, not a delete. Archived accounts are excluded from the main sidebar and net worth summary. Archived categories appear under a collapsed "Archived" group on the budget screen. In both cases, all data (transactions, history) is preserved.

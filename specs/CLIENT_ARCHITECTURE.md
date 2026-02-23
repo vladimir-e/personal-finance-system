@@ -16,17 +16,16 @@ interface DataStore {
 }
 ```
 
-All reads (derived balances, budget summaries, filtered transaction lists) are computed directly from this in-memory store — no additional API calls needed for display. Individual records are updated in place when mutations are confirmed.
+All reads (derived balances, budget summaries, filtered transaction lists) are computed directly from this in-memory store — no additional API calls needed for display.
 
 ## Optimistic Updates
 
 Every mutation follows this pattern:
 
 1. **Validate locally** — using the same Zod schemas from `pfs-lib` that the server uses. If invalid, show an inline error immediately, don't send to server.
-2. **Update DataStore immediately** — apply the change to the in-memory store. UI reflects the change instantly.
-3. **Persist in the background** — fire an API call to the server (5-second timeout).
-4. **On success** — optionally replace local state with server response (for server-generated fields like `id`, `createdAt`).
-5. **On failure** — show an error modal: "Something went wrong. Reload to continue." Reload restores the server's persisted state.
+2. **Update DataStore immediately** — the client generates a UUID for new entities, applies the change to the in-memory store. UI reflects the change instantly.
+3. **Persist in the background** — fire an API call to the server (5-second timeout). The response is not inspected on success.
+4. **On failure** — show an error modal: "Something went wrong. Reload to continue." Reload restores the server's persisted state.
 
 Errors are expected to be extremely rare (local server, same-machine storage). The error path is deliberately blunt — no retry logic, no partial rollback, just a reload. The risk of data loss between optimistic update and persistence failure is minimal.
 
@@ -54,7 +53,7 @@ interface UndoStack {
 }
 ```
 
-On every mutation, push `present` onto `past` and replace `present` with the new store. On undo, pop from `past`, push `present` onto `future`. The server is not involved — undo is purely a browser-side operation that fires the appropriate DELETE/PUT to re-sync storage.
+On every mutation, push `present` onto `past` and replace `present` with the new store. On undo, pop from `past`, push `present` onto `future`. Undo is a browser-side operation — the DataStore reverts immediately, then the appropriate DELETE/PUT fires in the background to re-sync storage.
 
 Undo history is scoped to the browser session and is not persisted.
 
@@ -65,10 +64,10 @@ On app load, the webapp calls `GET /api/budgets` to get the merged budget list �
 **Operations:**
 - **Create** — name, currency, adapter type (CSV default), path (default `./data/<id>`). Advanced settings for custom path or MongoDB.
 - **Open** — point to an existing budget folder or MongoDB URL. Server validates a `budget.json` meta file is present, then registers a pointer in `budgets.json`.
-- **Edit** — update name or currency (writes to the budget's own meta file). Adapter and path are immutable.
+- **Edit** — update name or currency (writes to the budget's own meta file).
 - **Remove** — removes the pointer from `budgets.json`. Does not delete data. Auto-discovered `./data` budgets cannot be removed (delete the folder manually).
 
-All data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
+Most data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
 
 ## Design Conventions
 

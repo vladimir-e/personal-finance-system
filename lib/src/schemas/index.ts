@@ -158,9 +158,9 @@ export const AdapterConfigSchema = z.object({
 
 // ── Inferred types ───────────────────────────────────────────
 
-export type CreateAccountInputType = z.infer<typeof CreateAccountInput>;
-export type UpdateAccountInputType = z.infer<typeof UpdateAccountInput>;
-export type CreateTransactionInputType = z.infer<typeof CreateTransactionInput>;
-export type UpdateTransactionInputType = z.infer<typeof UpdateTransactionInput>;
-export type CreateCategoryInputType = z.infer<typeof CreateCategoryInput>;
-export type UpdateCategoryInputType = z.infer<typeof UpdateCategoryInput>;
+export type CreateAccountInputType = z.input<typeof CreateAccountInput>;
+export type UpdateAccountInputType = z.input<typeof UpdateAccountInput>;
+export type CreateTransactionInputType = z.input<typeof CreateTransactionInput>;
+export type UpdateTransactionInputType = z.input<typeof UpdateTransactionInput>;
+export type CreateCategoryInputType = z.input<typeof CreateCategoryInput>;
+export type UpdateCategoryInputType = z.input<typeof UpdateCategoryInput>;

@@ -12,6 +12,13 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-23 — DataStore context and mutations
+- React context with `useReducer` providing typed state and mutation functions for accounts, transactions, and categories
+- Account mutations: create (with Opening Balance income transaction), update, delete (blocked when transactions exist), archive/unarchive (blocked when non-zero balance)
+- Transaction mutations: create, update (propagates to transfer pair), delete (cascades to transfer pair), createTransfer (both legs)
+- Category mutations: create, update, delete (clears categoryId on referencing transactions)
+- Test infrastructure: render helper wraps with DataStoreProvider, `makeCategory` and `makeDataStore` factories
+
 ## 2026-02-23 — Lib foundation
 - Entity types: Account, Transaction, Category, BudgetMetadata, DataStore, MonthlySummary, Currency, AdapterConfig
 - Zod validation schemas with create/update variants for Account, Transaction, Category; enforces transfer and amount-sign constraints

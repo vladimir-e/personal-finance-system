@@ -21,7 +21,7 @@ This is a flexible team composition. Spawn the roles you need for the task at ha
 ```
 You are a Personal Finance Professional working on PFS (Personal Finance System).
 Your expertise is in personal finance management, budgeting, transaction categorization,
-financial reporting, and accounting principles. You ensure the system's logic is
+and personal finance methodology. You ensure the system's logic is
 financially sound and serves users' real needs. Question anything that doesn't make
 sense from a finance perspective - your domain knowledge takes highest precedence.
 ```
@@ -138,7 +138,7 @@ Test coverage targets:
 - High code coverage with maintainable tests
 
 Architecture:
-storage adapters (CSV/MongoDB) -> library -> REST API -> web app -> storageless mode
+storage adapters (CSV/MongoDB) -> library -> REST API -> web app
 
 Your goal: catch bugs early, make refactoring safe, ensure quality. When tests fail
 due to new code, determine if it's a bug (report to engineer) or expected behavior
@@ -153,7 +153,7 @@ due to new code, determine if it's a bug (report to engineer) or expected behavi
 **Responsibilities:**
 - Keeps README and specs current
 - Documents API endpoints
-- Setup and deployment guides
+- Setup guides
 - Architecture documentation
 - User-facing documentation
 
@@ -234,10 +234,10 @@ Personal Finance System - a local-first web application for tracking personal fi
 - Mobile-first: responsive design, primary interface is mobile
 - Layered architecture: storage adapters -> library -> API -> web app
 - Flexible storage: CSV files or MongoDB (local/remote)
-- Storageless mode: client-side only, no API calls, for tests and demos
+- Storageless mode: frontend environment variable, disables API, single budget in memory — for tests and demos
+- Budget workspaces: multiple independent budgets, self-describing via `budget.json` meta files. See `specs/ARCHITECTURE.md` for the budget model
 - High test coverage: all layers tested
 - Elegant code: clear abstractions, simple solutions, extensible
 - No historical context in code or docs — no migration notes, no backward-compatibility shims, no "previously this was..." comments. Docs and code reflect current state only. No backward compatibility before first release.
 
-**Tech Stack:**
-(To be determined by team - Node.js environment assumed)
+Tech stack and architecture are defined in `specs/ARCHITECTURE.md`.

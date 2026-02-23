@@ -13,9 +13,10 @@ Key specs:
 - `specs/STORAGE.md` — adapter pattern and persistence
 - `specs/CLIENT_ARCHITECTURE.md` — browser state, optimistic updates, design conventions
 - `specs/TESTING.md` — test strategy, layers, rules
-- `specs/FEATURES.md` — prioritized feature backlog
+- `specs/FEATURES.md` — complete capabilities catalog
 - `specs/FINANCE_SYSTEM.md` — budgeting methodology, budget math, reconciliation
 - `specs/AI_ASSISTANT.md` — import assistant design
+- `ROADMAP.md` — phased implementation plan, ordered by dependency
 
 ## Key commands
 

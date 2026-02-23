@@ -96,9 +96,6 @@ export function computeMonthlySummary(dataStore: DataStore, month: string): Mont
     .filter((tx) => tx.categoryId === '' && tx.type !== 'transfer')
     .reduce((sum, tx) => sum + tx.amount, 0);
 
-  // Also count spending in income categories as uncategorized for budget purposes
-  // (No — income categories just don't appear in budget math, spending in them is in the group)
-
   return {
     month,
     availableToBudget: computeAvailableToBudget(dataStore),

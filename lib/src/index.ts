@@ -36,6 +36,8 @@ export {
   AdapterConfigSchema,
 } from './schemas/index.js';
 
+export { getDefaultCategories } from './categories.js';
+
 export type {
   CreateAccountInputType,
   UpdateAccountInputType,

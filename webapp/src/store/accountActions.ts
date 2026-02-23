@@ -7,9 +7,7 @@ export function reduceAccount(state: DataStore, action: AccountAction): DataStor
       return {
         ...state,
         accounts: [...state.accounts, action.account],
-        transactions: action.transaction
-          ? [...state.transactions, action.transaction]
-          : state.transactions,
+        transactions: [...state.transactions, action.transaction],
       };
 
     case 'UPDATE_ACCOUNT':

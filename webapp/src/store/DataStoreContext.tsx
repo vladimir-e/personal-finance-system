@@ -84,6 +84,9 @@ function createMutations(
     createAccount(input) {
       const parsed = CreateAccountInput.parse(input);
       const now = new Date().toISOString();
+      const state = getState();
+
+      const incomeCategory = state.categories.find((c) => c.group === 'Income');
       const account: Account = {
         id: crypto.randomUUID(),
         name: parsed.name,
@@ -95,23 +98,20 @@ function createMutations(
         createdAt: now,
       };
 
-      let transaction: Transaction | undefined;
-      if (parsed.startingBalance !== 0) {
-        transaction = {
-          id: crypto.randomUUID(),
-          type: 'income',
-          accountId: account.id,
-          date: now.slice(0, 10),
-          categoryId: '',
-          description: 'Opening Balance',
-          payee: '',
-          transferPairId: '',
-          amount: parsed.startingBalance,
-          notes: '',
-          source: 'manual',
-          createdAt: now,
-        };
-      }
+      const transaction: Transaction = {
+        id: crypto.randomUUID(),
+        type: 'income',
+        accountId: account.id,
+        date: now.slice(0, 10),
+        categoryId: incomeCategory?.id ?? '',
+        description: 'Opening Balance',
+        payee: '',
+        transferPairId: '',
+        amount: parsed.startingBalance,
+        notes: '',
+        source: 'manual',
+        createdAt: now,
+      };
 
       dispatch({ type: 'ADD_ACCOUNT', account, transaction });
       return account;

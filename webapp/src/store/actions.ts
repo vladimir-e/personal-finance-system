@@ -8,7 +8,7 @@ import type {
 // ── Account actions ─────────────────────────────────────────
 
 export type AccountAction =
-  | { type: 'ADD_ACCOUNT'; account: Account; transaction?: Transaction }
+  | { type: 'ADD_ACCOUNT'; account: Account; transaction: Transaction }
   | { type: 'UPDATE_ACCOUNT'; id: string; changes: Partial<Account> }
   | { type: 'DELETE_ACCOUNT'; id: string };
 

@@ -31,3 +31,16 @@ npm run typecheck    # TypeScript strict check across all packages
 ## Hard rules
 
 - No historical context, migrations, or backward-compatibility shims in code or docs
+- Create a feature branch for multi-commit work.
+
+## Validation
+
+- Run `npm run build && npm run typecheck && npm test` before considering any task done. All three must pass.
+- This is a monorepo — changes in `lib` affect `server` and `webapp`. Always validate across all workspaces, not just the one you changed.
+
+## Team workflow
+
+- When spawning a team for significant work, include **all relevant roles** from the start — not just implementation. Tests, docs, and domain review are first-class concerns, not afterthoughts.
+- At minimum for any feature work: engineer (implementation) + tester (coverage) + docs (changelog, README). Add finance-pro for business logic, tech-lead for architectural decisions.
+- Tester and docs roles should work in parallel with — or immediately after — implementation, not as a separate phase discovered later.
+- See `PFS_TEAM.md` for role descriptions and spawn instructions.

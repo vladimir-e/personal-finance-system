@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen, act } from '../test/render';
+import { screen, act, renderHook } from '../test/render';
 import { render } from '../test/render';
-import { render as rtlRender } from '@testing-library/react';
 import { makeAccount, makeTransaction, makeCategory, makeDataStore } from '../test/factories';
 import { useDataStore } from './DataStoreContext';
 import { useState } from 'react';
@@ -65,6 +64,7 @@ function TestHarness() {
           accountId: account.id,
           date: '2026-01-15',
           amount: -2500,
+          description: 'Groceries',
         });
       })}>Create Transaction</button>
 
@@ -94,6 +94,16 @@ function TestHarness() {
         const tx = store.state.transactions.find(t => t.type === 'transfer');
         if (tx) store.updateTransaction(tx.id, { type: 'expense' });
       })}>Update Transfer Type</button>
+
+      <button data-testid="change-expense-to-transfer" onClick={() => call(() => {
+        const tx = store.state.transactions.find(t => t.type === 'expense');
+        if (tx) store.updateTransaction(tx.id, { type: 'transfer' });
+      })}>Change Expense To Transfer</button>
+
+      <button data-testid="update-transfer-amount" onClick={() => call(() => {
+        const tx = store.state.transactions.find(t => t.type === 'transfer' && t.amount < 0);
+        if (tx) store.updateTransaction(tx.id, { amount: -7777, date: '2026-06-15' });
+      })}>Update Transfer Amount</button>
 
       {/* Category mutations */}
       <button data-testid="create-category" onClick={() => call(() => {
@@ -135,7 +145,7 @@ describe('DataStore Context', () => {
 
   it('throws when useDataStore is used outside provider', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => rtlRender(<TestHarness />))
+    expect(() => renderHook(() => useDataStore()))
       .toThrow('useDataStore must be used within a DataStoreProvider');
     spy.mockRestore();
   });
@@ -251,6 +261,7 @@ describe('Transaction Mutations', () => {
     const transactions = JSON.parse(screen.getByTestId('transactions').textContent!);
     const expense = transactions.find((t: { type: string }) => t.type === 'expense');
     expect(expense.amount).toBe(-2500);
+    expect(expense.description).toBe('Groceries');
     expect(expense.transferPairId).toBe('');
   });
 
@@ -310,7 +321,7 @@ describe('Transaction Mutations', () => {
     expect(remainingTransfers).toHaveLength(0);
   });
 
-  it('rejects changing transaction type to/from transfer', async () => {
+  it('rejects changing transaction type from transfer', async () => {
     render(<TestHarness />);
     await act(async () => screen.getByTestId('create-account').click());
     await act(async () => screen.getByTestId('create-account-zero').click());
@@ -318,6 +329,33 @@ describe('Transaction Mutations', () => {
     await act(async () => screen.getByTestId('update-transfer-type').click());
 
     expect(screen.getByTestId('error')).toHaveTextContent('Cannot change transaction type to or from transfer');
+  });
+
+  it('rejects changing transaction type to transfer', async () => {
+    render(<TestHarness />);
+    await act(async () => screen.getByTestId('create-account').click());
+    await act(async () => screen.getByTestId('create-transaction').click());
+    await act(async () => screen.getByTestId('change-expense-to-transfer').click());
+
+    expect(screen.getByTestId('error')).toHaveTextContent('Cannot change transaction type to or from transfer');
+  });
+
+  it('updateTransaction propagates amount and date to transfer pair', async () => {
+    render(<TestHarness />);
+    await act(async () => screen.getByTestId('create-account').click());
+    await act(async () => screen.getByTestId('create-account-zero').click());
+    await act(async () => screen.getByTestId('create-transfer').click());
+    await act(async () => screen.getByTestId('update-transfer-amount').click());
+
+    const transactions = JSON.parse(screen.getByTestId('transactions').textContent!);
+    const transfers = transactions.filter((t: { type: string }) => t.type === 'transfer');
+    const outflow = transfers.find((t: { amount: number }) => t.amount < 0);
+    const inflow = transfers.find((t: { amount: number }) => t.amount > 0);
+
+    expect(outflow.amount).toBe(-7777);
+    expect(outflow.date).toBe('2026-06-15');
+    expect(inflow.amount).toBe(7777);
+    expect(inflow.date).toBe('2026-06-15');
   });
 });
 

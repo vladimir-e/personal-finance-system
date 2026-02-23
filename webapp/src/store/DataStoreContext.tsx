@@ -193,6 +193,12 @@ function createMutations(
       const existing = state.transactions.find((t) => t.id === id);
       if (!existing) throw new Error(`Transaction not found: ${id}`);
 
+      if (parsed.type !== undefined && parsed.type !== existing.type) {
+        if (existing.type === 'transfer' || parsed.type === 'transfer') {
+          throw new Error('Cannot change transaction type to or from transfer');
+        }
+      }
+
       const updated = { ...existing, ...parsed };
 
       const transactions = existing.transferPairId

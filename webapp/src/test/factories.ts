@@ -1,4 +1,5 @@
-import type { Transaction, Account } from 'pfs-lib';
+import type { Transaction, Account, Category, DataStore } from 'pfs-lib';
+import { getDefaultCategories } from 'pfs-lib';
 
 let idCounter = 1;
 
@@ -30,6 +31,27 @@ export function makeAccount(overrides: Partial<Account> = {}): Account {
     reconciledAt: '',
     archived: false,
     createdAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function makeCategory(overrides: Partial<Category> = {}): Category {
+  return {
+    id: String(idCounter++),
+    name: 'Test Category',
+    group: 'Personal',
+    assigned: 0,
+    sortOrder: 1,
+    archived: false,
+    ...overrides,
+  };
+}
+
+export function makeDataStore(overrides: Partial<DataStore> = {}): DataStore {
+  return {
+    accounts: [],
+    transactions: [],
+    categories: getDefaultCategories(),
     ...overrides,
   };
 }

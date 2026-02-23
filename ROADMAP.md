@@ -37,16 +37,16 @@ Cover: derived balance, budget math (monthly summary, available to budget, edge 
 
 ## DataStore and mutations (10–13)
 
-### [ ] 10. DataStore context
+### [x] 10. DataStore context
 React context providing `{ accounts, transactions, categories }` via `useReducer` with typed actions. Storageless initialization: default categories, empty accounts/transactions, no API calls. Environment variable `VITE_STORAGELESS=true`. Update `test/render.tsx` to wrap with DataStore provider. Update `test/factories.ts` for new entity shapes.
 
-### [ ] 11. Account mutations
+### [x] 11. Account mutations
 DataStore mutation functions: `createAccount` (with Opening Balance income transaction from starting balance), `updateAccount`, `deleteAccount` (blocked if transactions exist), `archiveAccount` (blocked if non-zero balance). Enforce referential integrity via lib functions.
 
-### [ ] 12. Transaction mutations
+### [x] 12. Transaction mutations
 DataStore mutation functions: `createTransaction`, `updateTransaction` (propagates amount/date to transfer pair), `deleteTransaction` (cascades to transfer pair). `createTransfer` as a single operation producing both legs via transfer pair logic.
 
-### [ ] 13. Category mutations
+### [x] 13. Category mutations
 DataStore mutation functions: `createCategory`, `updateCategory`, `deleteCategory` (clears categoryId on referencing transactions). Enforce referential integrity via lib functions.
 
 ## Client UI — storageless mode (14–23)

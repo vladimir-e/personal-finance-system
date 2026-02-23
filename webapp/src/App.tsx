@@ -1,13 +1,16 @@
 import { ThemeProvider } from './components/ThemeProvider';
 import { AppShell } from './components/AppShell';
 import { HomePage } from './pages/HomePage';
+import { DataStoreProvider } from './store';
 
 export function App() {
   return (
-    <ThemeProvider>
-      <AppShell>
-        <HomePage />
-      </AppShell>
-    </ThemeProvider>
+    <DataStoreProvider>
+      <ThemeProvider>
+        <AppShell>
+          <HomePage />
+        </AppShell>
+      </ThemeProvider>
+    </DataStoreProvider>
   );
 }

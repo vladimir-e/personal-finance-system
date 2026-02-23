@@ -1,12 +1,25 @@
 import { render as rtlRender, type RenderOptions } from '@testing-library/react';
 import type { ReactElement } from 'react';
+import type { DataStore } from 'pfs-lib';
+import { DataStoreProvider } from '../store';
 
-function AllProviders({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+interface ExtendedRenderOptions extends Omit<RenderOptions, 'wrapper'> {
+  initialState?: DataStore;
 }
 
-export function render(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
-  return rtlRender(ui, { wrapper: AllProviders, ...options });
+function createWrapper(initialState?: DataStore) {
+  return function AllProviders({ children }: { children: React.ReactNode }) {
+    return (
+      <DataStoreProvider initialState={initialState}>
+        {children}
+      </DataStoreProvider>
+    );
+  };
+}
+
+export function render(ui: ReactElement, options?: ExtendedRenderOptions) {
+  const { initialState, ...renderOptions } = options ?? {};
+  return rtlRender(ui, { wrapper: createWrapper(initialState), ...renderOptions });
 }
 
 export * from '@testing-library/react';

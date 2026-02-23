@@ -17,3 +17,30 @@ export type {
 
 export type { StorageAdapter } from './storage/index.js';
 export { MemoryAdapter, createAdapter } from './storage/index.js';
+
+export {
+  CurrencySchema,
+  AccountTypeSchema,
+  AccountSchema,
+  CreateAccountInput,
+  UpdateAccountInput,
+  TransactionTypeSchema,
+  TransactionSourceSchema,
+  TransactionSchema,
+  CreateTransactionInput,
+  UpdateTransactionInput,
+  CategorySchema,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+  BudgetMetadataSchema,
+  AdapterConfigSchema,
+} from './schemas/index.js';
+
+export type {
+  CreateAccountInputType,
+  UpdateAccountInputType,
+  CreateTransactionInputType,
+  UpdateTransactionInputType,
+  CreateCategoryInputType,
+  UpdateCategoryInputType,
+} from './schemas/index.js';

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { Transaction } from './types/index.js';
 
 interface TransferOpts {
@@ -15,8 +14,8 @@ export function createTransferPair(
   opts: TransferOpts = {},
 ): [Transaction, Transaction] {
   const absAmount = Math.abs(amount);
-  const outflowId = randomUUID();
-  const inflowId = randomUUID();
+  const outflowId = globalThis.crypto.randomUUID();
+  const inflowId = globalThis.crypto.randomUUID();
   const now = new Date().toISOString();
   const shared = {
     type: 'transfer' as const,

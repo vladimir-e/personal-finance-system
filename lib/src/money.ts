@@ -26,7 +26,7 @@ export function parseMoney(input: string, currency: Currency): number {
     throw new Error(`Invalid money input: "${input}"`);
   }
   const parts = cleaned.split('.');
-  const whole = parts[0] ?? '0';
+  const whole = parts[0] || '0';
   const frac = (parts[1] ?? '').slice(0, currency.precision).padEnd(currency.precision, '0');
   const sign = whole.startsWith('-') ? -1 : 1;
   const absWhole = whole.replace('-', '') || '0';

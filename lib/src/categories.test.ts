@@ -42,4 +42,23 @@ describe('getDefaultCategories', () => {
     expect(a).not.toBe(b);
     expect(a).toEqual(b);
   });
+
+  it('returns new objects on each call (mutation safety)', () => {
+    const a = getDefaultCategories();
+    a[0].name = 'MUTATED';
+    const b = getDefaultCategories();
+    expect(b[0].name).toBe('Income');
+  });
+
+  it('every category has non-empty name and group', () => {
+    categories.forEach((cat) => {
+      expect(cat.name.length).toBeGreaterThan(0);
+      expect(cat.group.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('has unique IDs', () => {
+    const ids = categories.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 });

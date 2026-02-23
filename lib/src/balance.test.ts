@@ -52,4 +52,23 @@ describe('computeBalance', () => {
     const txs = [makeTx({ amount: 5000 })];
     expect(computeBalance(txs, 'acc-999')).toBe(0);
   });
+
+  it('includes transfer transactions in balance', () => {
+    const txs = [
+      makeTx({ id: '1', type: 'income', amount: 10000 }),
+      makeTx({ id: '2', type: 'transfer', amount: -3000, transferPairId: 'tx-3' }),
+    ];
+    expect(computeBalance(txs, 'acc-1')).toBe(7000);
+  });
+
+  it('handles single transaction', () => {
+    expect(computeBalance([makeTx({ amount: 500 })], 'acc-1')).toBe(500);
+  });
+
+  it('handles large accumulations without overflow', () => {
+    const txs = Array.from({ length: 100 }, (_, i) =>
+      makeTx({ id: String(i), amount: 1000000 }),
+    );
+    expect(computeBalance(txs, 'acc-1')).toBe(100000000);
+  });
 });

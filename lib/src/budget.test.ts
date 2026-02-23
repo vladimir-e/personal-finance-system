@@ -160,6 +160,91 @@ describe('computeMonthlySummary', () => {
     const summary = computeMonthlySummary(store, '2026-01');
     expect(summary.totalAssigned).toBe(50000);
   });
+
+  it('handles empty data store', () => {
+    const store: DataStore = { accounts: [], transactions: [], categories: [] };
+    const summary = computeMonthlySummary(store, '2026-01');
+    expect(summary.totalIncome).toBe(0);
+    expect(summary.totalAssigned).toBe(0);
+    expect(summary.groups).toHaveLength(0);
+    expect(summary.uncategorized.spent).toBe(0);
+  });
+
+  it('handles all categories archived', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [makeTx({ id: '1', amount: -3000 })],
+      categories: [
+        makeCat({ id: '5', assigned: 50000, archived: true }),
+        makeCat({ id: '6', name: 'Dining', assigned: 20000, archived: true }),
+      ],
+    };
+    const summary = computeMonthlySummary(store, '2026-01');
+    expect(summary.totalAssigned).toBe(0);
+    expect(summary.groups).toHaveLength(0);
+  });
+
+  it('handles month with no transactions', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [makeTx({ id: '1', date: '2026-01-15', amount: -5000 })],
+      categories: [makeCat({ assigned: 50000 })],
+    };
+    const feb = computeMonthlySummary(store, '2026-02');
+    const groceries = feb.groups.flatMap((g) => g.categories).find((c) => c.id === '5');
+    expect(groceries?.spent).toBe(0);
+    expect(groceries?.available).toBe(50000);
+    expect(feb.totalIncome).toBe(0);
+  });
+
+  it('sets assigned=0 and available=0 for Income group categories', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [
+        makeTx({ id: '1', type: 'income', amount: 500000, categoryId: '1' }),
+      ],
+      categories: [
+        makeCat({ id: '1', name: 'Income', group: 'Income', assigned: 0, sortOrder: 1 }),
+        makeCat({ id: '5', assigned: 50000 }),
+      ],
+    };
+    const summary = computeMonthlySummary(store, '2026-01');
+    const incomeGroup = summary.groups.find((g) => g.name === 'Income');
+    const incomeCat = incomeGroup?.categories.find((c) => c.id === '1');
+    expect(incomeCat?.assigned).toBe(0);
+    expect(incomeCat?.available).toBe(0);
+    expect(incomeGroup?.totalAssigned).toBe(0);
+    expect(incomeGroup?.totalAvailable).toBe(0);
+  });
+
+  it('sorts categories by sortOrder within groups', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [],
+      categories: [
+        makeCat({ id: '6', name: 'Dining Out', sortOrder: 10 }),
+        makeCat({ id: '5', name: 'Groceries', sortOrder: 5 }),
+      ],
+    };
+    const summary = computeMonthlySummary(store, '2026-01');
+    const daily = summary.groups.find((g) => g.name === 'Daily Living');
+    expect(daily?.categories[0].name).toBe('Groceries');
+    expect(daily?.categories[1].name).toBe('Dining Out');
+  });
+
+  it('separates categories into distinct groups', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [],
+      categories: [
+        makeCat({ id: '5', group: 'Daily Living', assigned: 50000 }),
+        makeCat({ id: '2', name: 'Housing', group: 'Fixed', assigned: 100000, sortOrder: 2 }),
+      ],
+    };
+    const summary = computeMonthlySummary(store, '2026-01');
+    const groupNames = summary.groups.map((g) => g.name).sort();
+    expect(groupNames).toEqual(['Daily Living', 'Fixed']);
+  });
 });
 
 describe('computeAvailableToBudget', () => {
@@ -241,6 +326,56 @@ describe('computeAvailableToBudget', () => {
       ],
     };
 
+    expect(computeAvailableToBudget(store)).toBe(70000);
+  });
+
+  it('returns 0 for empty data store', () => {
+    const store: DataStore = { accounts: [], transactions: [], categories: [] };
+    expect(computeAvailableToBudget(store)).toBe(0);
+  });
+
+  it('returns negative when assigned exceeds balance', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 10000 })],
+      categories: [makeCat({ assigned: 50000 })],
+    };
+    expect(computeAvailableToBudget(store)).toBe(-40000);
+  });
+
+  it('returns full balance when no categories exist', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 100000 })],
+      categories: [],
+    };
+    expect(computeAvailableToBudget(store)).toBe(100000);
+  });
+
+  it('includes savings and cash in spendable balance', () => {
+    const store: DataStore = {
+      accounts: [
+        makeAccount({ id: 'savings', type: 'savings' }),
+        makeAccount({ id: 'cash', type: 'cash' }),
+      ],
+      transactions: [
+        makeTx({ id: '1', accountId: 'savings', type: 'income', amount: 50000 }),
+        makeTx({ id: '2', accountId: 'cash', type: 'income', amount: 30000 }),
+      ],
+      categories: [],
+    };
+    expect(computeAvailableToBudget(store)).toBe(80000);
+  });
+
+  it('excludes archived categories from total assigned', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 100000 })],
+      categories: [
+        makeCat({ id: '5', assigned: 30000 }),
+        makeCat({ id: '6', assigned: 20000, archived: true }),
+      ],
+    };
     expect(computeAvailableToBudget(store)).toBe(70000);
   });
 });

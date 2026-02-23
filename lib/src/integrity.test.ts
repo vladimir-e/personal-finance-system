@@ -30,6 +30,20 @@ describe('canDeleteAccount', () => {
   it('returns true when other accounts have transactions', () => {
     expect(canDeleteAccount([makeTx({ accountId: 'acc-2' })], 'acc-1')).toBe(true);
   });
+
+  it('returns false even with a single transaction', () => {
+    expect(canDeleteAccount([makeTx({ id: '1' })], 'acc-1')).toBe(false);
+  });
+
+  it('handles mixed accounts correctly', () => {
+    const txs = [
+      makeTx({ id: '1', accountId: 'acc-1' }),
+      makeTx({ id: '2', accountId: 'acc-2' }),
+    ];
+    expect(canDeleteAccount(txs, 'acc-1')).toBe(false);
+    expect(canDeleteAccount(txs, 'acc-2')).toBe(false);
+    expect(canDeleteAccount(txs, 'acc-3')).toBe(true);
+  });
 });
 
 describe('canArchiveAccount', () => {
@@ -49,6 +63,13 @@ describe('canArchiveAccount', () => {
     const txs = [
       makeTx({ id: '1', amount: 5000 }),
       makeTx({ id: '2', amount: -5000 }),
+    ];
+    expect(canArchiveAccount(txs, 'acc-1')).toBe(true);
+  });
+
+  it('ignores other accounts when checking balance', () => {
+    const txs = [
+      makeTx({ id: '1', accountId: 'acc-2', amount: 5000 }),
     ];
     expect(canArchiveAccount(txs, 'acc-1')).toBe(true);
   });
@@ -76,5 +97,20 @@ describe('onDeleteCategory', () => {
     const txs = [makeTx({ categoryId: '6' })];
     const result = onDeleteCategory(txs, '5');
     expect(result[0].categoryId).toBe('6');
+  });
+
+  it('handles empty transaction list', () => {
+    const result = onDeleteCategory([], '5');
+    expect(result).toEqual([]);
+  });
+
+  it('clears all matching transactions', () => {
+    const txs = [
+      makeTx({ id: '1', categoryId: '5' }),
+      makeTx({ id: '2', categoryId: '5' }),
+      makeTx({ id: '3', categoryId: '5' }),
+    ];
+    const result = onDeleteCategory(txs, '5');
+    result.forEach((tx) => expect(tx.categoryId).toBe(''));
   });
 });

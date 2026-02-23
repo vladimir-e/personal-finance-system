@@ -40,6 +40,20 @@ describe('formatMoney', () => {
     expect(result).toContain('BTC');
     expect(result).toContain('-');
   });
+
+  it('formats 1 minor unit per precision', () => {
+    expect(formatMoney(1, USD)).toBe('$0.01');
+    expect(formatMoney(1, JPY)).toBe('¥1');
+  });
+
+  it('formats negative JPY', () => {
+    expect(formatMoney(-500, JPY)).toBe('-¥500');
+  });
+
+  it('formats fractional BTC (satoshis)', () => {
+    const result = formatMoney(1, BTC);
+    expect(result).toContain('0.00000001');
+  });
 });
 
 describe('parseMoney', () => {
@@ -101,5 +115,31 @@ describe('parseMoney', () => {
     const amount = 150000000; // 1.5 BTC
     const formatted = formatMoney(amount, BTC);
     expect(parseMoney(formatted, BTC)).toBe(amount);
+  });
+
+  it('round-trips negative amounts', () => {
+    const amount = -99999;
+    const formatted = formatMoney(amount, USD);
+    expect(parseMoney(formatted, USD)).toBe(amount);
+  });
+
+  it('parses whole number for USD (no decimal)', () => {
+    expect(parseMoney('10', USD)).toBe(1000);
+  });
+
+  it('parses JPY with no fractional part', () => {
+    expect(parseMoney('500', JPY)).toBe(500);
+  });
+
+  it('parses zero with decimals', () => {
+    expect(parseMoney('0.00', USD)).toBe(0);
+  });
+
+  it('truncates BTC beyond 8 decimal places', () => {
+    expect(parseMoney('1.123456789', BTC)).toBe(112345678);
+  });
+
+  it('pads BTC with fewer than 8 decimals', () => {
+    expect(parseMoney('1.5', BTC)).toBe(150000000);
   });
 });

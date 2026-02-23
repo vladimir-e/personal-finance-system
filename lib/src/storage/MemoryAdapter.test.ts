@@ -135,6 +135,57 @@ describe('MemoryAdapter', () => {
     expect(await adapter.getCategories()).toHaveLength(0);
   });
 
+  // Multiple entities
+
+  it('stores and retrieves multiple accounts', async () => {
+    await adapter.createAccount(makeAccount({ id: 'acc-1' }));
+    await adapter.createAccount(makeAccount({ id: 'acc-2', name: 'Savings' }));
+    const accounts = await adapter.getAccounts();
+    expect(accounts).toHaveLength(2);
+  });
+
+  it('stores and retrieves multiple transactions', async () => {
+    await adapter.createTransaction(makeTransaction({ id: 'tx-1' }));
+    await adapter.createTransaction(makeTransaction({ id: 'tx-2', amount: -3000 }));
+    const txs = await adapter.getTransactions();
+    expect(txs).toHaveLength(2);
+  });
+
+  // Overwrite behavior
+
+  it('overwrites account with same ID', async () => {
+    await adapter.createAccount(makeAccount({ id: 'acc-1', name: 'Old' }));
+    await adapter.createAccount(makeAccount({ id: 'acc-1', name: 'New' }));
+    const accounts = await adapter.getAccounts();
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0].name).toBe('New');
+  });
+
+  // Delete nonexistent (no-op, no throw)
+
+  it('does not throw when deleting nonexistent account', async () => {
+    await expect(adapter.deleteAccount('nope')).resolves.toBeUndefined();
+  });
+
+  it('does not throw when deleting nonexistent transaction', async () => {
+    await expect(adapter.deleteTransaction('nope')).resolves.toBeUndefined();
+  });
+
+  it('does not throw when deleting nonexistent category', async () => {
+    await expect(adapter.deleteCategory('nope')).resolves.toBeUndefined();
+  });
+
+  // Update preserves ID
+
+  it('preserves original ID even if patch contains different id', async () => {
+    await adapter.createAccount(makeAccount({ id: 'acc-1' }));
+    const updated = await adapter.updateAccount('acc-1', { id: 'acc-hijack', name: 'Renamed' } as Partial<Account>);
+    expect(updated.id).toBe('acc-1');
+    const accounts = await adapter.getAccounts();
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0].id).toBe('acc-1');
+  });
+
   // Backup
 
   it('returns empty backup result', async () => {

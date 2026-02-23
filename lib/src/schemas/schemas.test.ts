@@ -11,7 +11,34 @@ import {
   UpdateCategoryInput,
   BudgetMetadataSchema,
   AdapterConfigSchema,
+  CurrencySchema,
 } from './index.js';
+
+describe('CurrencySchema', () => {
+  it('accepts valid currency', () => {
+    expect(CurrencySchema.parse({ code: 'USD', precision: 2 })).toEqual({ code: 'USD', precision: 2 });
+  });
+
+  it('accepts precision 0 (JPY)', () => {
+    expect(CurrencySchema.parse({ code: 'JPY', precision: 0 }).precision).toBe(0);
+  });
+
+  it('accepts precision 8 (BTC)', () => {
+    expect(CurrencySchema.parse({ code: 'BTC', precision: 8 }).precision).toBe(8);
+  });
+
+  it('rejects negative precision', () => {
+    expect(() => CurrencySchema.parse({ code: 'USD', precision: -1 })).toThrow();
+  });
+
+  it('rejects float precision', () => {
+    expect(() => CurrencySchema.parse({ code: 'USD', precision: 2.5 })).toThrow();
+  });
+
+  it('rejects empty code', () => {
+    expect(() => CurrencySchema.parse({ code: '', precision: 2 })).toThrow();
+  });
+});
 
 describe('AccountSchema', () => {
   const valid = {
@@ -46,6 +73,10 @@ describe('AccountSchema', () => {
       expect(AccountSchema.parse({ ...valid, type }).type).toBe(type);
     }
   });
+
+  it('rejects float reportedBalance', () => {
+    expect(() => AccountSchema.parse({ ...valid, reportedBalance: 50.5 })).toThrow();
+  });
 });
 
 describe('CreateAccountInput', () => {
@@ -68,6 +99,15 @@ describe('CreateAccountInput', () => {
   it('rejects float startingBalance', () => {
     expect(() => CreateAccountInput.parse({ name: 'X', type: 'cash', startingBalance: 10.5 })).toThrow();
   });
+
+  it('rejects empty name', () => {
+    expect(() => CreateAccountInput.parse({ name: '', type: 'cash' })).toThrow();
+  });
+
+  it('accepts negative startingBalance', () => {
+    const result = CreateAccountInput.parse({ name: 'CC', type: 'credit_card', startingBalance: -50000 });
+    expect(result.startingBalance).toBe(-50000);
+  });
 });
 
 describe('UpdateAccountInput', () => {
@@ -77,6 +117,10 @@ describe('UpdateAccountInput', () => {
 
   it('accepts empty object', () => {
     expect(UpdateAccountInput.parse({})).toEqual({});
+  });
+
+  it('rejects empty name when provided', () => {
+    expect(() => UpdateAccountInput.parse({ name: '' })).toThrow();
   });
 });
 
@@ -145,6 +189,47 @@ describe('TransactionSchema', () => {
       expect(TransactionSchema.parse({ ...valid, source }).source).toBe(source);
     }
   });
+
+  it('allows transfer with negative amount (outflow leg)', () => {
+    const tx = TransactionSchema.parse({
+      ...valid,
+      type: 'transfer',
+      categoryId: '',
+      amount: -5000,
+      transferPairId: 'tx-2',
+    });
+    expect(tx.amount).toBe(-5000);
+  });
+
+  it('allows transfer with positive amount (inflow leg)', () => {
+    const tx = TransactionSchema.parse({
+      ...valid,
+      type: 'transfer',
+      categoryId: '',
+      amount: 5000,
+      transferPairId: 'tx-1',
+    });
+    expect(tx.amount).toBe(5000);
+  });
+
+  it('allows zero amount for transfer', () => {
+    const tx = TransactionSchema.parse({
+      ...valid,
+      type: 'transfer',
+      categoryId: '',
+      amount: 0,
+    });
+    expect(tx.amount).toBe(0);
+  });
+
+  it('rejects invalid source', () => {
+    expect(() => TransactionSchema.parse({ ...valid, source: 'csv' })).toThrow();
+  });
+
+  it('accepts valid date at month boundary', () => {
+    expect(TransactionSchema.parse({ ...valid, date: '2026-01-31' }).date).toBe('2026-01-31');
+    expect(TransactionSchema.parse({ ...valid, date: '2026-01-01' }).date).toBe('2026-01-01');
+  });
 });
 
 describe('CreateTransactionInput', () => {
@@ -167,6 +252,24 @@ describe('CreateTransactionInput', () => {
       date: '2026-01-15',
       amount: -5000,
       categoryId: '5',
+    })).toThrow();
+  });
+
+  it('enforces income amount sign', () => {
+    expect(() => CreateTransactionInput.parse({
+      type: 'income',
+      accountId: 'acc-1',
+      date: '2026-01-15',
+      amount: -100,
+    })).toThrow();
+  });
+
+  it('enforces expense amount sign', () => {
+    expect(() => CreateTransactionInput.parse({
+      type: 'expense',
+      accountId: 'acc-1',
+      date: '2026-01-15',
+      amount: 100,
     })).toThrow();
   });
 });
@@ -198,6 +301,18 @@ describe('CategorySchema', () => {
   it('rejects float assigned', () => {
     expect(() => CategorySchema.parse({ ...valid, assigned: 100.5 })).toThrow();
   });
+
+  it('accepts zero assigned', () => {
+    expect(CategorySchema.parse({ ...valid, assigned: 0 }).assigned).toBe(0);
+  });
+
+  it('rejects empty name', () => {
+    expect(() => CategorySchema.parse({ ...valid, name: '' })).toThrow();
+  });
+
+  it('rejects empty group', () => {
+    expect(() => CategorySchema.parse({ ...valid, group: '' })).toThrow();
+  });
 });
 
 describe('CreateCategoryInput', () => {
@@ -205,11 +320,31 @@ describe('CreateCategoryInput', () => {
     const result = CreateCategoryInput.parse({ name: 'Test', group: 'Other', sortOrder: 1 });
     expect(result.assigned).toBe(0);
   });
+
+  it('rejects empty name', () => {
+    expect(() => CreateCategoryInput.parse({ name: '', group: 'Other', sortOrder: 1 })).toThrow();
+  });
+
+  it('rejects empty group', () => {
+    expect(() => CreateCategoryInput.parse({ name: 'Test', group: '', sortOrder: 1 })).toThrow();
+  });
+
+  it('rejects negative assigned', () => {
+    expect(() => CreateCategoryInput.parse({ name: 'Test', group: 'Other', sortOrder: 1, assigned: -100 })).toThrow();
+  });
 });
 
 describe('UpdateCategoryInput', () => {
   it('accepts partial update', () => {
     expect(UpdateCategoryInput.parse({ assigned: 75000 })).toEqual({ assigned: 75000 });
+  });
+
+  it('accepts empty object', () => {
+    expect(UpdateCategoryInput.parse({})).toEqual({});
+  });
+
+  it('rejects negative assigned', () => {
+    expect(() => UpdateCategoryInput.parse({ assigned: -1 })).toThrow();
   });
 });
 
@@ -228,6 +363,22 @@ describe('BudgetMetadataSchema', () => {
       name: 'X',
       currency: { code: 'USD', precision: 2 },
       version: 0,
+    })).toThrow();
+  });
+
+  it('rejects negative version', () => {
+    expect(() => BudgetMetadataSchema.parse({
+      name: 'X',
+      currency: { code: 'USD', precision: 2 },
+      version: -1,
+    })).toThrow();
+  });
+
+  it('rejects empty name', () => {
+    expect(() => BudgetMetadataSchema.parse({
+      name: '',
+      currency: { code: 'USD', precision: 2 },
+      version: 1,
     })).toThrow();
   });
 });

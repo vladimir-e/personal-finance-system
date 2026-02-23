@@ -57,6 +57,33 @@ describe('createTransferPair', () => {
     expect(outflow.date).toBe('2026-03-01');
     expect(inflow.date).toBe('2026-03-01');
   });
+
+  it('handles zero amount', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 0, '2026-01-15');
+    expect(outflow.amount).toBe(-0);
+    expect(inflow.amount).toBe(0);
+  });
+
+  it('defaults optional fields to empty strings', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 1000, '2026-01-15');
+    expect(outflow.description).toBe('');
+    expect(outflow.payee).toBe('');
+    expect(outflow.notes).toBe('');
+    expect(inflow.description).toBe('');
+  });
+
+  it('sets source to manual', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 1000, '2026-01-15');
+    expect(outflow.source).toBe('manual');
+    expect(inflow.source).toBe('manual');
+  });
+
+  it('generates unique IDs for each leg', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 1000, '2026-01-15');
+    expect(outflow.id).not.toBe(inflow.id);
+    expect(outflow.id.length).toBeGreaterThan(0);
+    expect(inflow.id.length).toBeGreaterThan(0);
+  });
 });
 
 describe('propagateTransferUpdate', () => {
@@ -95,6 +122,36 @@ describe('propagateTransferUpdate', () => {
     const result = propagateTransferUpdate([tx], tx);
     expect(result).toEqual([tx]);
   });
+
+  it('leaves unrelated transactions untouched', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 1000, '2026-01-15');
+    const other: Transaction = {
+      id: 'other',
+      type: 'expense',
+      accountId: 'a',
+      date: '2026-01-10',
+      categoryId: '5',
+      description: 'Groceries',
+      payee: '',
+      transferPairId: '',
+      amount: -500,
+      notes: '',
+      source: 'manual',
+      createdAt: '2026-01-10T00:00:00.000Z',
+    };
+    const updated = { ...outflow, amount: -2000 };
+    const result = propagateTransferUpdate([other, outflow, inflow], updated);
+    expect(result[0]).toEqual(other);
+  });
+
+  it('syncs from inflow side too', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 1000, '2026-01-15');
+    const updated = { ...inflow, amount: 3000, date: '2026-03-01' };
+    const result = propagateTransferUpdate([outflow, inflow], updated);
+    const newOutflow = result.find((tx) => tx.id === outflow.id)!;
+    expect(newOutflow.amount).toBe(-3000);
+    expect(newOutflow.date).toBe('2026-03-01');
+  });
 });
 
 describe('cascadeTransferDelete', () => {
@@ -131,5 +188,32 @@ describe('cascadeTransferDelete', () => {
     const original = [outflow, inflow];
     cascadeTransferDelete(original, outflow.id);
     expect(original).toHaveLength(2);
+  });
+
+  it('returns array without target when ID not found', () => {
+    const [outflow, inflow] = createTransferPair('a', 'b', 1000, '2026-01-15');
+    const result = cascadeTransferDelete([outflow, inflow], 'nonexistent');
+    expect(result).toHaveLength(2);
+  });
+
+  it('deletes only the target when it has no transferPairId', () => {
+    const solo: Transaction = {
+      id: 'solo',
+      type: 'expense',
+      accountId: 'a',
+      date: '2026-01-15',
+      categoryId: '5',
+      description: '',
+      payee: '',
+      transferPairId: '',
+      amount: -500,
+      notes: '',
+      source: 'manual',
+      createdAt: '2026-01-15T00:00:00.000Z',
+    };
+    const other: Transaction = { ...solo, id: 'other', amount: -200 };
+    const result = cascadeTransferDelete([solo, other], 'solo');
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('other');
   });
 });

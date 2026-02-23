@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTheme } from './ThemeProvider';
 import { TransactionsPage } from '../pages/TransactionsPage';
 import { BudgetPage } from '../pages/BudgetPage';
@@ -7,7 +7,7 @@ type Tab = 'transactions' | 'budget';
 
 function TransactionsIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 6h18M3 12h18M3 18h18" />
     </svg>
   );
@@ -15,7 +15,7 @@ function TransactionsIcon({ className }: { className?: string }) {
 
 function BudgetIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="7" height="9" rx="1" />
       <rect x="14" y="3" width="7" height="5" rx="1" />
       <rect x="3" y="16" width="7" height="5" rx="1" />
@@ -26,7 +26,7 @@ function BudgetIcon({ className }: { className?: string }) {
 
 function PlusIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
       <path d="M12 5v14M5 12h14" />
     </svg>
   );
@@ -36,7 +36,7 @@ function ThemeIcon({ theme }: { theme: 'light' | 'dark' | 'system' }) {
   const className = 'h-5 w-5';
   if (theme === 'light') {
     return (
-      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
         <circle cx="12" cy="12" r="5" />
         <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
       </svg>
@@ -44,14 +44,14 @@ function ThemeIcon({ theme }: { theme: 'light' | 'dark' | 'system' }) {
   }
   if (theme === 'dark') {
     return (
-      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
     );
   }
   // system
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
       <rect x="2" y="3" width="20" height="14" rx="2" />
       <path d="M8 21h8M12 17v4" />
     </svg>
@@ -73,9 +73,13 @@ export function AppShell() {
     setTheme(next);
   };
 
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
   const handleAddTransaction = useCallback(() => {
     setShowAddToast(true);
-    setTimeout(() => setShowAddToast(false), 2000);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setShowAddToast(false), 2000);
   }, []);
 
   return (
@@ -91,6 +95,7 @@ export function AppShell() {
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
+                aria-current={activeTab === id ? 'page' : undefined}
                 className={`flex min-h-[44px] items-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors ${
                   activeTab === id
                     ? 'bg-accent/10 text-accent'
@@ -132,6 +137,7 @@ export function AppShell() {
           {/* Transactions tab */}
           <button
             onClick={() => setActiveTab('transactions')}
+            aria-current={activeTab === 'transactions' ? 'page' : undefined}
             className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-xs font-medium transition-colors ${
               activeTab === 'transactions'
                 ? 'text-accent'
@@ -154,6 +160,7 @@ export function AppShell() {
           {/* Budget tab */}
           <button
             onClick={() => setActiveTab('budget')}
+            aria-current={activeTab === 'budget' ? 'page' : undefined}
             className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-xs font-medium transition-colors ${
               activeTab === 'budget'
                 ? 'text-accent'

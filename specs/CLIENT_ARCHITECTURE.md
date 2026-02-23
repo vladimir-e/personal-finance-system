@@ -78,6 +78,7 @@ Most data requests carry a `Budget-Id` header identifying the active budget. See
 - **Semantic color tokens.** Use `text-positive`/`text-negative` for amounts, never raw color values. Tokens are defined in `webapp/src/index.css`.
 - **Tabular figures.** All financial amounts use `font-variant-numeric: tabular-nums` for digit alignment.
 - **Negative amounts.** Display with minus sign, not parentheses.
+- **Accessible navigation.** Active tab/nav items carry `aria-current="page"`. Decorative SVG icons use `aria-hidden="true"`; icon-only buttons must have an `aria-label`.
 
 ## Navigation
 

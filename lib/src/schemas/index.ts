@@ -50,6 +50,33 @@ export const UpdateAccountInput = z.object({
 export const TransactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
 export const TransactionSourceSchema = z.enum(['manual', 'ai_agent', 'import']);
 
+const transactionRefinement = (
+  tx: { type: string; categoryId: string; amount: number },
+  ctx: z.RefinementCtx,
+) => {
+  if (tx.type === 'transfer' && tx.categoryId !== '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Transfer transactions must have categoryId = ""',
+      path: ['categoryId'],
+    });
+  }
+  if (tx.type === 'income' && tx.amount < 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Income transactions must have a non-negative amount',
+      path: ['amount'],
+    });
+  }
+  if (tx.type === 'expense' && tx.amount > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Expense transactions must have a non-positive amount',
+      path: ['amount'],
+    });
+  }
+};
+
 export const TransactionSchema = z.object({
   id,
   type: TransactionTypeSchema,
@@ -63,29 +90,7 @@ export const TransactionSchema = z.object({
   notes: z.string(),
   source: TransactionSourceSchema,
   createdAt: isoTimestamp,
-}).superRefine((tx, ctx) => {
-  if (tx.type === 'transfer' && tx.categoryId !== '') {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Transfer transactions must have categoryId = ""',
-      path: ['categoryId'],
-    });
-  }
-  if (tx.type === 'income' && tx.amount < 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Income transactions must have a non-negative amount',
-      path: ['amount'],
-    });
-  }
-  if (tx.type === 'expense' && tx.amount > 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Expense transactions must have a non-positive amount',
-      path: ['amount'],
-    });
-  }
-});
+}).superRefine(transactionRefinement);
 
 export const CreateTransactionInput = z.object({
   type: TransactionTypeSchema,
@@ -97,29 +102,7 @@ export const CreateTransactionInput = z.object({
   amount: z.number().int(),
   notes: z.string().default(''),
   source: TransactionSourceSchema.default('manual'),
-}).superRefine((tx, ctx) => {
-  if (tx.type === 'transfer' && tx.categoryId !== '') {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Transfer transactions must have categoryId = ""',
-      path: ['categoryId'],
-    });
-  }
-  if (tx.type === 'income' && tx.amount < 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Income transactions must have a non-negative amount',
-      path: ['amount'],
-    });
-  }
-  if (tx.type === 'expense' && tx.amount > 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Expense transactions must have a non-positive amount',
-      path: ['amount'],
-    });
-  }
-});
+}).superRefine(transactionRefinement);
 
 export const UpdateTransactionInput = z.object({
   type: TransactionTypeSchema,

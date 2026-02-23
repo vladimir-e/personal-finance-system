@@ -1,6 +1,44 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryAdapter } from './MemoryAdapter.js';
-import type { Transaction } from '../types/index.js';
+import type { Account, Transaction, Category } from '../types/index.js';
+
+const makeAccount = (overrides: Partial<Account> = {}): Account => ({
+  id: 'acc-1',
+  name: 'Checking',
+  type: 'checking',
+  institution: 'Chase',
+  reportedBalance: null,
+  reconciledAt: '',
+  archived: false,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  ...overrides,
+});
+
+const makeTransaction = (overrides: Partial<Transaction> = {}): Transaction => ({
+  id: 'tx-1',
+  type: 'expense',
+  accountId: 'acc-1',
+  date: '2026-01-15',
+  categoryId: '5',
+  description: 'Groceries',
+  payee: 'Whole Foods',
+  transferPairId: '',
+  amount: -5000,
+  notes: '',
+  source: 'manual',
+  createdAt: '2026-01-15T10:00:00.000Z',
+  ...overrides,
+});
+
+const makeCategory = (overrides: Partial<Category> = {}): Category => ({
+  id: '5',
+  name: 'Groceries',
+  group: 'Daily Living',
+  assigned: 50000,
+  sortOrder: 5,
+  archived: false,
+  ...overrides,
+});
 
 describe('MemoryAdapter', () => {
   let adapter: MemoryAdapter;
@@ -16,83 +54,91 @@ describe('MemoryAdapter', () => {
     expect(adapter.isConnected()).toBe(false);
   });
 
-  it('saves and retrieves a transaction', async () => {
-    const tx: Transaction = {
-      id: '1',
-      accountId: 'acc-1',
-      type: 'expense',
-      date: new Date('2026-01-15'),
-      amount: { amount: -1000, currency: 'USD' },
-      description: 'Groceries',
-      createdAt: new Date('2026-01-15'),
-    };
+  // Accounts
 
-    await adapter.saveTransaction(tx);
-    const results = await adapter.findTransactions({});
+  it('creates and retrieves accounts', async () => {
+    const account = makeAccount();
+    await adapter.createAccount(account);
+    const accounts = await adapter.getAccounts();
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]).toEqual(account);
+  });
 
-    expect(results).toHaveLength(1);
-    expect(results[0]).toEqual(tx);
+  it('updates an account', async () => {
+    await adapter.createAccount(makeAccount());
+    const updated = await adapter.updateAccount('acc-1', { name: 'Main Checking' });
+    expect(updated.name).toBe('Main Checking');
+    expect(updated.type).toBe('checking');
+  });
+
+  it('throws on updating nonexistent account', async () => {
+    await expect(adapter.updateAccount('nope', { name: 'X' })).rejects.toThrow('Account not found');
+  });
+
+  it('deletes an account', async () => {
+    await adapter.createAccount(makeAccount());
+    await adapter.deleteAccount('acc-1');
+    expect(await adapter.getAccounts()).toHaveLength(0);
+  });
+
+  // Transactions
+
+  it('creates and retrieves transactions', async () => {
+    const tx = makeTransaction();
+    await adapter.createTransaction(tx);
+    const txs = await adapter.getTransactions();
+    expect(txs).toHaveLength(1);
+    expect(txs[0]).toEqual(tx);
+  });
+
+  it('updates a transaction', async () => {
+    await adapter.createTransaction(makeTransaction());
+    const updated = await adapter.updateTransaction('tx-1', { amount: -6000 });
+    expect(updated.amount).toBe(-6000);
+    expect(updated.description).toBe('Groceries');
+  });
+
+  it('throws on updating nonexistent transaction', async () => {
+    await expect(adapter.updateTransaction('nope', { amount: 0 })).rejects.toThrow('Transaction not found');
   });
 
   it('deletes a transaction', async () => {
-    const tx: Transaction = {
-      id: '1',
-      accountId: 'acc-1',
-      type: 'expense',
-      date: new Date('2026-01-15'),
-      amount: { amount: -500, currency: 'USD' },
-      description: 'Coffee',
-      createdAt: new Date('2026-01-15'),
-    };
-
-    await adapter.saveTransaction(tx);
-    await adapter.deleteTransaction('1');
-    const results = await adapter.findTransactions({});
-
-    expect(results).toHaveLength(0);
+    await adapter.createTransaction(makeTransaction());
+    await adapter.deleteTransaction('tx-1');
+    expect(await adapter.getTransactions()).toHaveLength(0);
   });
 
-  it('filters transactions by accountId', async () => {
-    const tx1: Transaction = {
-      id: '1',
-      accountId: 'acc-1',
-      type: 'expense',
-      date: new Date('2026-01-15'),
-      amount: { amount: -100, currency: 'USD' },
-      description: 'Test 1',
-      createdAt: new Date('2026-01-15'),
-    };
-    const tx2: Transaction = {
-      id: '2',
-      accountId: 'acc-2',
-      type: 'income',
-      date: new Date('2026-01-16'),
-      amount: { amount: 200, currency: 'USD' },
-      description: 'Test 2',
-      createdAt: new Date('2026-01-16'),
-    };
+  // Categories
 
-    await adapter.saveTransaction(tx1);
-    await adapter.saveTransaction(tx2);
-
-    const results = await adapter.findTransactions({ accountId: 'acc-1' });
-    expect(results).toHaveLength(1);
-    expect(results[0].id).toBe('1');
+  it('creates and retrieves categories', async () => {
+    const cat = makeCategory();
+    await adapter.createCategory(cat);
+    const cats = await adapter.getCategories();
+    expect(cats).toHaveLength(1);
+    expect(cats[0]).toEqual(cat);
   });
 
-  it('saves and retrieves accounts', async () => {
-    const account = {
-      id: 'acc-1',
-      name: 'Checking',
-      type: 'checking' as const,
-      currency: 'USD',
-      createdAt: new Date('2026-01-01'),
-    };
+  it('updates a category', async () => {
+    await adapter.createCategory(makeCategory());
+    const updated = await adapter.updateCategory('5', { assigned: 60000 });
+    expect(updated.assigned).toBe(60000);
+    expect(updated.name).toBe('Groceries');
+  });
 
-    await adapter.saveAccount(account);
-    const accounts = await adapter.findAccounts();
+  it('throws on updating nonexistent category', async () => {
+    await expect(adapter.updateCategory('nope', { name: 'X' })).rejects.toThrow('Category not found');
+  });
 
-    expect(accounts).toHaveLength(1);
-    expect(accounts[0]).toEqual(account);
+  it('deletes a category', async () => {
+    await adapter.createCategory(makeCategory());
+    await adapter.deleteCategory('5');
+    expect(await adapter.getCategories()).toHaveLength(0);
+  });
+
+  // Backup
+
+  it('returns empty backup result', async () => {
+    const result = await adapter.backup();
+    expect(result).toEqual({ paths: [] });
   });
 });

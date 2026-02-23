@@ -1,10 +1,19 @@
 export type {
-  Transaction,
-  Account,
+  AccountType,
+  TransactionType,
+  TransactionSource,
   Currency,
-  Money,
+  Account,
+  Transaction,
+  Category,
+  BudgetMetadata,
+  DataStore,
+  CategorySummary,
+  GroupSummary,
+  MonthlySummary,
   AdapterConfig,
+  BackupResult,
 } from './types/index.js';
 
-export type { StorageAdapter, TransactionQuery } from './storage/index.js';
+export type { StorageAdapter } from './storage/index.js';
 export { MemoryAdapter, createAdapter } from './storage/index.js';

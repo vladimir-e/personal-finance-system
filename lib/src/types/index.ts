@@ -1,30 +1,116 @@
-export type Currency = string;
+// ── Union types ──────────────────────────────────────────────
 
-export interface Money {
-  amount: number;
-  currency: Currency;
+export type AccountType =
+  | 'cash'
+  | 'checking'
+  | 'savings'
+  | 'credit_card'
+  | 'loan'
+  | 'asset'
+  | 'crypto';
+
+export type TransactionType = 'income' | 'expense' | 'transfer';
+
+export type TransactionSource = 'manual' | 'ai_agent' | 'import';
+
+// ── Value objects ────────────────────────────────────────────
+
+export interface Currency {
+  code: string;
+  precision: number;
 }
 
-export interface Transaction {
-  id: string;
-  accountId: string;
-  type: 'income' | 'expense' | 'transfer';
-  date: Date;
-  amount: Money;
-  description: string;
-  createdAt: Date;
-}
+// ── Entities ─────────────────────────────────────────────────
 
 export interface Account {
   id: string;
   name: string;
-  type: 'checking' | 'savings' | 'credit' | 'cash';
-  currency: Currency;
-  createdAt: Date;
+  type: AccountType;
+  institution: string;
+  reportedBalance: number | null;
+  reconciledAt: string;
+  archived: boolean;
+  createdAt: string;
 }
 
+export interface Transaction {
+  id: string;
+  type: TransactionType;
+  accountId: string;
+  date: string;
+  categoryId: string;
+  description: string;
+  payee: string;
+  transferPairId: string;
+  amount: number;
+  notes: string;
+  source: TransactionSource;
+  createdAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  group: string;
+  assigned: number;
+  sortOrder: number;
+  archived: boolean;
+}
+
+// ── Budget metadata ──────────────────────────────────────────
+
+export interface BudgetMetadata {
+  name: string;
+  currency: Currency;
+  version: number;
+}
+
+// ── Collections ──────────────────────────────────────────────
+
+export interface DataStore {
+  accounts: Account[];
+  transactions: Transaction[];
+  categories: Category[];
+}
+
+// ── Derived types ────────────────────────────────────────────
+
+export interface CategorySummary {
+  id: string;
+  name: string;
+  assigned: number;
+  spent: number;
+  available: number;
+}
+
+export interface GroupSummary {
+  name: string;
+  categories: CategorySummary[];
+  totalAssigned: number;
+  totalSpent: number;
+  totalAvailable: number;
+}
+
+export interface MonthlySummary {
+  month: string;
+  availableToBudget: number;
+  totalIncome: number;
+  totalAssigned: number;
+  groups: GroupSummary[];
+  uncategorized: {
+    spent: number;
+  };
+}
+
+// ── Adapter config ───────────────────────────────────────────
+
 export interface AdapterConfig {
-  type: 'memory' | 'csv' | 'mongodb';
-  // reserved: plugins — plugin-specific config will extend this
+  type: 'csv' | 'mongodb';
   [key: string]: unknown;
+}
+
+// ── Backup ───────────────────────────────────────────────────
+
+export interface BackupResult {
+  paths: string[];
 }

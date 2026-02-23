@@ -7,10 +7,15 @@ export function makeTransaction(overrides: Partial<Transaction> = {}): Transacti
     id: String(idCounter++),
     accountId: '1',
     type: 'expense',
-    date: new Date('2026-01-15'),
-    amount: { amount: -1000, currency: 'USD' },
+    date: '2026-01-15',
+    amount: -1000,
+    categoryId: '',
     description: 'Test transaction',
-    createdAt: new Date('2026-01-15'),
+    payee: '',
+    transferPairId: '',
+    notes: '',
+    source: 'manual',
+    createdAt: '2026-01-15T00:00:00.000Z',
     ...overrides,
   };
 }
@@ -20,8 +25,11 @@ export function makeAccount(overrides: Partial<Account> = {}): Account {
     id: String(idCounter++),
     name: 'Test Account',
     type: 'checking',
-    currency: 'USD',
-    createdAt: new Date('2026-01-01'),
+    institution: '',
+    reportedBalance: null,
+    reconciledAt: '',
+    archived: false,
+    createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
 }

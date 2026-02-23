@@ -26,6 +26,20 @@ describe('formatMoney', () => {
   it('formats large amounts with commas', () => {
     expect(formatMoney(1000000, USD)).toBe('$10,000.00');
   });
+
+  it('formats BTC without throwing', () => {
+    const result = formatMoney(150000000, BTC);
+    // Intl may format as "BTC 1.50000000" or fallback to "1.50000000 BTC"
+    expect(result).toContain('1.50000000');
+    expect(result).toContain('BTC');
+  });
+
+  it('formats negative BTC without throwing', () => {
+    const result = formatMoney(-100000000, BTC);
+    expect(result).toContain('1.00000000');
+    expect(result).toContain('BTC');
+    expect(result).toContain('-');
+  });
 });
 
 describe('parseMoney', () => {
@@ -53,6 +67,16 @@ describe('parseMoney', () => {
     expect(() => parseMoney('', USD)).toThrow('Invalid money input');
   });
 
+  it('throws on input with no digits', () => {
+    expect(() => parseMoney('.', USD)).toThrow('Invalid money input');
+    expect(() => parseMoney('-', USD)).toThrow('Invalid money input');
+    expect(() => parseMoney('$', USD)).toThrow('Invalid money input');
+  });
+
+  it('parses fractional-only input like "-.50"', () => {
+    expect(parseMoney('-.50', USD)).toBe(-50);
+  });
+
   it('round-trips with formatMoney for USD', () => {
     const amount = 12345;
     const formatted = formatMoney(amount, USD);
@@ -71,5 +95,11 @@ describe('parseMoney', () => {
 
   it('truncates excess fractional digits', () => {
     expect(parseMoney('10.999', USD)).toBe(1099);
+  });
+
+  it('round-trips with formatMoney for BTC', () => {
+    const amount = 150000000; // 1.5 BTC
+    const formatted = formatMoney(amount, BTC);
+    expect(parseMoney(formatted, BTC)).toBe(amount);
   });
 });

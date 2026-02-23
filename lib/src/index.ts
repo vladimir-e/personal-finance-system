@@ -40,6 +40,7 @@ export { getDefaultCategories } from './categories.js';
 export { formatMoney, parseMoney } from './money.js';
 export { computeBalance } from './balance.js';
 export { computeMonthlySummary, computeAvailableToBudget } from './budget.js';
+export { createTransferPair, propagateTransferUpdate, cascadeTransferDelete } from './transfers.js';
 
 export type {
   CreateAccountInputType,

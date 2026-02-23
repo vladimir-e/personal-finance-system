@@ -49,6 +49,7 @@ Each budget is a directory named after the budget ID (a filesystem-safe string, 
 
 ```
 <base-path>/<budget-id>/
+  budget.json          budget metadata (name, currency, version)
   accounts.csv
   transactions.csv
   categories.csv
@@ -71,7 +72,7 @@ Returns the list of created backup file paths.
 
 ## MongoDB Adapter
 
-Uses the `url` connection string from the budget preset config. The connection is established at server startup and held open for the lifetime of the process.
+Uses the `url` connection string from the budget pointer in `budgets.json`. Budget metadata is stored as a document in a `budget` collection.
 
 Each entity type maps to a collection (`accounts`, `transactions`, `categories`). Granular adapter operations map directly to individual document insert/update/delete — no collection-level rewrites.
 

@@ -2,7 +2,7 @@
 
 ## Base URL
 
-All endpoints are prefixed with `/api`. In development, the webapp proxies `/api` requests to `http://localhost:3001`. In production, the server serves the built webapp and handles `/api` routes directly.
+All endpoints are prefixed with `/api`. In development, the webapp proxies `/api` requests to `http://localhost:3001`.
 
 ## Authentication
 
@@ -10,7 +10,7 @@ None for v1. PFS is a local-first application — the only user is the machine o
 
 ## Budget Context
 
-All data endpoints require a `Budget-Id` header identifying which budget to operate on. The budget ID is a filesystem-safe string (lowercase letters, digits, hyphens — e.g. `personal`, `business-2024`). It doubles as the directory name for CSV-backed budgets.
+Most endpoints require a `Budget-Id` header identifying which budget to operate on. The budget ID is a filesystem-safe string (lowercase letters, digits, hyphens — e.g. `personal`, `business-2024`). It doubles as the directory name for CSV-backed budgets.
 
 ```
 Budget-Id: <budget-id>
@@ -18,48 +18,34 @@ Budget-Id: <budget-id>
 
 ## Response Format
 
-Responses use standard HTTP status codes.
+Mutations are fire-and-forget from the client's perspective — the client applies optimistic updates locally and only inspects the response on failure.
 
-`code` is UPPER_SNAKE_CASE and machine-readable. `message` is human-readable.
+Error responses include `code` (UPPER_SNAKE_CASE, machine-readable) and `message` (human-readable).
 
-Standard HTTP status codes: `422` validation error · `404` not found · `409` conflict · `500` internal error
+Standard error codes: `422` validation error · `404` not found · `409` conflict · `500` internal error
 
 ---
 
 ## Endpoints
 
-### GET /api/health
-
-Returns server status and active storage adapter type. Flat response for compatibility with standard health check tooling.
-
----
-
-### GET /api/budgets/local
-
-Scans the `./data` directory and returns a list of budget folders found there. Each entry includes the folder name (budget ID) and whether the directory contains the expected CSV files. Used by the webapp on first load to discover existing budgets without requiring manual path entry.
-
-Returns an empty array if `./data` does not exist.
-
----
-
-### GET /api/budgets/presets
-
-Returns server-provided budget presets from `budgets.json` at the project root. Returns an empty array if the file doesn't exist. Preset budgets are always `readonly: true`. When presets are present, the client hides budget creation and custom path entry — the user can only select from the provided list.
-
----
-
 ### Budgets
 
-- `POST /api/budgets` — create a new budget: `{ id, name, currency, adapter }`. Creates the directory/collections, seeds default categories, returns the budget config.
+Budget management endpoints. The budget list merges two sources: auto-discovered directories in `./data` (containing a `budget.json` meta file) and pointer entries from `budgets.json` (custom paths, MongoDB).
+
+- `GET /api/budgets` — merged budget list (local discovery + `budgets.json` pointers)
+- `POST /api/budgets` — create a new budget: `{ name, currency, adapter }`. Creates the directory, writes `budget.json` meta file, seeds default categories.
+- `POST /api/budgets/open` — register an existing budget: `{ adapter }`. Validates that the path contains a `budget.json` meta file (or MongoDB has a budget document), then adds a pointer to `budgets.json`.
+- `PUT /api/budgets/:id` — edit budget name or currency. Writes to the budget's own `budget.json` meta file.
+- `DELETE /api/budgets/:id` — remove pointer from `budgets.json`. Does not delete actual data.
 
 ---
 
 ### Accounts
 
-Request/response shapes match the Account entity in `specs/DATA_MODEL.md`. `POST /api/accounts` accepts an optional `startingBalance` (integer, minor units) — if provided, the server creates an "Opening Balance" income transaction.
+Request/response shapes match the Account entity in `specs/DATA_MODEL.md`.
 
-- `GET /api/accounts` — list accounts; supports `?includeHidden=true`; includes derived `balance` on each account
-- `GET /api/accounts/:id` — single account with derived balance
+- `GET /api/accounts` — list accounts; supports `?includeHidden=true`
+- `GET /api/accounts/:id` — single account
 - `POST /api/accounts` — create account
 - `PUT /api/accounts/:id` — update account (partial)
 - `DELETE /api/accounts/:id` — delete; returns `409` if account has transactions
@@ -69,9 +55,9 @@ Request/response shapes match the Account entity in `specs/DATA_MODEL.md`. `POST
 
 ### Transactions
 
-Request/response shapes match the Transaction entity in `specs/DATA_MODEL.md`. The client fetches all transactions on budget open and filters locally. Server-side query params are a convenience for partial fetches, not the primary data flow.
+Request/response shapes match the Transaction entity in `specs/DATA_MODEL.md`. The client fetches all transactions on budget open and filters locally. Server-side query params support partial fetches for future features like auto-categorization.
 
-- `GET /api/transactions` — list all transactions; sorted by date descending
+- `GET /api/transactions` — list all transactions; sorted by date descending; supports `?account=<id>&category=<id>&searchText=<text>`
 - `GET /api/transactions/:id` — single transaction
 - `POST /api/transactions` — create transaction; for transfers, include `transferToAccountId` and the server creates both legs atomically
 - `PUT /api/transactions/:id` — update; propagates `amount`/`date` changes to transfer pair automatically

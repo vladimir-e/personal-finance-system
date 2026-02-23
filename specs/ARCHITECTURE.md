@@ -21,7 +21,7 @@ PFS is a local-first personal finance tracker. It runs entirely on the user's ma
                                    +-----+---------+
 ```
 
-**webapp** — React SPA with Tailwind CSS. Holds the active `DataStore` in browser memory. Communicates with the server via `/api`. Budget configurations live in `localStorage`. A storageless budget type is available for demos and tests — the client behaves normally but makes no API calls. See `specs/CLIENT_ARCHITECTURE.md`.
+**webapp** — React SPA with Tailwind CSS. Holds the active `DataStore` in browser memory. Communicates with the server via `/api`. Budget metadata lives inside each budget's own data (see Budget Model below). A storageless mode is available for demos and tests — enabled by a frontend environment variable, it disables the API layer entirely and runs a single budget in memory. See `specs/CLIENT_ARCHITECTURE.md`.
 
 **server** — Hono HTTP server. Stateless between requests. Receives mutations, validates via shared Zod schemas, persists via the storage adapter, returns the updated entity. No business logic lives here — it translates HTTP to lib calls. Computed endpoints (like budget summaries) call lib functions that do the aggregation.
 
@@ -31,13 +31,19 @@ PFS is a local-first personal finance tracker. It runs entirely on the user's ma
 
 ## Budget Model
 
-A **budget** is a named workspace: a display name, a currency, and an adapter config pointing to where its data lives. Users may have multiple budgets (e.g. "Personal", "Business").
+A **budget** is a named workspace: a display name, a currency, and the data that lives in it. Users may have multiple budgets (e.g. "Personal", "Business").
 
-On load, the webapp fetches two lists and merges them into the budget selector:
-1. **Local budgets** — discovered by the server scanning `./data` for existing CSV budget folders (`GET /api/budgets/local`). Saved to `localStorage` when opened.
-2. **Presets** — from `budgets.json` at the project root, served via `GET /api/budgets/presets`, always `readonly: true`.
+Budget metadata (name, currency, version) is stored **inside the budget itself** — a `budget.json` file in the budget directory (CSV) or a `budget` document (MongoDB). This makes budgets self-describing and portable: copy a budget folder to another machine and it just works.
 
-When presets are present, budget creation and custom path entry are hidden — the user selects from the preset list only. MongoDB and storageless budgets are only available via presets; users cannot configure them directly.
+On load, the budget selector is built from two sources:
+1. **Local discovery** — the server scans `./data` for directories containing a `budget.json` meta file.
+2. **budgets.json** — a pointer file at the project root (gitignored) listing budgets at custom paths or on MongoDB.
+
+**Operations:**
+- **Create** — name, currency, adapter config (CSV default, path defaults to `./data/<id>`). Creates the directory, writes `budget.json` meta, seeds default categories.
+- **Open** — point to an existing budget folder or MongoDB URL. Server validates a `budget.json` meta file (or budget document) is present, then registers a pointer in `budgets.json`.
+- **Edit** — update name or currency. Writes to the budget's own `budget.json` meta file.
+- **Remove** — deletes the pointer from `budgets.json`. Does not delete actual data — `./data` budgets will still be auto-discovered.
 
 See `specs/DATA_MODEL.md` for the Budget entity shape.
 
@@ -58,7 +64,7 @@ pfs/
   webapp/      pfs-webapp: React SPA + Tailwind (port 5173)
   website/     pfs-website: Astro static promo site (port 4321, independent)
   specs/       living specifications (this folder)
-  budgets.json (optional) server-provided budget presets
+  budgets.json (gitignored) pointers to custom-path and MongoDB budgets
 ```
 
 npm workspaces manage dependencies. No Turborepo or Lerna — unnecessary at this scale. The `website` package is fully independent: no shared types or components with app packages.

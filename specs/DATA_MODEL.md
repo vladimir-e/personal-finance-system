@@ -8,17 +8,28 @@ For persistence details (how entities are stored and loaded), see `specs/STORAGE
 
 ## Budget
 
-A named workspace: a display name, a currency, and a pointer to where its data lives.
+A named workspace. Unlike other entities (Account, Transaction, Category), budget metadata is stored **with the budget data itself** — not through the StorageAdapter. For CSV budgets this is a `budget.json` file inside the budget directory; for MongoDB it is a document in a `budget` collection.
+
+### Budget Metadata (stored with the data)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Human-readable label (e.g. "Personal Finances") |
+| `currency` | Currency | Default currency for all accounts in this budget |
+| `version` | integer | Schema version for future migration support |
+
+The budget ID is derived — it is the directory name for CSV budgets (a filesystem-safe string: lowercase letters, digits, hyphens).
+
+### Budget Pointers (`budgets.json`)
+
+Budgets in the default `./data` directory are auto-discovered — no configuration needed. For budgets at custom paths or on MongoDB, a pointer entry in `budgets.json` (project root, gitignored) tells the server where to find them:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique identifier |
-| `name` | string | Human-readable label (e.g. "Personal Finances") |
-| `currency` | Currency | Default currency for all accounts in this budget |
-| `adapter` | AdapterConfig | Storage backend configuration |
-| `readonly` | boolean | `true` when loaded from server presets — cannot be edited or deleted from the UI |
+| `adapter` | AdapterConfig | Storage backend configuration (type + path or URL) |
 
-Budget configurations live in browser `localStorage` or in the optional `budgets.json` server preset file. See `specs/ARCHITECTURE.md` for the budget model.
+See `specs/ARCHITECTURE.md` for the full budget model (discovery, create, open, remove).
 
 ---
 
@@ -40,6 +51,8 @@ A financial account that holds transactions. All accounts in a budget share the 
 **Account types:** `cash` · `checking` · `savings` · `credit_card` · `loan` · `asset` · `crypto`
 
 **Live balance is derived**, not stored — the sum of all transactions for the account. `reportedBalance` is a temporary checkpoint entered during reconciliation — it auto-clears when the derived balance matches. See `specs/FINANCE_SYSTEM.md` for the full reconciliation process.
+
+**Opening balance:** On creation, a `startingBalance` parameter (default `0`) generates an "Opening Balance" income transaction to establish the correct derived balance. See `specs/FINANCE_SYSTEM.md`.
 
 ---
 
@@ -155,6 +168,7 @@ Use `Intl.NumberFormat` with the currency code for display — never store the f
 |-----------|------|
 | Delete account | Blocked if account has any transactions |
 | Hide account | Blocked if derived balance is non-zero |
+| Update transaction | If `transferPairId` is set, propagates `amount` and `date` changes to paired transaction |
 | Delete transaction | If `transferPairId` is set, cascades to delete paired transaction |
 | Delete category | Clears `categoryId` (sets to `""`) on all referencing transactions |
 

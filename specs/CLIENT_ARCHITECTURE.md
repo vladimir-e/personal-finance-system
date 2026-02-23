@@ -60,21 +60,15 @@ Undo history is scoped to the browser session and is not persisted.
 
 ## Budget Configuration
 
-On app load, the webapp fetches two lists in parallel and merges them:
+On app load, the webapp calls `GET /api/budgets` to get the merged budget list — auto-discovered `./data` budgets (each containing a `budget.json` meta file) plus custom-path/MongoDB pointers from `budgets.json`. The budget selector shows all available budgets.
 
-1. `GET /api/budgets/local` — CSV budget folders found in `./data` on the server
-2. `GET /api/budgets/presets` — preset budgets from `budgets.json` (always `readonly: true`)
+**Operations:**
+- **Create** — name, currency, adapter type (CSV default), path (default `./data/<id>`). Advanced settings for custom path or MongoDB.
+- **Open** — point to an existing budget folder or MongoDB URL. Server validates a `budget.json` meta file is present, then registers a pointer in `budgets.json`.
+- **Edit** — update name or currency (writes to the budget's own meta file). Adapter and path are immutable.
+- **Remove** — removes the pointer from `budgets.json`. Does not delete data. Auto-discovered `./data` budgets cannot be removed (delete the folder manually).
 
-Previously opened budgets are also stored in `localStorage` and merged into the list (covers budgets opened from custom paths).
-
-**When presets are present**, the create and open-by-path controls are hidden. The user selects from the preset list only.
-
-**When no presets exist**, the user can:
-- Select a budget discovered under `./data`
-- Enter a custom path to a budget folder elsewhere on the machine
-- Create a new budget (defaults to `./data/<name>`, path configurable under Advanced)
-
-Budget configurations (`{ id, name, currency, adapter }`) are saved to `localStorage` when a budget is opened. All data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
+All data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
 
 ## Design Conventions
 

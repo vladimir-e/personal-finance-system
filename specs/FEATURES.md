@@ -8,16 +8,19 @@ For the financial methodology (budgeting model, account types, budget math), see
 
 ## Budget Workspace
 
-A **budget** is a named workspace: a display name, a currency, and a storage backend. Users may have multiple budgets (e.g. "Personal", "Business").
+A **budget** is a named workspace: a display name, a currency, and a storage backend. Users may have multiple budgets (e.g. "Personal", "Business"). Each budget is independent: its own accounts, transactions, and categories.
 
-On app load, the budget selector merges budgets from three sources:
-- **Previously opened** — saved in `localStorage`
-- **Local discovery** — CSV budget folders found under `./data`
-- **Server presets** — from `budgets.json`, always read-only
+Budget metadata (name, currency) is stored inside the budget itself — a `budget.json` file in the budget directory or a document in MongoDB. This makes budgets self-describing and portable.
 
-When presets are present, budget creation is hidden — the user picks from the list. When no presets exist, the user can create a new budget, select a discovered one, or enter a custom path.
+On app load, the budget selector merges two sources:
+- **Local discovery** — directories under `./data` containing a `budget.json` meta file
+- **budgets.json** — pointers to budgets at custom paths or on MongoDB
 
-Each budget is independent: its own accounts, transactions, and categories.
+**Budget operations:**
+- **Create** — name, currency, adapter type (CSV default, path defaults to `./data/<id>`). Creates the directory, writes `budget.json` meta, seeds default categories.
+- **Open** — point to an existing budget folder or MongoDB URL. Server validates the meta file is present, then registers a pointer.
+- **Edit** — update name or currency (writes to the budget's own meta file). Adapter and path are immutable.
+- **Remove** — removes the pointer from `budgets.json`. Does not delete actual data.
 
 ---
 

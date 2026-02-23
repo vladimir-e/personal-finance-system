@@ -130,6 +130,6 @@ The AI can iterate: the user sees dry-run output, gives feedback ("the amounts a
 
 ## Configuration
 
-The Anthropic API key (or compatible provider key) is stored in browser `localStorage` alongside budget configuration — never sent to the PFS server. It is passed directly from the browser to the AI provider.
+The Anthropic API key (or compatible provider key) is stored in browser `localStorage` — never sent to the PFS server. It is passed directly from the browser to the AI provider.
 
 Long-running import operations are not subject to the standard 5-second API timeout. Progress is shown in the side panel as the assistant works.

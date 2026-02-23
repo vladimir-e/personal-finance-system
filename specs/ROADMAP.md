@@ -26,10 +26,10 @@ Monthly budget view with category groups. Per-category assigned/spent/available 
 ## Phase 3: Server and Storage
 
 ### 6. Server CRUD routes and CSV storage adapter
-All REST endpoints per API spec. Request validation via shared Zod schemas. Budget-Id middleware. CSV adapter with papaparse (read/write per entity file). Budget creation with default category seeding. Budget discovery (`GET /api/budgets/local`). Budget presets (`GET /api/budgets/presets`). Server integration tests against temp CSV directories.
+All REST endpoints per API spec. Request validation via shared Zod schemas. Budget-Id middleware. CSV adapter with papaparse (read/write per entity file). Budget management (create, open, edit, remove via `budgets.json`). Budget creation with default category seeding. Server integration tests against temp CSV directories.
 
 ### 7. Client-server integration
-API client module for all endpoints. Optimistic update wiring (validate locally, update DataStore, persist in background). Error modal on sync failure. Undo/redo stack (DataStore snapshots). Budget workspace management (create, select, local discovery, presets, localStorage persistence).
+API client module for all endpoints. Optimistic update wiring (validate locally, update DataStore, persist in background). Error modal on sync failure. Undo/redo stack (DataStore snapshots). Budget workspace management (create, open, edit, remove — backed by server-managed `budgets.json`).
 
 ## Phase 4: Complete Feature Set
 

@@ -63,8 +63,8 @@ available_to_budget = spendable_balance - total_assigned
 ```
 
 Where:
-- `spendable_balance` = sum of derived balances across all non-hidden **spendable** accounts (`cash`, `checking`, `savings`, `credit_card`)
-- `total_assigned` = sum of `assigned` values for all non-hidden, non-Income categories
+- `spendable_balance` = sum of derived balances across all non-archived **spendable** accounts (`cash`, `checking`, `savings`, `credit_card`)
+- `total_assigned` = sum of `assigned` values for all non-archived, non-Income categories
 
 Credit card balances are included because credit card debt represents money already spent (or committed to be repaid) from the user's liquid cash. A user with $5,000 in checking and -$4,000 on a credit card has $1,000 truly available, not $5,000.
 
@@ -82,7 +82,7 @@ This is a **total position**, not a monthly flow. It reflects cumulative savings
 
 ## Income Handling
 
-Income enters the system as a transaction with `type: "income"` and a positive amount. Income transactions are categorized under the "Income" category.
+Income enters the system as a transaction with `type: "income"` and a positive amount. Income transactions are categorized under an Income-group category.
 
 Income is **not automatically distributed** to envelopes. It flows into the liquid account balances, which feed the "Available to Budget" figure. There is no per-envelope allocation step — the budget plan is a fixed template, and income simply increases the pool of liquid cash.
 
@@ -154,19 +154,19 @@ Each account has a type that determines how it appears in the sidebar and how it
 
 **Normal balance** is the expected sign direction. A checking account normally has a positive balance (you have money). A credit card normally has a negative balance (you owe money). PFS does not enforce this — an overdrawn checking account will show negative, and a credit card with a refund credit will show positive.
 
-**Sidebar grouping:** The sidebar groups accounts by type for display. `asset` and `crypto` appear under an "Investment" group, `loan` under "Loans". Hidden accounts are collected under a "Closed" group. Each group shows a subtotal.
+**Sidebar grouping:** The sidebar groups accounts by type for display. `asset` and `crypto` appear under an "Investment" group, `loan` under "Loans". Archived accounts are collected under an "Archived" group. Each group shows a subtotal.
 
 ---
 
 ## Net Worth
 
 ```
-net_worth = sum of derived balances across all non-hidden accounts
+net_worth = sum of derived balances across all non-archived accounts
 ```
 
 Asset-type accounts (cash, checking, savings, asset, crypto) contribute positively. Liability-type accounts (credit_card, loan) contribute negatively because their balances are typically negative (representing debt).
 
-Hidden accounts are excluded.
+Archived accounts are excluded.
 
 ---
 
@@ -207,18 +207,28 @@ When a user adds an existing account (e.g., their checking account with $5,000 a
 
 On account creation, the user can optionally provide a starting balance. If provided, the system creates an `income` transaction dated to the account creation date with description "Opening Balance", categorized under the Income category. This establishes the correct derived balance from day one.
 
-If the starting balance not provided, a 0 starting balance transaction is created anyway.
+If the starting balance is not provided, a 0 starting balance transaction is created anyway.
 
 ---
 
-## Hidden Accounts
+## Archived Accounts
 
-Accounts can be hidden when their derived balance is zero. Hidden accounts:
-- Do not appear in the main account sidebar
+Accounts can be archived when their derived balance is zero. Archived accounts:
+- Do not appear in the main account sidebar (shown under a collapsed "Archived" group)
 - Are excluded from net worth calculation
 - Retain all their transaction history (transactions are not deleted)
-- Can be un-hidden at any time
+- Can be unarchived at any time
 
-This is designed for accounts that are closed or inactive. The zero-balance requirement prevents accidentally hiding an account with outstanding balance.
+This is designed for accounts that are closed or inactive. The zero-balance requirement prevents accidentally archiving an account with outstanding balance.
 
-There is no `closed` account type — "closed" is represented by hiding an account after its balance reaches zero. A closed credit card, a closed bank account, or an old wallet all end up as hidden accounts. The UI may present hidden accounts under a "Closed" label for clarity, but the underlying mechanism is the `hidden` flag, not a separate type.
+There is no `closed` account type — "closed" is represented by archiving an account after its balance reaches zero. A closed credit card, a closed bank account, or an old wallet all end up as archived accounts.
+
+---
+
+## Archived Categories
+
+Categories can be archived when no longer needed. Archived categories:
+- Appear under a collapsed "Archived" group on the budget screen instead of their original group
+- Are excluded from `total_assigned` (they do not count toward Available to Budget)
+- Retain all their transaction history (transactions keep their `categoryId`)
+- Can be unarchived at any time

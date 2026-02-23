@@ -44,12 +44,12 @@ Budget management endpoints. The budget list merges two sources: auto-discovered
 
 Request/response shapes match the Account entity in `specs/DATA_MODEL.md`.
 
-- `GET /api/accounts` — list accounts; supports `?includeHidden=true`
+- `GET /api/accounts` — list accounts; supports `?includeArchived=true`
 - `GET /api/accounts/:id` — single account
 - `POST /api/accounts` — create account
 - `PUT /api/accounts/:id` — update account (partial)
 - `DELETE /api/accounts/:id` — delete; returns `409` if account has transactions
-- `POST /api/accounts/:id/hide` — toggle hidden; returns `409` if derived balance is non-zero
+- `POST /api/accounts/:id/archive` — toggle archived; returns `409` if derived balance is non-zero
 
 ---
 
@@ -69,7 +69,7 @@ Request/response shapes match the Transaction entity in `specs/DATA_MODEL.md`. T
 
 Request/response shapes match the Category entity in `specs/DATA_MODEL.md`.
 
-- `GET /api/categories` — list categories; supports `?includeHidden=true`
+- `GET /api/categories` — list categories; supports `?includeArchived=true`
 - `GET /api/categories/:id` — single category
 - `POST /api/categories` — create category
 - `PUT /api/categories/:id` — update category (partial)

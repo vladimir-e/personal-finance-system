@@ -15,13 +15,13 @@ Rewrite existing types to match spec (current code was just a boilerplate, safe 
 Layout, tab navigation (Transactions / Add Transaction / Budget), theme toggle (light/dark/system), storageless DataStore context loaded with seed data. Budget selector as a simple storageless-budget picker for now.
 
 ### 3. Accounts and transaction list
-Account sidebar with type-based grouping, derived balances, net worth display. Account CRUD (create with opening balance, edit, hide, delete). Transaction list with sortable columns, filtering (search, category, date range), pagination. Mobile and desktop responsive layouts.
+Account sidebar with type-based grouping, derived balances, net worth display. Account CRUD (create with opening balance, edit, archive, delete). Transaction list with sortable columns, filtering (search, category, date range), pagination. Mobile and desktop responsive layouts.
 
 ### 4. Transaction entry and editing
 Add-transaction modal with expense/income/transfer tabs. Transfer pair creation (both legs atomically). Inline table editing. Delete with transfer cascade confirmation. Empty states and confirmation dialogs.
 
 ### 5. Budget tab
-Monthly budget view with category groups. Per-category assigned/spent/available display. Inline assigned editing. Available-to-budget header. Month navigation (prev/next). Uncategorized spending row. Category CRUD (create, edit, delete, reorder, hide). Income group rendered differently (total income, no assigned/available columns).
+Monthly budget view with category groups. Per-category assigned/spent/available display. Inline assigned editing. Available-to-budget header. Month navigation (prev/next). Uncategorized spending row. Category CRUD (create, edit, delete, reorder, archive). Income group rendered differently (total income, no assigned/available columns).
 
 ## Phase 3: Server and Storage
 

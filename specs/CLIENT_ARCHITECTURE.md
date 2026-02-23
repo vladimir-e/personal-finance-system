@@ -125,8 +125,8 @@ Help screen is accessible from a secondary location (settings/more menu), not a 
 **Confirmation dialogs** for destructive actions:
 - Delete transaction: if transfer, warn "This will also delete the matching transfer in [Account]."
 - Delete category: warn "This will remove the category from N transactions."
-- Delete account: blocked message if account has transactions. Instruct user to bring the balance to 0 and hide instead.
-- Hide account: blocked message if balance is non-zero.
+- Delete account: blocked message if account has transactions. Instruct user to bring the balance to 0 and archive instead.
+- Archive account: blocked message if balance is non-zero.
 
 **Empty states:** each major view shows a clear empty state with a CTA:
 - No accounts → "Create your first account to start tracking."

@@ -27,23 +27,23 @@ On app load, the budget selector merges two sources:
 ## Accounts
 
 ### Account management
-Create, edit, hide, and delete financial accounts. Each account has a name, type, and optional institution. On creation, the user can provide an optional starting balance — the system creates an "Opening Balance" income transaction to establish the correct derived balance. See `specs/FINANCE_SYSTEM.md`.
+Create, edit, archive, and delete financial accounts. Each account has a name, type, and optional institution. On creation, the user can provide an optional starting balance — the system creates an "Opening Balance" income transaction to establish the correct derived balance. See `specs/FINANCE_SYSTEM.md`.
 
 **Account types:** `cash` · `checking` · `savings` · `credit_card` · `loan` · `asset` · `crypto`
 
 ### Account sidebar
-Accounts are displayed in a sidebar, grouped for display: Cash, Checking, Savings, Credit, Investment (`asset` + `crypto`), Loans, and Closed (hidden accounts). Each group shows a subtotal. Each account shows its derived balance and a reconciliation status indicator.
+Accounts are displayed in a sidebar, grouped for display: Cash, Checking, Savings, Credit, Investment (`asset` + `crypto`), Loans, and Archived. Each group shows a subtotal. Each account shows its derived balance and a reconciliation status indicator.
 
 An "All Accounts" option shows transactions across every account.
 
 ### Derived balance
 Account balances are computed from transaction history — never stored. The `reportedBalance` field holds the user-entered bank statement balance for reconciliation comparison.
 
-### Hiding accounts
-Accounts with a zero derived balance can be hidden. Hidden accounts are excluded from the sidebar and net worth summary. Their transactions remain in the system.
+### Archiving accounts
+Accounts with a zero derived balance can be archived. Archived accounts are excluded from the main sidebar and net worth summary. Their transactions remain in the system.
 
 ### Net worth
-Total net worth is the sum of all visible account balances. Hidden accounts are excluded.
+Total net worth is the sum of all non-archived account balances.
 
 ---
 
@@ -103,7 +103,7 @@ The assigned amount is editable inline.
 The budget screen shows an "Uncategorized" pseudo-row for transactions with no category assigned. It displays `spent` only (no `assigned` value). This surfaces forgotten categorization so the user can address it.
 
 ### Category management
-Create, edit, hide, and delete categories and category groups. Deleting a category clears the `categoryId` on all referencing transactions. Categories have a `sortOrder` field for display positioning within their group.
+Create, edit, archive, and delete categories and category groups. Deleting a category clears the `categoryId` on all referencing transactions. Categories have a `sortOrder` field for display positioning within their group.
 
 ---
 

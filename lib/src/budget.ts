@@ -48,7 +48,6 @@ export function computeMonthlySummary(dataStore: DataStore, month: string): Mont
 
   // Build active (non-archived) categories, excluding Income group from budget math
   const activeCategories = categories.filter((c) => !c.archived);
-  const incomeCategories = new Set(activeCategories.filter((c) => c.group === 'Income').map((c) => c.id));
   const budgetCategories = activeCategories.filter((c) => c.group !== 'Income');
 
   // Group categories

@@ -37,6 +37,7 @@ export {
 } from './schemas/index.js';
 
 export { getDefaultCategories } from './categories.js';
+export { formatMoney, parseMoney } from './money.js';
 
 export type {
   CreateAccountInputType,

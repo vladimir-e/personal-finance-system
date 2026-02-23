@@ -51,13 +51,13 @@ DataStore mutation functions: `createCategory`, `updateCategory`, `deleteCategor
 
 ## Client UI — storageless mode (14–23)
 
-### [ ] 14. Navigation shell
+### [x] 14. Navigation shell
 Replace current single-page layout with 3-tab navigation: **Transactions** (list + accounts), **Add Transaction** (opens modal), **Budget** (monthly view). Bottom tabs on mobile, top nav on desktop. Touch-friendly 44px targets. Keep theme toggle.
 
-### [ ] 15. Account sidebar
+### [x] 15. Account sidebar
 Accounts grouped by type: Cash, Checking, Savings, Credit, Investment (asset + crypto), Loans, Archived. Each account shows derived balance. Group subtotals. Net worth total at top. "All Accounts" option. Desktop: permanent sidebar. Mobile: drawer or header selector. Reconciliation status indicator per account.
 
-### [ ] 16. Account CRUD UI
+### [x] 16. Account CRUD UI
 Create account: dialog with name, type, institution, starting balance (generates Opening Balance income transaction). Edit account: inline or dialog. Archive: toggle with zero-balance check. Delete: blocked if transactions exist, show message. Confirmation dialogs for destructive actions.
 
 ### [ ] 17. Transaction list

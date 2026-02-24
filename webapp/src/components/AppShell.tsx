@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTheme } from './ThemeProvider';
 import { TransactionsPage } from '../pages/TransactionsPage';
 import { BudgetPage } from '../pages/BudgetPage';
@@ -66,20 +66,16 @@ const tabs: { id: Tab; label: string; icon: typeof TransactionsIcon }[] = [
 export function AppShell() {
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
-  const [showAddToast, setShowAddToast] = useState(false);
+  const [showAddTxn, setShowAddTxn] = useState(false);
 
   const cycleTheme = () => {
     const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
     setTheme(next);
   };
 
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>(null);
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
-
   const handleAddTransaction = useCallback(() => {
-    setShowAddToast(true);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setShowAddToast(false), 2000);
+    setActiveTab('transactions');
+    setShowAddTxn(true);
   }, []);
 
   return (
@@ -128,7 +124,10 @@ export function AppShell() {
 
       {/* Main content */}
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {activeTab === 'transactions' ? <TransactionsPage /> : <BudgetPage />}
+        {activeTab === 'transactions'
+          ? <TransactionsPage showAddTransaction={showAddTxn} onCloseAddTransaction={() => setShowAddTxn(false)} />
+          : <BudgetPage />
+        }
       </main>
 
       {/* Mobile bottom tab bar */}
@@ -173,12 +172,6 @@ export function AppShell() {
         </div>
       </nav>
 
-      {/* Toast notification for add transaction placeholder */}
-      {showAddToast && (
-        <div className="fixed left-1/2 top-20 z-20 -translate-x-1/2 rounded-lg bg-elevated px-4 py-2 text-sm font-medium text-heading shadow-lg">
-          Add Transaction — coming soon
-        </div>
-      )}
     </div>
   );
 }

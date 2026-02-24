@@ -60,13 +60,13 @@ Accounts grouped by type: Cash, Checking, Savings, Credit, Investment (asset + c
 ### [x] 16. Account CRUD UI
 Create account: dialog with name, type, institution, starting balance (generates Opening Balance income transaction). Edit account: inline or dialog. Archive: toggle with zero-balance check. Delete: blocked if transactions exist, show message. Confirmation dialogs for destructive actions.
 
-### [ ] 17. Transaction list
+### [x] 17. Transaction list
 Table: date, account, category, description, amount. Sortable by any column (clickable headers on desktop, dropdown on mobile). Full-text search across description, payee, notes, category name, account name. Category filter dropdown. Pagination: 500 rows desktop, infinite scroll mobile (50-item batches). Tabular figures for amounts. Semantic color tokens for positive/negative.
 
-### [ ] 18. Transaction editing
+### [x] 18. Transaction editing
 Inline editing on desktop: click any field to edit directly in the table row. Mobile: tap a transaction to open a bottom sheet with editable fields. Delete transactions with confirmation (transfer cascade warning).
 
-### [ ] 19. Add/edit transaction modal
+### [x] 19. Add/edit transaction modal
 Segmented control: Expense / Income / Transfer. Fields: amount, date (defaults today), account (pre-selected from current view), category (dropdown, excluded for transfers), description, payee, notes. Zod validation with inline errors. Transfer mode: From Account and To Account selectors. On save, close modal and return to list.
 
 ### [ ] 20. Category management

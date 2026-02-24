@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AccountSidebar } from '../components/AccountSidebar';
 import { AccountDialog } from '../components/AccountDialog';
+import { TransactionDialog } from '../components/TransactionDialog';
+import { TransactionList } from '../components/TransactionList';
 import { useDataStore } from '../store';
 import { canArchiveAccount, canDeleteAccount } from 'pfs-lib';
-import type { Account } from 'pfs-lib';
+import type { Account, Transaction } from 'pfs-lib';
 
 // ── Dialog state ────────────────────────────────────────────
 
@@ -14,7 +16,8 @@ type DialogState =
   | { type: 'confirm-archive'; account: Account }
   | { type: 'confirm-delete'; account: Account }
   | { type: 'blocked-archive'; account: Account }
-  | { type: 'blocked-delete'; account: Account };
+  | { type: 'blocked-delete'; account: Account }
+  | { type: 'confirm-delete-transaction'; transaction: Transaction };
 
 // ── Icons ───────────────────────────────────────────────────
 
@@ -108,8 +111,13 @@ function ConfirmDialog({
 
 // ── Page ────────────────────────────────────────────────────
 
-export function TransactionsPage() {
-  const { state, archiveAccount, deleteAccount } = useDataStore();
+interface TransactionsPageProps {
+  showAddTransaction?: boolean;
+  onCloseAddTransaction?: () => void;
+}
+
+export function TransactionsPage({ showAddTransaction, onCloseAddTransaction }: TransactionsPageProps) {
+  const { state, archiveAccount, deleteAccount, deleteTransaction } = useDataStore();
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -175,6 +183,17 @@ export function TransactionsPage() {
     setDialog(null);
   }, [dialog, deleteAccount, selectedAccountId]);
 
+  const handleDeleteTransaction = useCallback((tx: Transaction) => {
+    setDialog({ type: 'confirm-delete-transaction', transaction: tx });
+  }, []);
+
+  const confirmDeleteTransaction = useCallback(() => {
+    if (dialog?.type === 'confirm-delete-transaction') {
+      deleteTransaction(dialog.transaction.id);
+    }
+    setDialog(null);
+  }, [dialog, deleteTransaction]);
+
   // Close drawer on Escape
   useEffect(() => {
     if (!drawerOpen) return;
@@ -231,10 +250,7 @@ export function TransactionsPage() {
 
         <h1 className="text-2xl font-bold text-heading">Transactions</h1>
 
-        {/* Transaction content placeholder */}
-        <div className="rounded-lg border border-edge bg-surface p-6">
-          <p className="text-muted">Transaction list will appear here.</p>
-        </div>
+        <TransactionList selectedAccountId={selectedAccountId} onDeleteTransaction={handleDeleteTransaction} />
       </div>
 
       {/* Mobile drawer — always mounted for smooth animation */}
@@ -327,6 +343,39 @@ export function TransactionsPage() {
           title="Cannot Delete"
           message={`"${dialog.account.name}" has existing transactions and cannot be deleted.`}
           onClose={closeDialog}
+        />
+      )}
+
+      {/* Confirm delete transaction */}
+      {dialog?.type === 'confirm-delete-transaction' && (() => {
+        const tx = dialog.transaction;
+        const isTransfer = tx.type === 'transfer' && tx.transferPairId;
+        const pairedAccountName = isTransfer
+          ? state.accounts.find(a =>
+              a.id === state.transactions.find(t => t.id === tx.transferPairId)?.accountId,
+            )?.name
+          : undefined;
+        const message = pairedAccountName
+          ? `Delete this transfer? This will also delete the matching transfer in "${pairedAccountName}".`
+          : 'Delete this transaction? This cannot be undone.';
+        return (
+          <ConfirmDialog
+            title="Delete Transaction"
+            message={message}
+            confirmLabel="Delete"
+            danger
+            onConfirm={confirmDeleteTransaction}
+            onClose={closeDialog}
+          />
+        );
+      })()}
+
+      {/* Add transaction dialog (triggered by AppShell button) */}
+      {showAddTransaction && (
+        <TransactionDialog
+          mode="create"
+          defaultAccountId={selectedAccountId ?? undefined}
+          onClose={() => onCloseAddTransaction?.()}
         />
       )}
     </div>

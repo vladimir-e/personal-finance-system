@@ -40,7 +40,40 @@ npm run typecheck    # TypeScript strict check across all packages
 
 ## Team workflow
 
-- When spawning a team for significant work, include **all relevant roles** from the start — not just implementation. Tests, docs, and domain review are first-class concerns, not afterthoughts.
-- At minimum for any feature work: engineer (implementation) + tester (coverage) + docs (changelog, README). Add finance-pro for business logic, tech-lead for architectural decisions.
-- Tester and docs roles should work in parallel with — or immediately after — implementation, not as a separate phase discovered later.
-- See `PFS_TEAM.md` for role descriptions and spawn instructions.
+All team roles, spawn instructions, and composition patterns are defined in `PFS_TEAM.md`. Key rules:
+- Include **all relevant roles** from the start — tests, docs, and domain review are first-class concerns, not afterthoughts.
+- Tester and docs roles work in parallel with — or immediately after — implementation.
+
+## Delivering a roadmap task
+
+When implementing defined roadmap tasks, follow this delivery checklist. Every domain must sign off before the work is considered done.
+
+### 1. Implementation (engineer)
+- Read the roadmap task description and all referenced specs
+- Implement on a feature branch
+- Run `npm run build && npm run typecheck && npm test` — all must pass
+
+### 2. Testing (tester)
+- Write component/unit tests covering the new functionality
+- Follow `specs/TESTING.md` rules: use `src/test/render` helper, factories for test data
+- Verify edge cases and error states
+
+### 3. Code review (tech-lead)
+- Review for architectural coherence and code quality
+- Check that interfaces between layers are clean
+- Verify patterns match established conventions
+- Flag over-engineering or missing abstractions
+
+### 4. Design review (designer)
+- Verify mobile-first responsive behavior
+- Check accessibility: 44px touch targets, aria labels, keyboard navigation, focus management
+- Confirm semantic color tokens and tabular figures for amounts
+- Review empty states and confirmation dialogs
+
+### 5. Documentation (docs)
+- Add CHANGELOG.md entry for the work delivered
+- Mark completed tasks in ROADMAP.md (`[x]`)
+- Update README or specs if the new feature changes documented behavior
+
+### Sign-off
+All five domains must be covered. The lead coordinates feedback back to the engineer for fixes before final validation.

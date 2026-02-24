@@ -12,6 +12,12 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-23 — Account sidebar and CRUD UI
+- Account sidebar in Transactions tab: accounts grouped by type (Cash, Checking, Savings, Credit, Investment, Loans, Archived), derived balances, group subtotals, net worth total
+- Responsive layout: permanent sidebar on desktop, slide-out drawer on mobile
+- Account CRUD: create (with starting balance), edit, archive (zero-balance check), delete (blocked when transactions exist)
+- Confirmation dialogs for destructive actions, inline Zod validation, empty state with CTA
+
 ## 2026-02-23 — DataStore context and mutations
 - React context with `useReducer` providing typed state and mutation functions for accounts, transactions, and categories
 - Account mutations: create (with Opening Balance income transaction), update, delete (blocked when transactions exist), archive/unarchive (blocked when non-zero balance)

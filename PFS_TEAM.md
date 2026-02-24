@@ -11,6 +11,8 @@ This is a flexible team composition. Spawn the roles you need for the task at ha
 ### 1. Personal Finance Professional (Domain Expert)
 **Agent Type:** `general-purpose`
 
+**Key docs:** `specs/FINANCE_SYSTEM.md`, `specs/DATA_MODEL.md`, `specs/FEATURES.md`
+
 **Responsibilities:**
 - Validates business logic and financial accuracy
 - Ensures compliance with personal finance best practices
@@ -30,6 +32,8 @@ sense from a finance perspective - your domain knowledge takes highest precedenc
 
 ### 2. Tech Lead (Architecture + Coordination)
 **Agent Type:** `general-purpose`
+
+**Key docs:** `specs/ARCHITECTURE.md`, `specs/CLIENT_ARCHITECTURE.md`, `specs/DATA_MODEL.md`
 
 **Responsibilities:**
 - Maintains product vision and architectural coherence
@@ -63,6 +67,8 @@ Reference /Users/vlad/Projects/CLAUDE.md for engineering philosophy.
 ### 3. Product Engineer (Implementation)
 **Agent Type:** `general-purpose`
 
+**Key docs:** `specs/ARCHITECTURE.md`, `specs/CLIENT_ARCHITECTURE.md`, `specs/DATA_MODEL.md`, `specs/TESTING.md`
+
 **Responsibilities:**
 - Implements features following architectural guidelines
 - Writes production-quality code
@@ -91,6 +97,8 @@ Work closely with Testing Specialist to ensure your code is testable.
 ### 4. UI/UX Designer (Design Specialist)
 **Agent Type:** `general-purpose`
 
+**Key docs:** `specs/CLIENT_ARCHITECTURE.md`, `specs/FEATURES.md`, `specs/FINANCE_SYSTEM.md`
+
 **Responsibilities:**
 - Mobile-first responsive design
 - Component design and user flows
@@ -118,6 +126,8 @@ to understand user needs.
 
 ### 5. Testing Specialist (Quality Assurance)
 **Agent Type:** `general-purpose`
+
+**Key docs:** `specs/TESTING.md`, `specs/CLIENT_ARCHITECTURE.md`, `specs/DATA_MODEL.md`
 
 **Responsibilities:**
 - Comprehensive test coverage across all layers
@@ -149,6 +159,8 @@ due to new code, determine if it's a bug (report to engineer) or expected behavi
 
 ### 6. Documentation Maintainer
 **Agent Type:** `general-purpose`
+
+**Key docs:** `ROADMAP.md`, `CHANGELOG.md`, `specs/README.md`, `specs/FEATURES.md`
 
 **Responsibilities:**
 - Keeps README and specs current

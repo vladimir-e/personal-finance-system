@@ -6,7 +6,7 @@ import { CategoryDialog } from './CategoryDialog';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
-const GROUP_ORDER = ['Income', 'Fixed', 'Daily Living', 'Personal', 'Irregular'];
+export const GROUP_ORDER = ['Income', 'Fixed', 'Daily Living', 'Personal', 'Irregular'];
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -121,7 +121,7 @@ function InlineEditName({
     return (
       <button
         onClick={onStartEdit}
-        className="min-h-[36px] truncate rounded px-1 text-left text-sm text-body transition-colors hover:bg-hover"
+        className="min-h-[44px] truncate rounded px-1 text-left text-sm text-body underline decoration-edge decoration-dashed underline-offset-4 transition-colors hover:bg-hover"
       >
         {value}
       </button>
@@ -139,7 +139,7 @@ function InlineEditName({
         if (e.key === 'Enter') commit();
         if (e.key === 'Escape') onCancelEdit();
       }}
-      className="min-h-[36px] w-full rounded border border-edge bg-page px-2 text-sm text-body"
+      className="min-h-[44px] w-full rounded border border-edge bg-page px-2 text-sm text-body"
     />
   );
 }
@@ -189,7 +189,7 @@ function InlineEditAmount({
     return (
       <button
         onClick={onStartEdit}
-        className="min-h-[36px] rounded px-1 text-right text-sm tabular-nums text-body transition-colors hover:bg-hover"
+        className="min-h-[44px] rounded px-1 text-right text-sm tabular-nums text-body underline decoration-edge decoration-dashed underline-offset-4 transition-colors hover:bg-hover"
       >
         {formatMoney(value, CURRENCY)}
       </button>
@@ -212,7 +212,7 @@ function InlineEditAmount({
           if (e.key === 'Enter') commit();
           if (e.key === 'Escape') onCancelEdit();
         }}
-        className="min-h-[36px] w-24 rounded border border-edge bg-page pl-6 pr-2 text-right text-sm tabular-nums text-body"
+        className="min-h-[44px] w-24 rounded border border-edge bg-page pl-6 pr-2 text-right text-sm tabular-nums text-body"
       />
     </div>
   );
@@ -251,7 +251,7 @@ function CategoryRow({
   const isEditingAssigned = editing?.categoryId === category.id && editing.field === 'assigned';
 
   return (
-    <div className="flex items-center gap-1 px-4 py-1 transition-colors hover:bg-hover/50">
+    <div className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50">
       <div className="min-w-0 flex-1">
         <InlineEditName
           value={category.name}
@@ -276,38 +276,38 @@ function CategoryRow({
         <button
           onClick={() => onMoveUp(category)}
           disabled={isFirst}
-          className="flex h-8 w-8 items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading disabled:opacity-30 disabled:hover:bg-transparent"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading disabled:opacity-30 disabled:hover:bg-transparent"
           aria-label={`Move ${category.name} up`}
         >
-          <ArrowUpIcon className="h-3.5 w-3.5" />
+          <ArrowUpIcon className="h-4 w-4" />
         </button>
         <button
           onClick={() => onMoveDown(category)}
           disabled={isLast}
-          className="flex h-8 w-8 items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading disabled:opacity-30 disabled:hover:bg-transparent"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading disabled:opacity-30 disabled:hover:bg-transparent"
           aria-label={`Move ${category.name} down`}
         >
-          <ArrowDownIcon className="h-3.5 w-3.5" />
+          <ArrowDownIcon className="h-4 w-4" />
         </button>
         <button
           onClick={() => onArchive(category)}
-          className="flex h-8 w-8 items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading"
           aria-label={category.archived ? `Unarchive ${category.name}` : `Archive ${category.name}`}
           title={category.archived ? 'Unarchive' : 'Archive'}
         >
           {category.archived ? (
-            <UnarchiveIcon className="h-3.5 w-3.5" />
+            <UnarchiveIcon className="h-4 w-4" />
           ) : (
-            <ArchiveIcon className="h-3.5 w-3.5" />
+            <ArchiveIcon className="h-4 w-4" />
           )}
         </button>
         <button
           onClick={() => onDelete(category)}
-          className="flex h-8 w-8 items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-negative"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-negative"
           aria-label={`Delete ${category.name}`}
           title="Delete"
         >
-          <TrashIcon className="h-3.5 w-3.5" />
+          <TrashIcon className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -376,7 +376,7 @@ function ConfirmDialog({
 // ── Main Component ─────────────────────────────────────────
 
 export function CategoryManagement() {
-  const { state, createCategory, updateCategory, deleteCategory } = useDataStore();
+  const { state, updateCategory, deleteCategory } = useDataStore();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [editing, setEditing] = useState<EditingField | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set(['Archived']));
@@ -385,7 +385,7 @@ export function CategoryManagement() {
   const cancelEdit = useCallback(() => setEditing(null), []);
 
   // Group categories: active by group, archived separately
-  const { groups, archived, existingGroupNames, maxSortOrder } = useMemo(() => {
+  const { groups, archived, existingGroupNames } = useMemo(() => {
     const active = state.categories.filter((c) => !c.archived);
     const arch = state.categories.filter((c) => c.archived);
     const byGroup = new Map<string, Category[]>();
@@ -413,13 +413,11 @@ export function CategoryManagement() {
     }));
 
     const allNames = [...new Set(state.categories.map((c) => c.group))];
-    const maxSort = state.categories.reduce((max, c) => Math.max(max, c.sortOrder), 0);
 
     return {
       groups: orderedGroups,
       archived: arch,
       existingGroupNames: allNames,
-      maxSortOrder: maxSort,
     };
   }, [state.categories]);
 
@@ -432,13 +430,9 @@ export function CategoryManagement() {
     });
   }, []);
 
-  const handleCreateCategory = useCallback(
-    (data: { name: string; group: string; assigned: number; sortOrder: number }) => {
-      createCategory(data);
-      setDialog(null);
-    },
-    [createCategory],
-  );
+  const handleDialogClose = useCallback(() => {
+    setDialog(null);
+  }, []);
 
   const handleUpdateName = useCallback(
     (id: string, name: string) => {
@@ -615,9 +609,7 @@ export function CategoryManagement() {
       {dialog?.type === 'create' && (
         <CategoryDialog
           existingGroups={existingGroupNames}
-          nextSortOrder={maxSortOrder + 1}
-          onSave={handleCreateCategory}
-          onClose={closeDialog}
+          onClose={handleDialogClose}
         />
       )}
 

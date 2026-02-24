@@ -1,25 +1,22 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { useDataStore } from '../store';
 import { CreateCategoryInput, parseMoney } from 'pfs-lib';
 import type { Currency } from 'pfs-lib';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
-const DEFAULT_GROUPS = ['Income', 'Fixed', 'Daily Living', 'Personal', 'Irregular'];
-
 export interface CategoryDialogProps {
   existingGroups: string[];
-  nextSortOrder: number;
-  onSave: (data: { name: string; group: string; assigned: number; sortOrder: number }) => void;
   onClose: () => void;
 }
 
-export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose }: CategoryDialogProps) {
-  const allGroups = [...new Set([...DEFAULT_GROUPS, ...existingGroups])];
+export function CategoryDialog({ existingGroups, onClose }: CategoryDialogProps) {
+  const { state, createCategory } = useDataStore();
 
   const [name, setName] = useState('');
-  const [group, setGroup] = useState(allGroups[0] ?? '');
-  const [customGroup, setCustomGroup] = useState('');
+  const [group, setGroup] = useState(existingGroups[0] ?? 'Personal');
   const [useCustomGroup, setUseCustomGroup] = useState(false);
+  const [customGroup, setCustomGroup] = useState('');
   const [assigned, setAssigned] = useState('0.00');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -41,6 +38,8 @@ export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose 
     e.preventDefault();
     setErrors({});
 
+    const selectedGroup = useCustomGroup ? customGroup.trim() : group;
+
     let parsedAssigned: number;
     try {
       parsedAssigned = parseMoney(assigned, CURRENCY);
@@ -49,13 +48,14 @@ export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose 
       return;
     }
 
-    const groupValue = useCustomGroup ? customGroup.trim() : group;
+    const groupCats = state.categories.filter(c => c.group === selectedGroup);
+    const maxSort = groupCats.reduce((max, c) => Math.max(max, c.sortOrder), 0);
 
     const result = CreateCategoryInput.safeParse({
       name: name.trim(),
-      group: groupValue,
+      group: selectedGroup,
       assigned: parsedAssigned,
-      sortOrder: nextSortOrder,
+      sortOrder: maxSort + 1,
     });
 
     if (!result.success) {
@@ -67,7 +67,8 @@ export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose 
       return;
     }
 
-    onSave(result.data);
+    createCategory(result.data);
+    onClose();
   };
 
   const inputClass =
@@ -78,11 +79,11 @@ export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose 
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Create category"
+      aria-label="Add category"
     >
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-xl border border-edge bg-surface p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-semibold text-heading">Create Category</h2>
+        <h2 className="mb-4 text-lg font-semibold text-heading">Add Category</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -118,7 +119,7 @@ export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose 
                 <button
                   type="button"
                   onClick={() => setUseCustomGroup(false)}
-                  className="min-h-[44px] whitespace-nowrap rounded-lg px-3 text-sm text-muted transition-colors hover:bg-hover hover:text-heading"
+                  className="min-h-[44px] shrink-0 rounded-lg px-3 text-sm text-muted transition-colors hover:bg-hover hover:text-heading"
                 >
                   Cancel
                 </button>
@@ -131,14 +132,14 @@ export function CategoryDialog({ existingGroups, nextSortOrder, onSave, onClose 
                   onChange={(e) => setGroup(e.target.value)}
                   className={inputClass}
                 >
-                  {allGroups.map((g) => (
+                  {existingGroups.map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
                 </select>
                 <button
                   type="button"
                   onClick={() => setUseCustomGroup(true)}
-                  className="min-h-[44px] whitespace-nowrap rounded-lg px-3 text-sm text-muted transition-colors hover:bg-hover hover:text-heading"
+                  className="min-h-[44px] shrink-0 rounded-lg px-3 text-sm font-medium text-accent transition-colors hover:text-accent/80"
                 >
                   New
                 </button>

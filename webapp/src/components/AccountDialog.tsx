@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useDataStore } from '../store';
-import { CreateAccountInput, parseMoney } from 'pfs-lib';
+import { CreateAccountInput, UpdateAccountInput, parseMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
@@ -77,7 +77,19 @@ export function AccountDialog({ mode, account, onClose, onCreated }: AccountDial
       const created = createAccount(result.data);
       onCreated?.(created.id);
     } else if (account) {
-      updateAccount(account.id, { name: name.trim(), type, institution: institution.trim() });
+      const update = { name: name.trim(), type, institution: institution.trim() };
+      const result = UpdateAccountInput.safeParse(update);
+
+      if (!result.success) {
+        const errs: Record<string, string> = {};
+        for (const issue of result.error.issues) {
+          errs[issue.path[0]?.toString() ?? 'name'] = issue.message;
+        }
+        setErrors(errs);
+        return;
+      }
+
+      updateAccount(account.id, result.data);
     }
 
     onClose();

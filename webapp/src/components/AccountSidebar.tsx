@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDataStore } from '../store';
-import { computeBalance, formatMoney } from 'pfs-lib';
+import { formatMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
@@ -48,8 +48,14 @@ function useAccountGroups() {
     const archived: GroupedAccount[] = [];
     let netWorth = 0;
 
+    // Single pass over transactions to build balance map — O(transactions)
+    const balanceMap = new Map<string, number>();
+    for (const tx of transactions) {
+      balanceMap.set(tx.accountId, (balanceMap.get(tx.accountId) ?? 0) + tx.amount);
+    }
+
     for (const account of accounts) {
-      const balance = computeBalance(transactions, account.id);
+      const balance = balanceMap.get(account.id) ?? 0;
 
       if (account.archived) {
         archived.push({ account, balance });
@@ -168,7 +174,7 @@ function AccountRow({
           e.stopPropagation();
           onMenuOpen(account, e.currentTarget.getBoundingClientRect());
         }}
-        className={`flex min-h-[44px] min-w-[36px] items-center justify-center transition-colors ${
+        className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors ${
           selected ? 'text-accent/60 hover:text-accent' : 'text-muted hover:text-heading'
         }`}
         aria-label={`Actions for ${account.name}`}

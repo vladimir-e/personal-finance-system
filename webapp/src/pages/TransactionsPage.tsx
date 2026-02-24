@@ -131,10 +131,12 @@ export function TransactionsPage() {
   }, []);
 
   const handleEditAccount = useCallback((account: Account) => {
+    setDrawerOpen(false);
     setDialog({ type: 'edit-account', account });
   }, []);
 
   const handleArchiveAccount = useCallback((account: Account) => {
+    setDrawerOpen(false);
     if (account.archived) {
       archiveAccount(account.id, false);
     } else if (canArchiveAccount(state.transactions, account.id)) {
@@ -145,6 +147,7 @@ export function TransactionsPage() {
   }, [state.transactions, archiveAccount]);
 
   const handleDeleteAccount = useCallback((account: Account) => {
+    setDrawerOpen(false);
     if (canDeleteAccount(state.transactions, account.id)) {
       setDialog({ type: 'confirm-delete', account });
     } else {
@@ -241,6 +244,7 @@ export function TransactionsPage() {
         aria-modal="true"
         aria-label="Account selector"
         aria-hidden={!drawerOpen}
+        {...(!drawerOpen && { inert: true })}
       >
         {/* Backdrop */}
         <div
@@ -321,7 +325,7 @@ export function TransactionsPage() {
       {dialog?.type === 'blocked-delete' && (
         <ConfirmDialog
           title="Cannot Delete"
-          message={`"${dialog.account.name}" has existing transactions. Archive it instead.`}
+          message={`"${dialog.account.name}" has existing transactions and cannot be deleted.`}
           onClose={closeDialog}
         />
       )}

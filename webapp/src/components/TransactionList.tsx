@@ -104,6 +104,14 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
+function EditIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  );
+}
+
 function TrashIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -151,6 +159,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
   const editValueRef = useRef('');
   const committedRef = useRef(false);
   const [mobileEditTx, setMobileEditTx] = useState<Transaction | null>(null);
+  const [desktopEditTx, setDesktopEditTx] = useState<Transaction | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -181,6 +190,17 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
       .sort((a, b) => a.name.localeCompare(b.name)),
     [state.categories],
   );
+
+  // Grouped categories for filter dropdown
+  const categoryGroups = useMemo(() => {
+    const groups = new Map<string, typeof activeCategories>();
+    for (const cat of activeCategories) {
+      const list = groups.get(cat.group) ?? [];
+      list.push(cat);
+      groups.set(cat.group, list);
+    }
+    return groups;
+  }, [activeCategories]);
 
   // Filter and sort
   const filtered = useMemo(() => {
@@ -553,8 +573,12 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           aria-label="Filter by category"
         >
           <option value="">All Categories</option>
-          {activeCategories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          {[...categoryGroups.entries()].map(([group, cats]) => (
+            <optgroup key={group} label={group}>
+              {cats.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
 
@@ -608,7 +632,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                       </button>
                     </th>
                   ))}
-                  <th className="w-12 p-0">
+                  <th className="w-24 p-0">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -617,14 +641,23 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                 {paginated.map(tx => (
                   <tr key={tx.id} className="group transition-colors hover:bg-hover">
                     {columns.map(field => renderCell(tx, field))}
-                    <td className="px-1 py-1 text-center">
-                      <button
-                        onClick={e => { e.stopPropagation(); onDeleteTransaction(tx); }}
-                        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted opacity-0 transition-all hover:text-negative group-hover:opacity-100 focus:opacity-100"
-                        aria-label={`Delete transaction: ${tx.description || tx.payee || 'untitled'}`}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                    <td className="px-1 py-1">
+                      <div className="flex items-center justify-center opacity-0 transition-all group-hover:opacity-100 focus-within:opacity-100">
+                        <button
+                          onClick={e => { e.stopPropagation(); setDesktopEditTx(tx); }}
+                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:text-accent"
+                          aria-label={`Edit transaction: ${tx.description || tx.payee || 'untitled'}`}
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); onDeleteTransaction(tx); }}
+                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:text-negative"
+                          aria-label={`Delete transaction: ${tx.description || tx.payee || 'untitled'}`}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -708,12 +741,12 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
         </div>
       )}
 
-      {/* ── Mobile edit dialog ───────────────────────────── */}
-      {mobileEditTx && (
+      {/* ── Edit dialog (desktop + mobile) ─────────────────── */}
+      {(desktopEditTx || mobileEditTx) && (
         <TransactionDialog
           mode="edit"
-          transaction={mobileEditTx}
-          onClose={() => setMobileEditTx(null)}
+          transaction={(desktopEditTx ?? mobileEditTx)!}
+          onClose={() => { setDesktopEditTx(null); setMobileEditTx(null); }}
         />
       )}
     </div>

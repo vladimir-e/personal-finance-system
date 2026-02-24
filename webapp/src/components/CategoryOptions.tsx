@@ -1,10 +1,15 @@
 import { useMemo } from 'react';
 import type { Category } from 'pfs-lib';
 
-/** Group categories by their `group` field, preserving insertion order. */
+/**
+ * Group categories by their `group` field, sorted by `sortOrder`.
+ * Groups appear in the order of their first category's sortOrder.
+ * Categories within each group are also sorted by sortOrder.
+ */
 export function groupCategories(categories: Category[]): Map<string, Category[]> {
+  const sorted = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
   const groups = new Map<string, Category[]>();
-  for (const cat of categories) {
+  for (const cat of sorted) {
     const list = groups.get(cat.group) ?? [];
     list.push(cat);
     groups.set(cat.group, list);

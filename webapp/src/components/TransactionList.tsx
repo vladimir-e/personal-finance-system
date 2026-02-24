@@ -186,9 +186,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
     [state.accounts],
   );
   const activeCategories = useMemo(
-    () => state.categories
-      .filter(c => !c.archived)
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    () => state.categories.filter(c => !c.archived),
     [state.categories],
   );
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, type FormEvent } from 'react';
 import { useDataStore } from '../store';
 import { CreateTransactionInput, UpdateTransactionInput, parseMoney } from 'pfs-lib';
 import type { Transaction, TransactionType, Currency } from 'pfs-lib';
+import { CategoryOptions } from './CategoryOptions';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -170,17 +171,6 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
     onClose();
   };
 
-  // ── Grouped categories for <optgroup> ───────────────────────
-  const categoryGroups = useMemo(() => {
-    const groups = new Map<string, typeof categories>();
-    for (const cat of categories) {
-      const list = groups.get(cat.group) ?? [];
-      list.push(cat);
-      groups.set(cat.group, list);
-    }
-    return groups;
-  }, [categories]);
-
   // ── Styles ──────────────────────────────────────────────────
   const inputClass =
     'min-h-[44px] w-full rounded-lg border border-edge bg-page px-3 py-2 text-sm text-body placeholder:text-muted';
@@ -334,13 +324,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   className={inputClass}
                 >
                   <option value="">Uncategorized</option>
-                  {[...categoryGroups.entries()].map(([group, cats]) => (
-                    <optgroup key={group} label={group}>
-                      {cats.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </optgroup>
-                  ))}
+                  <CategoryOptions categories={categories} />
                 </select>
                 {errors.categoryId && <p className="mt-1 text-xs text-negative">{errors.categoryId}</p>}
               </div>

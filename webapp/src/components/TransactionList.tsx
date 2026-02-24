@@ -3,6 +3,7 @@ import { useDataStore } from '../store';
 import { formatMoney, parseMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
 import { TransactionDialog } from './TransactionDialog';
+import { CategoryOptions } from './CategoryOptions';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 const DESKTOP_PAGE_SIZE = 500;
@@ -190,17 +191,6 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
       .sort((a, b) => a.name.localeCompare(b.name)),
     [state.categories],
   );
-
-  // Grouped categories for filter dropdown
-  const categoryGroups = useMemo(() => {
-    const groups = new Map<string, typeof activeCategories>();
-    for (const cat of activeCategories) {
-      const list = groups.get(cat.group) ?? [];
-      list.push(cat);
-      groups.set(cat.group, list);
-    }
-    return groups;
-  }, [activeCategories]);
 
   // Filter and sort
   const filtered = useMemo(() => {
@@ -442,9 +432,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                 className={editInputClass}
               >
                 <option value="">Uncategorized</option>
-                {activeCategories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                <CategoryOptions categories={activeCategories} />
               </select>
             </td>
           );
@@ -573,13 +561,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           aria-label="Filter by category"
         >
           <option value="">All Categories</option>
-          {[...categoryGroups.entries()].map(([group, cats]) => (
-            <optgroup key={group} label={group}>
-              {cats.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </optgroup>
-          ))}
+          <CategoryOptions categories={activeCategories} />
         </select>
 
         {/* Mobile sort selector */}

@@ -12,6 +12,15 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-24 — Category management within Budget tab
+- Category management UI in the Budget tab: categories organized under collapsible group headers (Income, Fixed, Daily Living, Personal, Irregular)
+- Create category: dialog with name, group selector (existing groups + custom), monthly budget amount, Zod validation
+- Inline editing: click category name or assigned amount to edit directly; Enter saves, Escape cancels
+- Archive/unarchive categories; archived categories shown under collapsed "Archived" group
+- Delete with confirmation dialog showing count of affected transactions
+- Reorder categories within group via up/down controls (sortOrder swap)
+- 29 component tests covering display, create, inline editing, delete, archive, reorder, and accessibility
+
 ## 2026-02-23 — Transaction list, editing, and add/edit modal
 - Transaction list with sortable columns (date, account, category, description, amount), full-text search, and category filter
 - Desktop: full table with clickable column headers for sorting, inline click-to-edit on any cell (Enter/blur saves, Escape cancels)

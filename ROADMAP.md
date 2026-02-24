@@ -69,7 +69,7 @@ Inline editing on desktop: click any field to edit directly in the table row. Mo
 ### [x] 19. Add/edit transaction modal
 Segmented control: Expense / Income / Transfer. Fields: amount, date (defaults today), account (pre-selected from current view), category (dropdown, excluded for transfers), description, payee, notes. Zod validation with inline errors. Transfer mode: From Account and To Account selectors. On save, close modal and return to list.
 
-### [ ] 20. Category management
+### [x] 20. Category management
 Within Budget tab. Create category: name, group (select or new), assigned amount. Edit: inline name and assigned amount. Archive/unarchive. Delete: confirmation warning "This will remove the category from N transactions." Reorder within group via sortOrder. Categories are organized under their group headers.
 
 ### [ ] 21. Budget screen

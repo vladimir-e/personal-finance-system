@@ -113,12 +113,25 @@ describe('AppShell', () => {
     expect(btn).toHaveAttribute('aria-label', 'Theme: system');
   });
 
-  it('Add Transaction shows placeholder toast', async () => {
+  it('Add Transaction button opens transaction dialog', async () => {
     renderShell();
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: 'Add transaction' }));
 
-    expect(screen.getByText('Add Transaction — coming soon')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Add transaction' })).toBeInTheDocument();
+  });
+
+  it('Add Transaction switches to Transactions tab when on Budget', async () => {
+    renderShell();
+    const user = userEvent.setup();
+
+    await user.click(within(mobileNav()).getByText('Budget'));
+    expect(screen.queryByRole('heading', { name: 'Transactions' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add transaction' }));
+
+    expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Add transaction' })).toBeInTheDocument();
   });
 });

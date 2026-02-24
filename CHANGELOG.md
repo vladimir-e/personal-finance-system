@@ -12,6 +12,19 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-23 — Transaction list, editing, and add/edit modal
+- Transaction list with sortable columns (date, account, category, description, amount), full-text search, and category filter
+- Desktop: full table with clickable column headers for sorting, inline click-to-edit on any cell (Enter/blur saves, Escape cancels)
+- Mobile: card layout with tap-to-edit via modal, infinite scroll (50-item batches), sort dropdown
+- Desktop pagination at 500 rows per page
+- Add Transaction modal: segmented control (Expense/Income/Transfer), amount with automatic sign, date defaulting to today, account/category dropdowns, Zod validation with inline errors
+- Transfer mode: From/To account selectors, transfer pair creation, type switching disabled for transfer edits
+- Edit Transaction: pre-populated fields, type constraints enforced (no switching to/from transfer)
+- Delete transaction with confirmation dialog; transfer cascade warning showing paired account name
+- Add Transaction button in nav bar (desktop) and FAB (mobile) opens the modal with pre-selected account
+- Empty states: no transactions, no matches, no transactions in account
+- 53 new component tests covering list rendering, sorting, filtering, inline editing, dialog create/edit/dismiss, accessibility
+
 ## 2026-02-23 — Account sidebar and CRUD UI
 - Account sidebar in Transactions tab: accounts grouped by type (Cash, Checking, Savings, Credit, Investment, Loans, Archived), derived balances, group subtotals, net worth total
 - Responsive layout: permanent sidebar on desktop, slide-out drawer on mobile

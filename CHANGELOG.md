@@ -12,6 +12,14 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-24 — Budget screen, empty states, and component tests
+- Monthly budget view with prev/next month navigation and Available to Budget header
+- Category groups as collapsible sections: per-category assigned (editable inline), spent, available with color-coded amounts
+- Income group shows total income only; uncategorized pseudo-row surfaces forgotten categorization
+- Group subtotals for assigned, spent, and available
+- Enhanced EmptyState component with optional CTA button; budget-specific empty state for no categories
+- 26 new component tests for BudgetScreen (month navigation, budget math, inline editing, groups, uncategorized) and EmptyState (rendering, CTA, accessibility)
+
 ## 2026-02-24 — Category management within Budget tab
 - Category management UI in the Budget tab: categories organized under collapsible group headers (Income, Fixed, Daily Living, Personal, Irregular)
 - Create category: dialog with name, group selector (existing groups + custom), monthly budget amount, Zod validation

@@ -9,6 +9,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useTransactionFilters, SORT_LABELS } from '../hooks/useTransactionFilters';
 import type { SortField, SortDir, SortConfig } from '../hooks/useTransactionFilters';
 import { useInlineEdit } from '../hooks/useInlineEdit';
+import { EmptyState } from './EmptyState';
 import { amountClass } from '../utils/amountClass';
 import { formatDate } from '../utils/formatDate';
 
@@ -26,15 +27,6 @@ function SortIndicator({ field, sort }: { field: SortField; sort: SortConfig }) 
   return sort.dir === 'asc'
     ? <ChevronUpIcon className="ml-1 inline h-3.5 w-3.5" />
     : <ChevronDownIcon className="ml-1 inline h-3.5 w-3.5" />;
-}
-
-function EmptyState({ heading, message }: { heading: string; message: string }) {
-  return (
-    <div className="rounded-lg border border-edge bg-surface px-6 py-16 text-center">
-      <p className="text-lg font-medium text-heading">{heading}</p>
-      <p className="mt-1 text-sm text-muted">{message}</p>
-    </div>
-  );
 }
 
 // ── Main component ───────────────────────────────────────────

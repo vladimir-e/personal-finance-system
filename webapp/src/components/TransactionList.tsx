@@ -5,6 +5,9 @@ import type { Transaction, Currency } from 'pfs-lib';
 import { TransactionDialog } from './TransactionDialog';
 import { CategoryOptions } from './CategoryOptions';
 import { SearchIcon, ChevronUpIcon, ChevronDownIcon, EditIcon, TrashIcon } from './icons';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { amountClass } from '../utils/amountClass';
+import { formatDate } from '../utils/formatDate';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 const DESKTOP_PAGE_SIZE = 500;
@@ -28,40 +31,6 @@ interface EditingCell {
 export interface TransactionListProps {
   selectedAccountId: string | null;
   onDeleteTransaction: (tx: Transaction) => void;
-}
-
-// ── Hooks ────────────────────────────────────────────────────
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 768,
-  );
-
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 767px)');
-    const onChange = (e: MediaQueryListEvent) => setMobile(e.matches);
-    mql.addEventListener('change', onChange);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
-
-  return mobile;
-}
-
-// ── Helpers ──────────────────────────────────────────────────
-
-function amountClass(amount: number): string {
-  if (amount > 0) return 'text-positive';
-  if (amount < 0) return 'text-negative';
-  return 'text-muted';
-}
-
-function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return new Date(+y!, +m! - 1, +d!).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 }
 
 function amountToEditString(amount: number): string {

@@ -4,6 +4,7 @@ import { useDataStore } from '../store';
 import { formatMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
 import { ChevronRightIcon, ReconcileIcon, PlusIcon, MoreIcon } from './icons';
+import { amountClass } from '../utils/amountClass';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -80,14 +81,6 @@ function useAccountGroups() {
 
     return { groups, archived, netWorth, isEmpty: accounts.length === 0 };
   }, [state]);
-}
-
-// ── Helpers ─────────────────────────────────────────────────
-
-function amountClass(amount: number): string {
-  if (amount > 0) return 'text-positive';
-  if (amount < 0) return 'text-negative';
-  return 'text-muted';
 }
 
 // ── Subcomponents ───────────────────────────────────────────

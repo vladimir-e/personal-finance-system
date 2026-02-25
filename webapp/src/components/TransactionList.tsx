@@ -228,7 +228,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search transactions\u2026"
+            placeholder="Search transactions…"
             className="min-h-[44px] w-full rounded-lg border border-edge bg-surface pl-9 pr-3 text-sm text-body placeholder:text-muted transition-colors focus:border-accent focus:outline-none"
             aria-label="Search transactions"
           />
@@ -397,7 +397,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           {/* Infinite scroll sentinel */}
           {hasMore && (
             <div ref={sentinelRef} className="flex justify-center py-4">
-              <span className="text-xs text-muted">Loading more\u2026</span>
+              <span className="text-xs text-muted">Loading more…</span>
             </div>
           )}
         </div>

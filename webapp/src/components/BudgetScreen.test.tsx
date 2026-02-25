@@ -399,11 +399,12 @@ describe('BudgetScreen', () => {
   });
 
   describe('delete category', () => {
-    it('delete button opens confirmation dialog', async () => {
+    it('delete menu item opens confirmation dialog', async () => {
       const user = userEvent.setup();
       renderBudget();
 
-      await user.click(screen.getByRole('button', { name: 'Delete Rent' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
       expect(screen.getByRole('alertdialog', { name: 'Delete Category' })).toBeInTheDocument();
     });
@@ -417,7 +418,8 @@ describe('BudgetScreen', () => {
       ];
       renderBudget({ transactions });
 
-      await user.click(screen.getByRole('button', { name: 'Delete Rent' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
       // tx-2 from buildTransactions + 2 extras = 3
       expect(screen.getByText(/3 transactions/)).toBeInTheDocument();
@@ -427,7 +429,8 @@ describe('BudgetScreen', () => {
       const user = userEvent.setup();
       renderBudget();
 
-      await user.click(screen.getByRole('button', { name: 'Delete Rent' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
       await user.click(screen.getByRole('button', { name: 'Delete' }));
 
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
@@ -441,7 +444,8 @@ describe('BudgetScreen', () => {
       const user = userEvent.setup();
       renderBudget();
 
-      await user.click(screen.getByRole('button', { name: 'Delete Rent' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
@@ -450,11 +454,12 @@ describe('BudgetScreen', () => {
   });
 
   describe('archive / unarchive', () => {
-    it('archive button archives a category', async () => {
+    it('archive menu item archives a category', async () => {
       const user = userEvent.setup();
       renderBudget();
 
-      await user.click(screen.getByRole('button', { name: 'Archive Rent' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Archive' }));
 
       // Archived group appears, collapsed by default
       await waitFor(() => {
@@ -466,10 +471,9 @@ describe('BudgetScreen', () => {
       // Expand archived to verify Rent is there
       await user.click(screen.getByRole('button', { name: /Archived/i }));
       expect(screen.getByText('Rent')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Unarchive Rent' })).toBeInTheDocument();
     });
 
-    it('unarchive button unarchives a category', async () => {
+    it('unarchive menu item unarchives a category', async () => {
       const user = userEvent.setup();
       const categories = [
         ...buildCategories(),
@@ -481,7 +485,8 @@ describe('BudgetScreen', () => {
       await user.click(screen.getByRole('button', { name: /Archived/i }));
       expect(screen.getByText('Old Sub')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: 'Unarchive Old Sub' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Old Sub' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Unarchive' }));
 
       // Old Sub should now appear in the active Fixed group
       await waitFor(() => {
@@ -502,6 +507,60 @@ describe('BudgetScreen', () => {
 
       // Collapsed, so archived category not visible
       expect(screen.queryByText('Old Subscription')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('actions menu', () => {
+    it('opens on more button click', async () => {
+      const user = userEvent.setup();
+      renderBudget();
+
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Archive' })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
+    });
+
+    it('edit menu item triggers inline name editing', async () => {
+      const user = userEvent.setup();
+      renderBudget();
+
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Edit' }));
+
+      // Menu should close
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+      // Name should be in edit mode
+      const input = screen.getByDisplayValue('Rent');
+      expect(input.tagName).toBe('INPUT');
+    });
+
+    it('closes on Escape key', async () => {
+      const user = userEvent.setup();
+      renderBudget();
+
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
+
+    it('shows Unarchive for archived categories', async () => {
+      const user = userEvent.setup();
+      const categories = [
+        ...buildCategories(),
+        makeCategory({ id: 'arch-1', name: 'Old Sub', group: 'Fixed', archived: true, sortOrder: 7 }),
+      ];
+      renderBudget({ categories });
+
+      await user.click(screen.getByRole('button', { name: /Archived/i }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Old Sub' }));
+
+      expect(screen.getByRole('menuitem', { name: 'Unarchive' })).toBeInTheDocument();
     });
   });
 
@@ -546,7 +605,8 @@ describe('BudgetScreen', () => {
       const user = userEvent.setup();
       renderBudget();
 
-      await user.click(screen.getByRole('button', { name: 'Delete Rent' }));
+      await user.click(screen.getByRole('button', { name: 'Actions for Rent' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
       const alertDialog = screen.getByRole('alertdialog');
       expect(alertDialog).toHaveAttribute('aria-modal', 'true');

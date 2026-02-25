@@ -12,6 +12,13 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-25 — Category actions behind "..." menu
+- Replaced inline archive/delete icon buttons with a single "..." (More) button per category row
+- Portal-based popup menu with Edit, Archive/Unarchive, and Delete actions
+- Edit triggers inline name editing (existing mechanism, now discoverable from the menu)
+- Smart positioning (flips vertically near viewport bottom), Escape + backdrop dismissal
+- Matches the established ActionMenu pattern from AccountSidebar
+
 ## 2026-02-25 — Drag-and-drop category reordering
 - Replaced arrow up/down buttons with drag-and-drop reordering using @dnd-kit
 - Grip handle on every category row (active and archived) for intuitive repositioning

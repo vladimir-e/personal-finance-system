@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useDataStore } from '../store';
 import { computeMonthlySummary, formatMoney, parseMoney } from 'pfs-lib';
 import type { Currency, GroupSummary, CategorySummary, Category } from 'pfs-lib';
@@ -13,9 +14,7 @@ import { useDroppable } from '@dnd-kit/core';
 import {
   ChevronRightIcon,
   PlusIcon,
-  ArchiveIcon,
-  UnarchiveIcon,
-  TrashIcon,
+  MoreIcon,
   GripVerticalIcon,
 } from './icons';
 import { CategoryDialog } from './CategoryDialog';
@@ -37,6 +36,12 @@ type DialogState =
   | null
   | { type: 'create' }
   | { type: 'confirm-delete'; category: Category; transactionCount: number };
+
+interface ActionMenuState {
+  category: Category;
+  x: number;
+  y: number;
+}
 
 interface EditingField {
   categoryId: string;
@@ -220,40 +225,80 @@ function InlineEditAmount({
   );
 }
 
-// ── Category action buttons ────────────────────────────────
+// ── Category more button ───────────────────────────────────
 
-function CategoryActions({
+function CategoryMoreButton({
   category,
-  onArchive,
-  onDelete,
+  onMenuOpen,
 }: {
   category: Category;
-  onArchive: () => void;
-  onDelete: () => void;
+  onMenuOpen: (category: Category, rect: DOMRect) => void;
 }) {
   return (
-    <div className="flex flex-shrink-0 items-center">
-      <button
-        onClick={onArchive}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading"
-        aria-label={category.archived ? `Unarchive ${category.name}` : `Archive ${category.name}`}
-        title={category.archived ? 'Unarchive' : 'Archive'}
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onMenuOpen(category, e.currentTarget.getBoundingClientRect());
+      }}
+      className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading"
+      aria-label={`Actions for ${category.name}`}
+    >
+      <MoreIcon className="h-4 w-4" />
+    </button>
+  );
+}
+
+// ── Category action menu (portal) ─────────────────────────
+
+function CategoryActionMenu({
+  menu,
+  onEdit,
+  onArchive,
+  onDelete,
+  onClose,
+}: {
+  menu: ActionMenuState;
+  onEdit: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const menuWidth = 160;
+  const menuHeight = 140;
+  const left = Math.max(8, menu.x - menuWidth);
+  const top = menu.y + menuHeight > window.innerHeight
+    ? Math.max(8, menu.y - menuHeight - 44)
+    : menu.y + 4;
+
+  const itemClass =
+    'flex min-h-[44px] w-full items-center px-4 text-sm transition-colors hover:bg-hover';
+
+  return createPortal(
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        className="fixed z-50 w-40 overflow-hidden rounded-lg border border-edge bg-surface py-1 shadow-lg"
+        style={{ top, left }}
+        role="menu"
       >
-        {category.archived ? (
-          <UnarchiveIcon className="h-4 w-4" />
-        ) : (
-          <ArchiveIcon className="h-4 w-4" />
-        )}
-      </button>
-      <button
-        onClick={onDelete}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-negative"
-        aria-label={`Delete ${category.name}`}
-        title="Delete"
-      >
-        <TrashIcon className="h-4 w-4" />
-      </button>
-    </div>
+        <button onClick={onEdit} className={`${itemClass} text-body`} role="menuitem">
+          Edit
+        </button>
+        <button onClick={onArchive} className={`${itemClass} text-body`} role="menuitem">
+          {menu.category.archived ? 'Unarchive' : 'Archive'}
+        </button>
+        <button onClick={onDelete} className={`${itemClass} text-negative`} role="menuitem">
+          Delete
+        </button>
+      </div>
+    </>,
+    document.body,
   );
 }
 
@@ -265,12 +310,14 @@ function BudgetCategoryRow({
   editing,
   handlers,
   dragHandleProps,
+  onMenuOpen,
 }: {
   cat: CategorySummary;
   rawCategory: Category;
   editing: EditingField | null;
   handlers: CategoryHandlers;
   dragHandleProps: DragHandleProps;
+  onMenuOpen: (category: Category, rect: DOMRect) => void;
 }) {
   const isEditingName = editing?.categoryId === cat.id && editing.field === 'name';
   const isEditingAssigned = editing?.categoryId === cat.id && editing.field === 'assigned';
@@ -304,11 +351,7 @@ function BudgetCategoryRow({
       >
         {formatMoney(cat.available, CURRENCY)}
       </span>
-      <CategoryActions
-        category={rawCategory}
-        onArchive={() => handlers.onArchive(rawCategory)}
-        onDelete={() => handlers.onDelete(rawCategory)}
-      />
+      <CategoryMoreButton category={rawCategory} onMenuOpen={onMenuOpen} />
     </div>
   );
 }
@@ -344,6 +387,7 @@ function BudgetGroup({
   editing,
   handlers,
   itemIds,
+  onMenuOpen,
 }: {
   group: GroupSummary;
   categoryById: Map<string, Category>;
@@ -351,6 +395,7 @@ function BudgetGroup({
   editing: EditingField | null;
   handlers: CategoryHandlers;
   itemIds: string[];
+  onMenuOpen: (category: Category, rect: DOMRect) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const isIncome = group.name === 'Income';
@@ -389,7 +434,7 @@ function BudgetGroup({
               <span className="w-24 flex-shrink-0 text-right">Assigned</span>
               <span className="w-20 flex-shrink-0 text-right">Spent</span>
               <span className="w-20 flex-shrink-0 text-right">Available</span>
-              <span className="w-[88px] flex-shrink-0" />
+              <span className="w-[44px] flex-shrink-0" />
             </div>
           )}
 
@@ -418,11 +463,7 @@ function BudgetGroup({
                         <span className="flex-shrink-0 text-sm font-medium tabular-nums text-positive">
                           {cat ? formatMoney(cat.spent, CURRENCY) : '$0.00'}
                         </span>
-                        <CategoryActions
-                          category={rawCat}
-                          onArchive={() => handlers.onArchive(rawCat)}
-                          onDelete={() => handlers.onDelete(rawCat)}
-                        />
+                        <CategoryMoreButton category={rawCat} onMenuOpen={onMenuOpen} />
                       </div>
                     )}
                   </SortableItem>
@@ -441,6 +482,7 @@ function BudgetGroup({
                         editing={editing}
                         handlers={handlers}
                         dragHandleProps={dragHandleProps}
+                        onMenuOpen={onMenuOpen}
                       />
                     )}
                   </SortableItem>
@@ -463,7 +505,7 @@ function BudgetGroup({
               >
                 {formatMoney(group.totalAvailable, CURRENCY)}
               </span>
-              <span className="w-[88px] flex-shrink-0" />
+              <span className="w-[44px] flex-shrink-0" />
             </div>
           )}
         </DroppableGroup>
@@ -480,6 +522,13 @@ export function BudgetScreen() {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [editing, setEditing] = useState<EditingField | null>(null);
   const [archivedCollapsed, setArchivedCollapsed] = useState(true);
+  const [actionMenu, setActionMenu] = useState<ActionMenuState | null>(null);
+
+  const handleMenuOpen = useCallback((category: Category, rect: DOMRect) => {
+    setActionMenu({ category, x: rect.right, y: rect.bottom });
+  }, []);
+
+  const closeMenu = useCallback(() => setActionMenu(null), []);
 
   const summary = useMemo(
     () => computeMonthlySummary(state, month),
@@ -664,6 +713,7 @@ export function BudgetScreen() {
               editing={editing}
               handlers={handlers}
               itemIds={getGroupItemIds(group.name)}
+              onMenuOpen={handleMenuOpen}
             />
           ))}
 
@@ -725,11 +775,7 @@ export function BudgetScreen() {
                                 onSave={(name) => handlers.onUpdateName(cat.id, name)}
                               />
                             </div>
-                            <CategoryActions
-                              category={cat}
-                              onArchive={() => handlers.onArchive(cat)}
-                              onDelete={() => handlers.onDelete(cat)}
-                            />
+                            <CategoryMoreButton category={cat} onMenuOpen={handleMenuOpen} />
                           </div>
                         )}
                       </SortableItem>
@@ -783,6 +829,26 @@ export function BudgetScreen() {
           danger
           onConfirm={handleConfirmDelete}
           onClose={() => setDialog(null)}
+        />
+      )}
+
+      {/* Category action menu (portal) */}
+      {actionMenu && (
+        <CategoryActionMenu
+          menu={actionMenu}
+          onEdit={() => {
+            handlers.onStartEdit({ categoryId: actionMenu.category.id, field: 'name' });
+            closeMenu();
+          }}
+          onArchive={() => {
+            handlers.onArchive(actionMenu.category);
+            closeMenu();
+          }}
+          onDelete={() => {
+            handlers.onDelete(actionMenu.category);
+            closeMenu();
+          }}
+          onClose={closeMenu}
         />
       )}
     </div>

@@ -1,7 +1,8 @@
 import type { Category } from './types/index.js';
 
 const defaults: [string, string][] = [
-  ['Income',                       'Income'],
+  ['Paycheck',                     'Income'],
+  ['Other',                        'Income'],
   ['Housing',                      'Fixed'],
   ['Bills & Utilities',            'Fixed'],
   ['Subscriptions',                'Fixed'],

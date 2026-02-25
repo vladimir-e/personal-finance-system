@@ -4,13 +4,13 @@ import { getDefaultCategories } from './categories.js';
 describe('getDefaultCategories', () => {
   const categories = getDefaultCategories();
 
-  it('returns 18 categories', () => {
-    expect(categories).toHaveLength(18);
+  it('returns 19 categories', () => {
+    expect(categories).toHaveLength(19);
   });
 
   it('uses string IDs starting from "1"', () => {
     expect(categories[0].id).toBe('1');
-    expect(categories[17].id).toBe('18');
+    expect(categories[18].id).toBe('19');
   });
 
   it('has sequential sortOrder', () => {
@@ -26,9 +26,9 @@ describe('getDefaultCategories', () => {
     });
   });
 
-  it('has Income as the first category in the Income group', () => {
-    expect(categories[0].name).toBe('Income');
-    expect(categories[0].group).toBe('Income');
+  it('has Paycheck and Other in the Income group', () => {
+    const income = categories.filter((c) => c.group === 'Income');
+    expect(income.map((c) => c.name)).toEqual(['Paycheck', 'Other']);
   });
 
   it('contains all expected groups', () => {
@@ -47,7 +47,7 @@ describe('getDefaultCategories', () => {
     const a = getDefaultCategories();
     a[0].name = 'MUTATED';
     const b = getDefaultCategories();
-    expect(b[0].name).toBe('Income');
+    expect(b[0].name).toBe('Paycheck');
   });
 
   it('every category has non-empty name and group', () => {

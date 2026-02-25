@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDataStore } from '../store';
 import { formatMoney, parseMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
@@ -6,22 +6,12 @@ import { TransactionDialog } from './TransactionDialog';
 import { CategoryOptions } from './CategoryOptions';
 import { SearchIcon, ChevronUpIcon, ChevronDownIcon, EditIcon, TrashIcon } from './icons';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useTransactionFilters, SORT_LABELS } from '../hooks/useTransactionFilters';
+import type { SortField, SortDir, SortConfig } from '../hooks/useTransactionFilters';
 import { amountClass } from '../utils/amountClass';
 import { formatDate } from '../utils/formatDate';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
-const DESKTOP_PAGE_SIZE = 500;
-const MOBILE_BATCH_SIZE = 50;
-
-// ── Types ────────────────────────────────────────────────────
-
-type SortField = 'date' | 'account' | 'category' | 'description' | 'amount';
-type SortDir = 'asc' | 'desc';
-
-interface SortConfig {
-  field: SortField;
-  dir: SortDir;
-}
 
 interface EditingCell {
   txId: string;
@@ -36,17 +26,6 @@ export interface TransactionListProps {
 function amountToEditString(amount: number): string {
   return (Math.abs(amount) / 10 ** CURRENCY.precision).toFixed(CURRENCY.precision);
 }
-
-const SORT_LABELS: Record<string, string> = {
-  'date:desc': 'Newest first',
-  'date:asc': 'Oldest first',
-  'amount:desc': 'Highest amount',
-  'amount:asc': 'Lowest amount',
-  'description:asc': 'Description A\u2013Z',
-  'description:desc': 'Description Z\u2013A',
-  'category:asc': 'Category A\u2013Z',
-  'account:asc': 'Account A\u2013Z',
-};
 
 // ── Subcomponents ────────────────────────────────────────────
 
@@ -72,12 +51,17 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
   const { state, updateTransaction } = useDataStore();
   const isMobile = useIsMobile();
 
-  // Filter / sort state
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [sort, setSort] = useState<SortConfig>({ field: 'date', dir: 'desc' });
-  const [page, setPage] = useState(1);
-  const [mobileVisible, setMobileVisible] = useState(MOBILE_BATCH_SIZE);
+  const {
+    search, setSearch,
+    categoryFilter, setCategoryFilter,
+    sort, setSort,
+    page, setPage,
+    filtered, paginated,
+    totalPages, hasMore, hasFilters,
+    accountMap, categoryMap,
+    activeAccounts, activeCategories,
+    toggleSort, sentinelRef,
+  } = useTransactionFilters(selectedAccountId, isMobile);
 
   // Editing state
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
@@ -87,124 +71,11 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
   const [mobileEditTx, setMobileEditTx] = useState<Transaction | null>(null);
   const [desktopEditTx, setDesktopEditTx] = useState<Transaction | null>(null);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
   // Keep ref in sync with state
   const updateEditValue = (v: string) => {
     editValueRef.current = v;
     setEditValue(v);
   };
-
-  // Lookup maps
-  const accountMap = useMemo(
-    () => new Map(state.accounts.map(a => [a.id, a.name])),
-    [state.accounts],
-  );
-  const categoryMap = useMemo(
-    () => new Map(state.categories.map(c => [c.id, c.name])),
-    [state.categories],
-  );
-
-  // Non-archived lists for inline edit selects
-  const activeAccounts = useMemo(
-    () => state.accounts.filter(a => !a.archived),
-    [state.accounts],
-  );
-  const activeCategories = useMemo(
-    () => state.categories.filter(c => !c.archived),
-    [state.categories],
-  );
-
-  // Filter and sort
-  const filtered = useMemo(() => {
-    let result = state.transactions;
-
-    if (selectedAccountId) {
-      result = result.filter(t => t.accountId === selectedAccountId);
-    }
-
-    if (categoryFilter) {
-      result = result.filter(t => t.categoryId === categoryFilter);
-    }
-
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(t =>
-        t.description.toLowerCase().includes(q) ||
-        t.payee.toLowerCase().includes(q) ||
-        t.notes.toLowerCase().includes(q) ||
-        (categoryMap.get(t.categoryId) ?? '').toLowerCase().includes(q) ||
-        (accountMap.get(t.accountId) ?? '').toLowerCase().includes(q),
-      );
-    }
-
-    return [...result].sort((a, b) => {
-      let cmp = 0;
-      switch (sort.field) {
-        case 'date':
-          cmp = a.date.localeCompare(b.date);
-          break;
-        case 'account':
-          cmp = (accountMap.get(a.accountId) ?? '').localeCompare(accountMap.get(b.accountId) ?? '');
-          break;
-        case 'category':
-          cmp = (categoryMap.get(a.categoryId) ?? '').localeCompare(categoryMap.get(b.categoryId) ?? '');
-          break;
-        case 'description':
-          cmp = a.description.localeCompare(b.description);
-          break;
-        case 'amount':
-          cmp = a.amount - b.amount;
-          break;
-      }
-      return sort.dir === 'asc' ? cmp : -cmp;
-    });
-  }, [state.transactions, selectedAccountId, categoryFilter, search, sort, accountMap, categoryMap]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setPage(1);
-    setMobileVisible(MOBILE_BATCH_SIZE);
-  }, [search, categoryFilter, selectedAccountId, sort]);
-
-  // Paginated slice
-  const paginated = useMemo(() => {
-    if (isMobile) return filtered.slice(0, mobileVisible);
-    const start = (page - 1) * DESKTOP_PAGE_SIZE;
-    return filtered.slice(start, start + DESKTOP_PAGE_SIZE);
-  }, [filtered, isMobile, page, mobileVisible]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / DESKTOP_PAGE_SIZE));
-  const hasMore = isMobile && mobileVisible < filtered.length;
-
-  // Infinite scroll
-  const loadMore = useCallback(() => {
-    setMobileVisible(v => Math.min(v + MOBILE_BATCH_SIZE, filtered.length));
-  }, [filtered.length]);
-
-  useEffect(() => {
-    if (!isMobile || !hasMore) return;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      entries => { if (entries[0]?.isIntersecting) loadMore(); },
-      { rootMargin: '200px' },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [isMobile, hasMore, loadMore]);
-
-  // Sort toggle for desktop headers
-  const toggleSort = useCallback((field: SortField) => {
-    setSort(prev =>
-      prev.field === field
-        ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-        : { field, dir: field === 'amount' ? 'desc' : 'asc' },
-    );
-  }, []);
-
-  const hasFilters = search.trim() !== '' || categoryFilter !== '';
 
   // ── Inline editing ──────────────────────────────────────
 

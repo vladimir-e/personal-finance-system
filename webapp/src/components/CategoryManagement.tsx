@@ -331,6 +331,10 @@ function ConfirmDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => { confirmRef.current?.focus(); }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -360,6 +364,7 @@ function ConfirmDialog({
             Cancel
           </button>
           <button
+            ref={confirmRef}
             onClick={onConfirm}
             className={`min-h-[44px] rounded-lg px-4 text-sm font-medium text-white transition-colors ${
               danger ? 'bg-negative hover:bg-negative/90' : 'bg-accent hover:bg-accent/90'

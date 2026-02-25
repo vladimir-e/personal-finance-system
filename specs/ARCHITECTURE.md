@@ -69,6 +69,12 @@ pfs/
 
 npm workspaces manage dependencies. No Turborepo or Lerna — unnecessary at this scale. The `website` package is fully independent: no shared types or components with app packages.
 
+## Single Responsibility
+
+Every function, hook, and component should have one reason to change. A hook manages one piece of state. A component renders one concept. When a unit does too many things, changes to one responsibility risk breaking the others.
+
+Colocating related things in one file is fine — the principle is about design, not file organization.
+
 ## Functional Style
 
 Business logic in `pfs-lib` is functional:

@@ -69,10 +69,6 @@ On app load, the webapp calls `GET /api/budgets` to get the merged budget list â
 
 Most data requests carry a `Budget-Id` header identifying the active budget. See `specs/API.md`.
 
-## Code Organization
-
-**Context Independence.** Each file should be understandable and modifiable without reading other files in the same directory. Shared UI primitives (icons, dialogs, inline editors) live in their own modules. Complex stateful logic is extracted into custom hooks with explicit interfaces.
-
 ## Design Conventions
 
 - **Mobile-first.** Layout and interactions designed for small screens first, enhanced for larger ones.

@@ -18,7 +18,9 @@ export const SORT_LABELS: Record<string, string> = {
   'description:asc': 'Description A\u2013Z',
   'description:desc': 'Description Z\u2013A',
   'category:asc': 'Category A\u2013Z',
+  'category:desc': 'Category Z\u2013A',
   'account:asc': 'Account A\u2013Z',
+  'account:desc': 'Account Z\u2013A',
 };
 
 const DESKTOP_PAGE_SIZE = 500;

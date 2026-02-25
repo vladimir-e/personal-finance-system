@@ -18,8 +18,9 @@ export function ConfirmDialog({
   onClose,
 }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => { confirmRef.current?.focus(); }, []);
+  useEffect(() => { (confirmRef.current ?? closeRef.current)?.focus(); }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -44,6 +45,7 @@ export function ConfirmDialog({
         <p className="mb-4 text-sm text-body">{message}</p>
         <div className="flex justify-end gap-3">
           <button
+            ref={closeRef}
             onClick={onClose}
             className="min-h-[44px] rounded-lg px-4 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-heading"
           >

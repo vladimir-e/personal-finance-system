@@ -12,6 +12,15 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-24 — Unified budget view with inline category management
+- Merged BudgetScreen and CategoryManagement into a single unified view
+- Each budget row now supports inline name editing, reorder (up/down), archive/unarchive, and delete
+- "Add Category" button in the budget header opens the create dialog
+- Archived categories shown in a collapsed section at the bottom of the budget groups
+- Income category rows gain inline name editing and action controls
+- Deleted standalone CategoryManagement component (functionality absorbed into BudgetScreen)
+- 39 tests covering budget display + category CRUD in a single test suite
+
 ## 2026-02-24 — Budget screen, empty states, and component tests
 - Monthly budget view with prev/next month navigation and Available to Budget header
 - Category groups as collapsible sections: per-category assigned (editable inline), spent, available with color-coded amounts

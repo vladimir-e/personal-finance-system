@@ -130,7 +130,7 @@ describe('DataStore Context', () => {
     render(<TestHarness />);
     expect(screen.getByTestId('account-count')).toHaveTextContent('0');
     expect(screen.getByTestId('transaction-count')).toHaveTextContent('0');
-    expect(screen.getByTestId('category-count')).toHaveTextContent('18');
+    expect(screen.getByTestId('category-count')).toHaveTextContent('19');
   });
 
   it('initializes with custom initial state', () => {

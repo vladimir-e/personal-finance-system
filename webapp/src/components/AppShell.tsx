@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTheme } from './ThemeProvider';
 import { TransactionsPage } from '../pages/TransactionsPage';
 import { BudgetPage } from '../pages/BudgetPage';
+import { PlusIcon } from './icons';
 
 type Tab = 'transactions' | 'budget';
 
@@ -20,14 +21,6 @@ function BudgetIcon({ className }: { className?: string }) {
       <rect x="14" y="3" width="7" height="5" rx="1" />
       <rect x="3" y="16" width="7" height="5" rx="1" />
       <rect x="14" y="12" width="7" height="9" rx="1" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }

@@ -4,6 +4,7 @@ import { formatMoney, parseMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
 import { TransactionDialog } from './TransactionDialog';
 import { CategoryOptions } from './CategoryOptions';
+import { SearchIcon, ChevronUpIcon, ChevronDownIcon, EditIcon, TrashIcon } from './icons';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 const DESKTOP_PAGE_SIZE = 500;
@@ -77,51 +78,6 @@ const SORT_LABELS: Record<string, string> = {
   'category:asc': 'Category A\u2013Z',
   'account:asc': 'Account A\u2013Z',
 };
-
-// ── Icons ────────────────────────────────────────────────────
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="8" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}
-
-function ChevronUpIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 15l-6-6-6 6" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M3 6h18" />
-      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
-      <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-    </svg>
-  );
-}
 
 // ── Subcomponents ────────────────────────────────────────────
 

@@ -6,6 +6,7 @@ import { TransactionList } from '../components/TransactionList';
 import { useDataStore } from '../store';
 import { canArchiveAccount, canDeleteAccount } from 'pfs-lib';
 import type { Account, Transaction } from 'pfs-lib';
+import { AccountsIcon, CloseIcon, ChevronDownIcon } from '../components/icons';
 
 // ── Dialog state ────────────────────────────────────────────
 
@@ -18,33 +19,6 @@ type DialogState =
   | { type: 'blocked-archive'; account: Account }
   | { type: 'blocked-delete'; account: Account }
   | { type: 'confirm-delete-transaction'; transaction: Transaction };
-
-// ── Icons ───────────────────────────────────────────────────
-
-function AccountsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <path d="M2 10h20" />
-    </svg>
-  );
-}
-
-function CloseIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 6L6 18M6 6l12 12" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
 
 // ── Confirm / info dialog ───────────────────────────────────
 

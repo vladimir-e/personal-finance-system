@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useDataStore } from '../store';
 import { formatMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
+import { ChevronRightIcon, ReconcileIcon, PlusIcon, MoreIcon } from './icons';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -87,42 +88,6 @@ function amountClass(amount: number): string {
   if (amount > 0) return 'text-positive';
   if (amount < 0) return 'text-negative';
   return 'text-muted';
-}
-
-// ── Icons ───────────────────────────────────────────────────
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M9 18l6-6-6-6" />
-    </svg>
-  );
-}
-
-function ReconcileIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function MoreIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="6" r="1.5" />
-      <circle cx="12" cy="12" r="1.5" />
-      <circle cx="12" cy="18" r="1.5" />
-    </svg>
-  );
 }
 
 // ── Subcomponents ───────────────────────────────────────────

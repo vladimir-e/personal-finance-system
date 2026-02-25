@@ -97,7 +97,7 @@ describe('CategoryManagement', () => {
 
       await user.click(screen.getByRole('button', { name: /Add Category/i }));
 
-      expect(screen.getByRole('dialog', { name: 'Add category' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: /Add Category/i })).toBeInTheDocument();
     });
 
     it('dialog validates empty name', async () => {

@@ -79,11 +79,11 @@ export function CategoryDialog({ existingGroups, onClose }: CategoryDialogProps)
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Add category"
+      aria-labelledby="cat-dialog-title"
     >
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-xl border border-edge bg-surface p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-semibold text-heading">Add Category</h2>
+        <h2 id="cat-dialog-title" className="mb-4 text-lg font-semibold text-heading">Add Category</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

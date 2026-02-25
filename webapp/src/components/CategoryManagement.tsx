@@ -3,6 +3,8 @@ import { useDataStore } from '../store';
 import { formatMoney, parseMoney } from 'pfs-lib';
 import type { Category, Currency } from 'pfs-lib';
 import { CategoryDialog } from './CategoryDialog';
+import { ChevronRightIcon, PlusIcon, ArrowUpIcon, ArrowDownIcon, ArchiveIcon, UnarchiveIcon, TrashIcon } from './icons';
+import { ConfirmDialog } from './ConfirmDialog';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -18,69 +20,6 @@ type DialogState =
 interface EditingField {
   categoryId: string;
   field: 'name' | 'assigned';
-}
-
-// ── Icons ──────────────────────────────────────────────────
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M9 18l6-6-6-6" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-function ArrowUpIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 19V5M5 12l7-7 7 7" />
-    </svg>
-  );
-}
-
-function ArrowDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12l7 7 7-7" />
-    </svg>
-  );
-}
-
-function ArchiveIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="3" width="20" height="5" rx="1" />
-      <path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8" />
-      <path d="M10 12h4" />
-    </svg>
-  );
-}
-
-function UnarchiveIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="3" width="20" height="5" rx="1" />
-      <path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8" />
-      <path d="M12 14V10M9 11l3-3 3 3" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-    </svg>
-  );
 }
 
 // ── Inline editable name ───────────────────────────────────
@@ -309,70 +248,6 @@ function CategoryRow({
         >
           <TrashIcon className="h-4 w-4" />
         </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Confirm Dialog ─────────────────────────────────────────
-
-function ConfirmDialog({
-  title,
-  message,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onClose,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
-  const confirmRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => { confirmRef.current?.focus(); }, []);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="alertdialog"
-      aria-modal="true"
-      aria-label={title}
-    >
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-xl border border-edge bg-surface p-6 shadow-xl">
-        <h2 className="mb-2 text-lg font-semibold text-heading">{title}</h2>
-        <p className="mb-4 text-sm text-body">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="min-h-[44px] rounded-lg px-4 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-heading"
-          >
-            Cancel
-          </button>
-          <button
-            ref={confirmRef}
-            onClick={onConfirm}
-            className={`min-h-[44px] rounded-lg px-4 text-sm font-medium text-white transition-colors ${
-              danger ? 'bg-negative hover:bg-negative/90' : 'bg-accent hover:bg-accent/90'
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
       </div>
     </div>
   );

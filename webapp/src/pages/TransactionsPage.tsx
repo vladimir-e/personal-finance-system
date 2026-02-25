@@ -6,6 +6,8 @@ import { TransactionList } from '../components/TransactionList';
 import { useDataStore } from '../store';
 import { canArchiveAccount, canDeleteAccount } from 'pfs-lib';
 import type { Account, Transaction } from 'pfs-lib';
+import { AccountsIcon, CloseIcon, ChevronDownIcon } from '../components/icons';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 // ── Dialog state ────────────────────────────────────────────
 
@@ -18,96 +20,6 @@ type DialogState =
   | { type: 'blocked-archive'; account: Account }
   | { type: 'blocked-delete'; account: Account }
   | { type: 'confirm-delete-transaction'; transaction: Transaction };
-
-// ── Icons ───────────────────────────────────────────────────
-
-function AccountsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <path d="M2 10h20" />
-    </svg>
-  );
-}
-
-function CloseIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 6L6 18M6 6l12 12" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
-// ── Confirm / info dialog ───────────────────────────────────
-
-function ConfirmDialog({
-  title,
-  message,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onClose,
-}: {
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  danger?: boolean;
-  onConfirm?: () => void;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="alertdialog"
-      aria-modal="true"
-      aria-label={title}
-    >
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-xl border border-edge bg-surface p-6 shadow-xl">
-        <h2 className="mb-2 text-lg font-semibold text-heading">{title}</h2>
-        <p className="mb-4 text-sm text-body">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="min-h-[44px] rounded-lg px-4 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-heading"
-          >
-            {onConfirm ? 'Cancel' : 'OK'}
-          </button>
-          {onConfirm && (
-            <button
-              onClick={onConfirm}
-              className={`min-h-[44px] rounded-lg px-4 text-sm font-medium text-white transition-colors ${
-                danger
-                  ? 'bg-negative hover:bg-negative/90'
-                  : 'bg-accent hover:bg-accent/90'
-              }`}
-            >
-              {confirmLabel ?? 'Confirm'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Page ────────────────────────────────────────────────────
 

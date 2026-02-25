@@ -1,126 +1,23 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useDataStore } from '../store';
-import { formatMoney, parseMoney } from 'pfs-lib';
+import { formatMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
 import { TransactionDialog } from './TransactionDialog';
 import { CategoryOptions } from './CategoryOptions';
+import { SearchIcon, ChevronUpIcon, ChevronDownIcon, EditIcon, TrashIcon } from './icons';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { useTransactionFilters, SORT_LABELS } from '../hooks/useTransactionFilters';
+import type { SortField, SortDir, SortConfig } from '../hooks/useTransactionFilters';
+import { useInlineEdit } from '../hooks/useInlineEdit';
+import { EmptyState } from './EmptyState';
+import { amountClass } from '../utils/amountClass';
+import { formatDate } from '../utils/formatDate';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
-const DESKTOP_PAGE_SIZE = 500;
-const MOBILE_BATCH_SIZE = 50;
-
-// ── Types ────────────────────────────────────────────────────
-
-type SortField = 'date' | 'account' | 'category' | 'description' | 'amount';
-type SortDir = 'asc' | 'desc';
-
-interface SortConfig {
-  field: SortField;
-  dir: SortDir;
-}
-
-interface EditingCell {
-  txId: string;
-  field: SortField;
-}
 
 export interface TransactionListProps {
   selectedAccountId: string | null;
   onDeleteTransaction: (tx: Transaction) => void;
-}
-
-// ── Hooks ────────────────────────────────────────────────────
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 768,
-  );
-
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 767px)');
-    const onChange = (e: MediaQueryListEvent) => setMobile(e.matches);
-    mql.addEventListener('change', onChange);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
-
-  return mobile;
-}
-
-// ── Helpers ──────────────────────────────────────────────────
-
-function amountClass(amount: number): string {
-  if (amount > 0) return 'text-positive';
-  if (amount < 0) return 'text-negative';
-  return 'text-muted';
-}
-
-function formatDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return new Date(+y!, +m! - 1, +d!).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function amountToEditString(amount: number): string {
-  return (Math.abs(amount) / 10 ** CURRENCY.precision).toFixed(CURRENCY.precision);
-}
-
-const SORT_LABELS: Record<string, string> = {
-  'date:desc': 'Newest first',
-  'date:asc': 'Oldest first',
-  'amount:desc': 'Highest amount',
-  'amount:asc': 'Lowest amount',
-  'description:asc': 'Description A\u2013Z',
-  'description:desc': 'Description Z\u2013A',
-  'category:asc': 'Category A\u2013Z',
-  'account:asc': 'Account A\u2013Z',
-};
-
-// ── Icons ────────────────────────────────────────────────────
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="8" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  );
-}
-
-function ChevronUpIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M18 15l-6-6-6 6" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M3 6h18" />
-      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
-      <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-    </svg>
-  );
 }
 
 // ── Subcomponents ────────────────────────────────────────────
@@ -132,247 +29,32 @@ function SortIndicator({ field, sort }: { field: SortField; sort: SortConfig }) 
     : <ChevronDownIcon className="ml-1 inline h-3.5 w-3.5" />;
 }
 
-function EmptyState({ heading, message }: { heading: string; message: string }) {
-  return (
-    <div className="rounded-lg border border-edge bg-surface px-6 py-16 text-center">
-      <p className="text-lg font-medium text-heading">{heading}</p>
-      <p className="mt-1 text-sm text-muted">{message}</p>
-    </div>
-  );
-}
-
 // ── Main component ───────────────────────────────────────────
 
 export function TransactionList({ selectedAccountId, onDeleteTransaction }: TransactionListProps) {
   const { state, updateTransaction } = useDataStore();
   const isMobile = useIsMobile();
 
-  // Filter / sort state
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [sort, setSort] = useState<SortConfig>({ field: 'date', dir: 'desc' });
-  const [page, setPage] = useState(1);
-  const [mobileVisible, setMobileVisible] = useState(MOBILE_BATCH_SIZE);
+  const {
+    search, setSearch,
+    categoryFilter, setCategoryFilter,
+    sort, setSort,
+    page, setPage,
+    filtered, paginated,
+    totalPages, hasMore, hasFilters,
+    accountMap, categoryMap,
+    activeAccounts, activeCategories,
+    toggleSort, sentinelRef,
+  } = useTransactionFilters(selectedAccountId, isMobile);
 
-  // Editing state
-  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const editValueRef = useRef('');
-  const committedRef = useRef(false);
+  const {
+    editingCell, editValue, committedRef,
+    startEdit, cancelEdit, commitEdit,
+    updateEditValue, handleEditKeyDown, handleSelectCommit,
+  } = useInlineEdit(state.transactions, paginated, updateTransaction);
+
   const [mobileEditTx, setMobileEditTx] = useState<Transaction | null>(null);
   const [desktopEditTx, setDesktopEditTx] = useState<Transaction | null>(null);
-
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  // Keep ref in sync with state
-  const updateEditValue = (v: string) => {
-    editValueRef.current = v;
-    setEditValue(v);
-  };
-
-  // Lookup maps
-  const accountMap = useMemo(
-    () => new Map(state.accounts.map(a => [a.id, a.name])),
-    [state.accounts],
-  );
-  const categoryMap = useMemo(
-    () => new Map(state.categories.map(c => [c.id, c.name])),
-    [state.categories],
-  );
-
-  // Non-archived lists for inline edit selects
-  const activeAccounts = useMemo(
-    () => state.accounts.filter(a => !a.archived),
-    [state.accounts],
-  );
-  const activeCategories = useMemo(
-    () => state.categories.filter(c => !c.archived),
-    [state.categories],
-  );
-
-  // Filter and sort
-  const filtered = useMemo(() => {
-    let result = state.transactions;
-
-    if (selectedAccountId) {
-      result = result.filter(t => t.accountId === selectedAccountId);
-    }
-
-    if (categoryFilter) {
-      result = result.filter(t => t.categoryId === categoryFilter);
-    }
-
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(t =>
-        t.description.toLowerCase().includes(q) ||
-        t.payee.toLowerCase().includes(q) ||
-        t.notes.toLowerCase().includes(q) ||
-        (categoryMap.get(t.categoryId) ?? '').toLowerCase().includes(q) ||
-        (accountMap.get(t.accountId) ?? '').toLowerCase().includes(q),
-      );
-    }
-
-    return [...result].sort((a, b) => {
-      let cmp = 0;
-      switch (sort.field) {
-        case 'date':
-          cmp = a.date.localeCompare(b.date);
-          break;
-        case 'account':
-          cmp = (accountMap.get(a.accountId) ?? '').localeCompare(accountMap.get(b.accountId) ?? '');
-          break;
-        case 'category':
-          cmp = (categoryMap.get(a.categoryId) ?? '').localeCompare(categoryMap.get(b.categoryId) ?? '');
-          break;
-        case 'description':
-          cmp = a.description.localeCompare(b.description);
-          break;
-        case 'amount':
-          cmp = a.amount - b.amount;
-          break;
-      }
-      return sort.dir === 'asc' ? cmp : -cmp;
-    });
-  }, [state.transactions, selectedAccountId, categoryFilter, search, sort, accountMap, categoryMap]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setPage(1);
-    setMobileVisible(MOBILE_BATCH_SIZE);
-  }, [search, categoryFilter, selectedAccountId, sort]);
-
-  // Paginated slice
-  const paginated = useMemo(() => {
-    if (isMobile) return filtered.slice(0, mobileVisible);
-    const start = (page - 1) * DESKTOP_PAGE_SIZE;
-    return filtered.slice(start, start + DESKTOP_PAGE_SIZE);
-  }, [filtered, isMobile, page, mobileVisible]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / DESKTOP_PAGE_SIZE));
-  const hasMore = isMobile && mobileVisible < filtered.length;
-
-  // Infinite scroll
-  const loadMore = useCallback(() => {
-    setMobileVisible(v => Math.min(v + MOBILE_BATCH_SIZE, filtered.length));
-  }, [filtered.length]);
-
-  useEffect(() => {
-    if (!isMobile || !hasMore) return;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      entries => { if (entries[0]?.isIntersecting) loadMore(); },
-      { rootMargin: '200px' },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [isMobile, hasMore, loadMore]);
-
-  // Sort toggle for desktop headers
-  const toggleSort = useCallback((field: SortField) => {
-    setSort(prev =>
-      prev.field === field
-        ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-        : { field, dir: field === 'amount' ? 'desc' : 'asc' },
-    );
-  }, []);
-
-  const hasFilters = search.trim() !== '' || categoryFilter !== '';
-
-  // ── Inline editing ──────────────────────────────────────
-
-  const startEdit = useCallback((txId: string, field: SortField) => {
-    const tx = state.transactions.find(t => t.id === txId);
-    if (!tx) return;
-    // Transfers: only date, description, amount are editable inline
-    if (tx.type === 'transfer' && (field === 'account' || field === 'category')) return;
-
-    let value: string;
-    switch (field) {
-      case 'date': value = tx.date; break;
-      case 'account': value = tx.accountId; break;
-      case 'category': value = tx.categoryId; break;
-      case 'description': value = tx.description; break;
-      case 'amount': value = amountToEditString(tx.amount); break;
-    }
-
-    committedRef.current = false;
-    editValueRef.current = value;
-    setEditingCell({ txId, field });
-    setEditValue(value);
-  }, [state.transactions]);
-
-  const cancelEdit = useCallback(() => setEditingCell(null), []);
-
-  const commitEdit = useCallback(() => {
-    if (!editingCell || committedRef.current) return;
-    committedRef.current = true;
-    const value = editValueRef.current;
-    const { txId, field } = editingCell;
-    const tx = state.transactions.find(t => t.id === txId);
-    if (!tx) { setEditingCell(null); return; }
-
-    try {
-      switch (field) {
-        case 'date':
-          if (value && value !== tx.date) updateTransaction(txId, { date: value });
-          break;
-        case 'account':
-          if (value && value !== tx.accountId) updateTransaction(txId, { accountId: value });
-          break;
-        case 'category':
-          if (value !== tx.categoryId) updateTransaction(txId, { categoryId: value });
-          break;
-        case 'description':
-          if (value.trim() !== tx.description) updateTransaction(txId, { description: value.trim() });
-          break;
-        case 'amount': {
-          const parsed = parseMoney(value, CURRENCY);
-          let signed: number;
-          if (tx.type === 'transfer') {
-            signed = tx.amount < 0 ? -Math.abs(parsed) : Math.abs(parsed);
-          } else {
-            signed = tx.type === 'expense' ? -Math.abs(parsed) : Math.abs(parsed);
-          }
-          if (signed !== tx.amount) updateTransaction(txId, { amount: signed });
-          break;
-        }
-      }
-    } catch {
-      // Validation failed — revert silently
-    }
-
-    setEditingCell(null);
-  }, [editingCell, state.transactions, updateTransaction]);
-
-  // Cancel editing if the transaction leaves the visible page
-  useEffect(() => {
-    if (editingCell && !paginated.some(t => t.id === editingCell.txId)) {
-      setEditingCell(null);
-    }
-  }, [editingCell, paginated]);
-
-  const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
-    if (e.key === 'Escape') cancelEdit();
-  };
-
-  const handleSelectCommit = (txId: string, field: 'account' | 'category', newValue: string) => {
-    committedRef.current = true;
-    const tx = state.transactions.find(t => t.id === txId);
-    if (tx) {
-      try {
-        if (field === 'account' && newValue !== tx.accountId) {
-          updateTransaction(txId, { accountId: newValue });
-        } else if (field === 'category' && newValue !== tx.categoryId) {
-          updateTransaction(txId, { categoryId: newValue });
-        }
-      } catch {}
-    }
-    setEditingCell(null);
-  };
 
   // ── Render helpers ──────────────────────────────────────
 
@@ -546,7 +228,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search transactions\u2026"
+            placeholder="Search transactions…"
             className="min-h-[44px] w-full rounded-lg border border-edge bg-surface pl-9 pr-3 text-sm text-body placeholder:text-muted transition-colors focus:border-accent focus:outline-none"
             aria-label="Search transactions"
           />
@@ -715,7 +397,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           {/* Infinite scroll sentinel */}
           {hasMore && (
             <div ref={sentinelRef} className="flex justify-center py-4">
-              <span className="text-xs text-muted">Loading more\u2026</span>
+              <span className="text-xs text-muted">Loading more…</span>
             </div>
           )}
         </div>

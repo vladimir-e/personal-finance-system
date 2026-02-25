@@ -12,6 +12,15 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-25 — Drag-and-drop category reordering
+- Replaced arrow up/down buttons with drag-and-drop reordering using @dnd-kit
+- Grip handle on every category row (active and archived) for intuitive repositioning
+- Within-group, cross-group, archive (drop on archived section), and unarchive (drag out) all supported
+- Keyboard accessible: Tab to handle, Space to grab, Arrow keys to move, Space to drop
+- Touch friendly: long-press handle (250ms) to start drag
+- `computeReorder` pure function with 8 unit tests covering all reorder scenarios
+- Archived section auto-expands when dragging over it, with "Drop to archive" hint
+
 ## 2026-02-24 — Unified budget view with inline category management
 - Merged BudgetScreen and CategoryManagement into a single unified view
 - Each budget row now supports inline name editing, reorder (up/down), archive/unarchive, and delete

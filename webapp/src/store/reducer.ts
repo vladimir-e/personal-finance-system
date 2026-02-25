@@ -20,6 +20,7 @@ export function storeReducer(state: DataStore, action: StoreAction): DataStore {
     case 'ADD_CATEGORY':
     case 'UPDATE_CATEGORY':
     case 'DELETE_CATEGORY':
+    case 'REORDER_CATEGORIES':
       return reduceCategory(state, action);
 
     case 'RESET':

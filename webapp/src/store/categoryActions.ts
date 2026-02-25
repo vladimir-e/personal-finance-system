@@ -23,5 +23,16 @@ export function reduceCategory(state: DataStore, action: CategoryAction): DataSt
         categories: state.categories.filter((c) => c.id !== action.id),
         transactions: action.transactions,
       };
+
+    case 'REORDER_CATEGORIES': {
+      const changesById = new Map(action.updates.map((u) => [u.id, u.changes]));
+      return {
+        ...state,
+        categories: state.categories.map((c) => {
+          const changes = changesById.get(c.id);
+          return changes ? { ...c, ...changes } : c;
+        }),
+      };
+    }
   }
 }

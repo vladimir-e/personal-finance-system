@@ -249,7 +249,7 @@ describe('BudgetScreen', () => {
       );
       await user.click(assignedButtons[0]);
 
-      const input = screen.getByDisplayValue('1500.00');
+      const input = await waitFor(() => screen.getByDisplayValue('1500.00'));
       await user.clear(input);
       await user.type(input, '2000.00{Enter}');
 
@@ -505,35 +505,30 @@ describe('BudgetScreen', () => {
     });
   });
 
-  describe('reorder', () => {
-    it('move up swaps sortOrder with previous category in same group', async () => {
+  describe('drag-and-drop reorder', () => {
+    it('every category row has a drag handle', () => {
+      renderBudget();
+
+      const dragHandles = screen.getAllByRole('button', { name: 'Drag to reorder' });
+      // 6 categories, all visible (groups expanded by default)
+      expect(dragHandles.length).toBe(6);
+    });
+
+    it('archived categories also have drag handles', async () => {
       const user = userEvent.setup();
-      renderBudget();
+      const categories = [
+        ...buildCategories(),
+        makeCategory({ id: 'arch-1', name: 'Old Sub', group: 'Fixed', archived: true, sortOrder: 7 }),
+      ];
+      renderBudget({ categories });
 
-      // Fixed group: Rent (sortOrder 2), Utilities (sortOrder 3)
-      await user.click(screen.getByRole('button', { name: 'Move Utilities up' }));
+      await user.click(screen.getByRole('button', { name: /Archived/i }));
 
-      await waitFor(() => {
-        const allButtons = screen.getAllByRole('button');
-        const utilIdx = allButtons.findIndex((b) => b.textContent === 'Utilities');
-        const rentIdx = allButtons.findIndex((b) => b.textContent === 'Rent');
-        expect(utilIdx).toBeLessThan(rentIdx);
-      });
+      const dragHandles = screen.getAllByRole('button', { name: 'Drag to reorder' });
+      // 6 active + 1 archived = 7
+      expect(dragHandles.length).toBe(7);
     });
 
-    it('move up is disabled for first category in group', () => {
-      renderBudget();
-
-      const moveUpBtn = screen.getByRole('button', { name: 'Move Rent up' });
-      expect(moveUpBtn).toBeDisabled();
-    });
-
-    it('move down is disabled for last category in group', () => {
-      renderBudget();
-
-      const moveDownBtn = screen.getByRole('button', { name: 'Move Utilities down' });
-      expect(moveDownBtn).toBeDisabled();
-    });
   });
 
   describe('accessibility', () => {
@@ -572,6 +567,16 @@ describe('BudgetScreen', () => {
 
       for (const header of headers) {
         expect(header).toHaveAttribute('aria-expanded', 'true');
+      }
+    });
+
+    it('drag handles meet 44px minimum touch target', () => {
+      renderBudget();
+
+      const dragHandles = screen.getAllByRole('button', { name: 'Drag to reorder' });
+      for (const handle of dragHandles) {
+        expect(handle.className).toContain('min-h-[44px]');
+        expect(handle.className).toContain('min-w-[44px]');
       }
     });
   });

@@ -45,6 +45,7 @@ export interface DataStoreMutations {
   createCategory(input: CreateCategoryInputType): Category;
   updateCategory(id: string, input: UpdateCategoryInputType): void;
   deleteCategory(id: string): void;
+  reorderCategories(updates: Array<{ id: string; changes: Partial<Category> }>): void;
 }
 
 export interface DataStoreContextValue extends DataStoreMutations {
@@ -254,6 +255,11 @@ function createMutations(
 
       const transactions = onDeleteCategory(state.transactions, id);
       dispatch({ type: 'DELETE_CATEGORY', id, transactions });
+    },
+
+    reorderCategories(updates) {
+      if (updates.length === 0) return;
+      dispatch({ type: 'REORDER_CATEGORIES', updates });
     },
   };
 }

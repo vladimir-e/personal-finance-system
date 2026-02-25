@@ -3,18 +3,29 @@ import { useDataStore } from '../store';
 import { computeMonthlySummary, formatMoney, parseMoney } from 'pfs-lib';
 import type { Currency, GroupSummary, CategorySummary, Category } from 'pfs-lib';
 import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  type UniqueIdentifier,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
+import {
   ChevronRightIcon,
   PlusIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   ArchiveIcon,
   UnarchiveIcon,
   TrashIcon,
+  GripVerticalIcon,
 } from './icons';
 import { CategoryDialog } from './CategoryDialog';
 import { ConfirmDialog } from './ConfirmDialog';
 import { EmptyState } from './EmptyState';
 import { amountClass } from '../utils/amountClass';
+import { ARCHIVED_GROUP } from '../utils/computeReorder';
+import { SortableItem, type DragHandleProps } from './budget/SortableItem';
+import { DragOverlayContent } from './budget/DragOverlayContent';
+import { useBudgetDnd } from './budget/useBudgetDnd';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -37,8 +48,6 @@ interface CategoryHandlers {
   onCancelEdit: () => void;
   onUpdateName: (id: string, name: string) => void;
   onUpdateAssigned: (id: string, assigned: number) => void;
-  onMoveUp: (category: Category) => void;
-  onMoveDown: (category: Category) => void;
   onArchive: (category: Category) => void;
   onDelete: (category: Category) => void;
 }
@@ -60,6 +69,21 @@ function formatMonthLabel(month: string): string {
   const [y, m] = month.split('-').map(Number);
   const d = new Date(y, m - 1, 1);
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+// ── Drag handle ──────────────────────────────────────────────
+
+function DragHandle({ dragHandleProps }: { dragHandleProps: DragHandleProps }) {
+  return (
+    <button
+      className="flex min-h-[44px] min-w-[44px] flex-shrink-0 cursor-grab items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading active:cursor-grabbing"
+      aria-label="Drag to reorder"
+      {...dragHandleProps.attributes}
+      {...dragHandleProps.listeners}
+    >
+      <GripVerticalIcon className="h-4 w-4" />
+    </button>
+  );
 }
 
 // ── Inline editable name ───────────────────────────────────
@@ -200,39 +224,15 @@ function InlineEditAmount({
 
 function CategoryActions({
   category,
-  isFirst,
-  isLast,
-  onMoveUp,
-  onMoveDown,
   onArchive,
   onDelete,
 }: {
   category: Category;
-  isFirst: boolean;
-  isLast: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   onArchive: () => void;
   onDelete: () => void;
 }) {
   return (
     <div className="flex flex-shrink-0 items-center">
-      <button
-        onClick={onMoveUp}
-        disabled={isFirst}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading disabled:opacity-30 disabled:hover:bg-transparent"
-        aria-label={`Move ${category.name} up`}
-      >
-        <ArrowUpIcon className="h-4 w-4" />
-      </button>
-      <button
-        onClick={onMoveDown}
-        disabled={isLast}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading disabled:opacity-30 disabled:hover:bg-transparent"
-        aria-label={`Move ${category.name} down`}
-      >
-        <ArrowDownIcon className="h-4 w-4" />
-      </button>
       <button
         onClick={onArchive}
         className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-heading"
@@ -263,22 +263,21 @@ function BudgetCategoryRow({
   cat,
   rawCategory,
   editing,
-  isFirst,
-  isLast,
   handlers,
+  dragHandleProps,
 }: {
   cat: CategorySummary;
   rawCategory: Category;
   editing: EditingField | null;
-  isFirst: boolean;
-  isLast: boolean;
   handlers: CategoryHandlers;
+  dragHandleProps: DragHandleProps;
 }) {
   const isEditingName = editing?.categoryId === cat.id && editing.field === 'name';
   const isEditingAssigned = editing?.categoryId === cat.id && editing.field === 'assigned';
 
   return (
     <div className="flex items-center gap-1 px-4 py-1 transition-colors hover:bg-hover/50">
+      <DragHandle dragHandleProps={dragHandleProps} />
       <div className="min-w-0 flex-1">
         <InlineEditName
           value={cat.name}
@@ -307,13 +306,31 @@ function BudgetCategoryRow({
       </span>
       <CategoryActions
         category={rawCategory}
-        isFirst={isFirst}
-        isLast={isLast}
-        onMoveUp={() => handlers.onMoveUp(rawCategory)}
-        onMoveDown={() => handlers.onMoveDown(rawCategory)}
         onArchive={() => handlers.onArchive(rawCategory)}
         onDelete={() => handlers.onDelete(rawCategory)}
       />
+    </div>
+  );
+}
+
+// ── Droppable group wrapper ────────────────────────────────
+
+function DroppableGroup({
+  groupName,
+  items,
+  children,
+}: {
+  groupName: string;
+  items: string[];
+  children: React.ReactNode;
+}) {
+  const { setNodeRef } = useDroppable({ id: groupName });
+
+  return (
+    <div ref={setNodeRef}>
+      <SortableContext items={items} strategy={verticalListSortingStrategy}>
+        {children}
+      </SortableContext>
     </div>
   );
 }
@@ -323,13 +340,17 @@ function BudgetCategoryRow({
 function BudgetGroup({
   group,
   categoryById,
+  categorySummaryById,
   editing,
   handlers,
+  itemIds,
 }: {
   group: GroupSummary;
   categoryById: Map<string, Category>;
+  categorySummaryById: Map<string, CategorySummary>;
   editing: EditingField | null;
   handlers: CategoryHandlers;
+  itemIds: string[];
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const isIncome = group.name === 'Income';
@@ -359,73 +380,77 @@ function BudgetGroup({
 
       {/* Category rows */}
       {!collapsed && (
-        <>
+        <DroppableGroup groupName={group.name} items={itemIds}>
           {/* Column labels for non-income groups */}
-          {!isIncome && group.categories.length > 0 && (
+          {!isIncome && itemIds.length > 0 && (
             <div className="flex items-center gap-1 px-4 py-1 text-[11px] font-medium uppercase tracking-wider text-muted">
+              <span className="w-[44px] flex-shrink-0" />
               <span className="min-w-0 flex-1">Category</span>
               <span className="w-24 flex-shrink-0 text-right">Assigned</span>
               <span className="w-20 flex-shrink-0 text-right">Spent</span>
               <span className="w-20 flex-shrink-0 text-right">Available</span>
-              <span className="w-[176px] flex-shrink-0" />
+              <span className="w-[88px] flex-shrink-0" />
             </div>
           )}
 
           {isIncome
-            ? group.categories.map((cat, i) => {
-                const rawCat = categoryById.get(cat.id);
+            ? itemIds.map((catId) => {
+                const rawCat = categoryById.get(catId);
+                const cat = categorySummaryById.get(catId);
                 if (!rawCat) return null;
-                const isEditingName = editing?.categoryId === cat.id && editing.field === 'name';
+                const isEditingName = editing?.categoryId === catId && editing.field === 'name';
                 return (
-                  <div
-                    key={cat.id}
-                    className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <InlineEditName
-                        value={cat.name}
-                        isEditing={isEditingName}
-                        onStartEdit={() =>
-                          handlers.onStartEdit({ categoryId: cat.id, field: 'name' })
-                        }
-                        onCancelEdit={handlers.onCancelEdit}
-                        onSave={(name) => handlers.onUpdateName(cat.id, name)}
-                      />
-                    </div>
-                    <span className="flex-shrink-0 text-sm font-medium tabular-nums text-positive">
-                      {formatMoney(cat.spent, CURRENCY)}
-                    </span>
-                    <CategoryActions
-                      category={rawCat}
-                      isFirst={i === 0}
-                      isLast={i === group.categories.length - 1}
-                      onMoveUp={() => handlers.onMoveUp(rawCat)}
-                      onMoveDown={() => handlers.onMoveDown(rawCat)}
-                      onArchive={() => handlers.onArchive(rawCat)}
-                      onDelete={() => handlers.onDelete(rawCat)}
-                    />
-                  </div>
+                  <SortableItem key={catId} id={catId}>
+                    {({ dragHandleProps }) => (
+                      <div className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50">
+                        <DragHandle dragHandleProps={dragHandleProps} />
+                        <div className="min-w-0 flex-1">
+                          <InlineEditName
+                            value={rawCat.name}
+                            isEditing={isEditingName}
+                            onStartEdit={() =>
+                              handlers.onStartEdit({ categoryId: catId, field: 'name' })
+                            }
+                            onCancelEdit={handlers.onCancelEdit}
+                            onSave={(name) => handlers.onUpdateName(catId, name)}
+                          />
+                        </div>
+                        <span className="flex-shrink-0 text-sm font-medium tabular-nums text-positive">
+                          {cat ? formatMoney(cat.spent, CURRENCY) : '$0.00'}
+                        </span>
+                        <CategoryActions
+                          category={rawCat}
+                          onArchive={() => handlers.onArchive(rawCat)}
+                          onDelete={() => handlers.onDelete(rawCat)}
+                        />
+                      </div>
+                    )}
+                  </SortableItem>
                 );
               })
-            : group.categories.map((cat, i) => {
-                const rawCat = categoryById.get(cat.id);
-                if (!rawCat) return null;
+            : itemIds.map((catId) => {
+                const rawCat = categoryById.get(catId);
+                const cat = categorySummaryById.get(catId);
+                if (!rawCat || !cat) return null;
                 return (
-                  <BudgetCategoryRow
-                    key={cat.id}
-                    cat={cat}
-                    rawCategory={rawCat}
-                    editing={editing}
-                    isFirst={i === 0}
-                    isLast={i === group.categories.length - 1}
-                    handlers={handlers}
-                  />
+                  <SortableItem key={catId} id={catId}>
+                    {({ dragHandleProps }) => (
+                      <BudgetCategoryRow
+                        cat={cat}
+                        rawCategory={rawCat}
+                        editing={editing}
+                        handlers={handlers}
+                        dragHandleProps={dragHandleProps}
+                      />
+                    )}
+                  </SortableItem>
                 );
               })}
 
           {/* Group subtotals (non-income only) */}
-          {!isIncome && group.categories.length > 0 && (
+          {!isIncome && itemIds.length > 0 && (
             <div className="flex items-center gap-1 border-t border-edge/50 px-4 py-2 text-xs font-medium">
+              <span className="w-[44px] flex-shrink-0" />
               <span className="min-w-0 flex-1 text-muted">Total</span>
               <span className="w-24 flex-shrink-0 text-right tabular-nums text-muted">
                 {formatMoney(group.totalAssigned, CURRENCY)}
@@ -438,10 +463,10 @@ function BudgetGroup({
               >
                 {formatMoney(group.totalAvailable, CURRENCY)}
               </span>
-              <span className="w-[176px] flex-shrink-0" />
+              <span className="w-[88px] flex-shrink-0" />
             </div>
           )}
-        </>
+        </DroppableGroup>
       )}
     </div>
   );
@@ -450,7 +475,7 @@ function BudgetGroup({
 // ── Main component ──────────────────────────────────────────
 
 export function BudgetScreen() {
-  const { state, updateCategory, deleteCategory } = useDataStore();
+  const { state, updateCategory, deleteCategory, reorderCategories } = useDataStore();
   const [month, setMonth] = useState(currentMonth);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [editing, setEditing] = useState<EditingField | null>(null);
@@ -465,6 +490,17 @@ export function BudgetScreen() {
     () => new Map(state.categories.map((c) => [c.id, c])),
     [state.categories],
   );
+
+  // Flat map of category summaries by ID (for DnD cross-group rendering)
+  const categorySummaryById = useMemo(() => {
+    const map = new Map<string, CategorySummary>();
+    for (const group of summary.groups) {
+      for (const cat of group.categories) {
+        map.set(cat.id, cat);
+      }
+    }
+    return map;
+  }, [summary.groups]);
 
   const orderedGroups = useMemo(() => {
     const byName = new Map(summary.groups.map((g) => [g.name, g]));
@@ -485,39 +521,50 @@ export function BudgetScreen() {
     return [...known, ...custom];
   }, [state.categories]);
 
+  const {
+    sensors,
+    activeItem,
+    containerItems,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDragCancel,
+  } = useBudgetDnd(state.categories, reorderCategories);
+
+  // Resolve item IDs for each group: use transient containerItems during drag, otherwise from store
+  const getGroupItemIds = useCallback(
+    (groupName: string): string[] => {
+      if (containerItems) {
+        return containerItems.get(groupName) ?? [];
+      }
+      return state.categories
+        .filter((c) => !c.archived && c.group === groupName)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((c) => c.id);
+    },
+    [containerItems, state.categories],
+  );
+
+  const archivedItemIds = useMemo((): string[] => {
+    if (containerItems) {
+      return containerItems.get(ARCHIVED_GROUP) ?? [];
+    }
+    return archivedCategories.map((c) => c.id);
+  }, [containerItems, archivedCategories]);
+
   const handlers = useMemo<CategoryHandlers>(
     () => ({
       onStartEdit: setEditing,
       onCancelEdit: () => setEditing(null),
       onUpdateName: (id, name) => updateCategory(id, { name }),
       onUpdateAssigned: (id, assigned) => updateCategory(id, { assigned }),
-      onMoveUp: (category) => {
-        const siblings = state.categories
-          .filter((c) => c.group === category.group && c.archived === category.archived)
-          .sort((a, b) => a.sortOrder - b.sortOrder);
-        const idx = siblings.findIndex((c) => c.id === category.id);
-        if (idx <= 0) return;
-        const prev = siblings[idx - 1];
-        updateCategory(category.id, { sortOrder: prev.sortOrder });
-        updateCategory(prev.id, { sortOrder: category.sortOrder });
-      },
-      onMoveDown: (category) => {
-        const siblings = state.categories
-          .filter((c) => c.group === category.group && c.archived === category.archived)
-          .sort((a, b) => a.sortOrder - b.sortOrder);
-        const idx = siblings.findIndex((c) => c.id === category.id);
-        if (idx < 0 || idx >= siblings.length - 1) return;
-        const next = siblings[idx + 1];
-        updateCategory(category.id, { sortOrder: next.sortOrder });
-        updateCategory(next.id, { sortOrder: category.sortOrder });
-      },
       onArchive: (category) => updateCategory(category.id, { archived: !category.archived }),
       onDelete: (category) => {
         const count = state.transactions.filter((t) => t.categoryId === category.id).length;
         setDialog({ type: 'confirm-delete', category, transactionCount: count });
       },
     }),
-    [state.categories, state.transactions, updateCategory],
+    [state.transactions, updateCategory],
   );
 
   const handleConfirmDelete = useCallback(() => {
@@ -526,6 +573,17 @@ export function BudgetScreen() {
     }
     setDialog(null);
   }, [dialog, deleteCategory]);
+
+  // Auto-expand archived when dragging over it
+  const { isOver: isOverArchived, setNodeRef: setArchivedDropRef } = useDroppable({
+    id: ARCHIVED_GROUP,
+  });
+
+  useEffect(() => {
+    if (isOverArchived && archivedCollapsed) {
+      setArchivedCollapsed(false);
+    }
+  }, [isOverArchived, archivedCollapsed]);
 
   if (state.categories.length === 0) {
     return (
@@ -587,73 +645,106 @@ export function BudgetScreen() {
         </div>
       </div>
 
-      {/* Budget groups */}
-      <div className="overflow-hidden rounded-lg border border-edge bg-surface">
-        {orderedGroups.map((group) => (
-          <BudgetGroup
-            key={group.name}
-            group={group}
-            categoryById={categoryById}
-            editing={editing}
-            handlers={handlers}
-          />
-        ))}
+      {/* Budget groups with DnD */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="overflow-hidden rounded-lg border border-edge bg-surface">
+          {orderedGroups.map((group) => (
+            <BudgetGroup
+              key={group.name}
+              group={group}
+              categoryById={categoryById}
+              categorySummaryById={categorySummaryById}
+              editing={editing}
+              handlers={handlers}
+              itemIds={getGroupItemIds(group.name)}
+            />
+          ))}
 
-        {/* Uncategorized pseudo-row */}
-        {summary.uncategorized.spent !== 0 && (
-          <div className="flex items-center justify-between border-t border-edge px-4 py-3">
-            <span className="text-sm font-medium text-warning">Uncategorized</span>
-            <span className="text-sm font-medium tabular-nums text-warning">
-              {formatMoney(summary.uncategorized.spent, CURRENCY)}
-            </span>
-          </div>
-        )}
+          {/* Uncategorized pseudo-row */}
+          {summary.uncategorized.spent !== 0 && (
+            <div className="flex items-center justify-between border-t border-edge px-4 py-3">
+              <span className="text-sm font-medium text-warning">Uncategorized</span>
+              <span className="text-sm font-medium tabular-nums text-warning">
+                {formatMoney(summary.uncategorized.spent, CURRENCY)}
+              </span>
+            </div>
+          )}
 
-        {/* Archived section */}
-        {archivedCategories.length > 0 && (
-          <div className="border-b border-edge last:border-b-0">
-            <button
-              onClick={() => setArchivedCollapsed((v) => !v)}
-              aria-expanded={!archivedCollapsed}
-              className="flex min-h-[44px] w-full items-center gap-2 px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
+          {/* Archived section */}
+          {(archivedItemIds.length > 0 || isOverArchived) && (
+            <div
+              ref={setArchivedDropRef}
+              className={`border-b border-edge last:border-b-0 ${isOverArchived ? 'bg-hover/30' : ''}`}
             >
-              <ChevronRightIcon
-                className={`h-4 w-4 transition-transform ${archivedCollapsed ? '' : 'rotate-90'}`}
-              />
-              <span className="flex-1 text-left">Archived</span>
-              <span className="tabular-nums text-muted">{archivedCategories.length}</span>
-            </button>
-            {!archivedCollapsed &&
-              archivedCategories.map((cat, i) => (
-                <div
-                  key={cat.id}
-                  className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50"
+              <button
+                onClick={() => setArchivedCollapsed((v) => !v)}
+                aria-expanded={!archivedCollapsed}
+                className="flex min-h-[44px] w-full items-center gap-2 px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
+              >
+                <ChevronRightIcon
+                  className={`h-4 w-4 transition-transform ${archivedCollapsed ? '' : 'rotate-90'}`}
+                />
+                <span className="flex-1 text-left">Archived</span>
+                {isOverArchived && archivedCollapsed && (
+                  <span className="text-[10px] font-normal normal-case tracking-normal text-accent">
+                    Drop to archive
+                  </span>
+                )}
+                <span className="tabular-nums text-muted">{archivedItemIds.length}</span>
+              </button>
+              {!archivedCollapsed && (
+                <SortableContext
+                  items={archivedItemIds}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <div className="min-w-0 flex-1">
-                    <InlineEditName
-                      value={cat.name}
-                      isEditing={editing?.categoryId === cat.id && editing.field === 'name'}
-                      onStartEdit={() =>
-                        handlers.onStartEdit({ categoryId: cat.id, field: 'name' })
-                      }
-                      onCancelEdit={handlers.onCancelEdit}
-                      onSave={(name) => handlers.onUpdateName(cat.id, name)}
-                    />
-                  </div>
-                  <CategoryActions
-                    category={cat}
-                    isFirst={i === 0}
-                    isLast={i === archivedCategories.length - 1}
-                    onMoveUp={() => handlers.onMoveUp(cat)}
-                    onMoveDown={() => handlers.onMoveDown(cat)}
-                    onArchive={() => handlers.onArchive(cat)}
-                    onDelete={() => handlers.onDelete(cat)}
-                  />
-                </div>
-              ))}
-          </div>
-        )}
-      </div>
+                  {archivedItemIds.map((catId) => {
+                    const cat = categoryById.get(catId);
+                    if (!cat) return null;
+                    return (
+                      <SortableItem key={catId} id={catId}>
+                        {({ dragHandleProps }) => (
+                          <div className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50">
+                            <DragHandle dragHandleProps={dragHandleProps} />
+                            <div className="min-w-0 flex-1">
+                              <InlineEditName
+                                value={cat.name}
+                                isEditing={
+                                  editing?.categoryId === cat.id && editing.field === 'name'
+                                }
+                                onStartEdit={() =>
+                                  handlers.onStartEdit({ categoryId: cat.id, field: 'name' })
+                                }
+                                onCancelEdit={handlers.onCancelEdit}
+                                onSave={(name) => handlers.onUpdateName(cat.id, name)}
+                              />
+                            </div>
+                            <CategoryActions
+                              category={cat}
+                              onArchive={() => handlers.onArchive(cat)}
+                              onDelete={() => handlers.onDelete(cat)}
+                            />
+                          </div>
+                        )}
+                      </SortableItem>
+                    );
+                  })}
+                </SortableContext>
+              )}
+            </div>
+          )}
+        </div>
+
+        <DragOverlay>
+          {activeItem ? <DragOverlayContent category={activeItem} /> : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Summary */}
       <div className="rounded-lg border border-edge bg-surface px-4 py-3">

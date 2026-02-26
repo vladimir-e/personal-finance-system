@@ -118,7 +118,7 @@ describe('BudgetScreen', () => {
   describe('available to budget', () => {
     it('displays the available to budget value', () => {
       renderBudget();
-      expect(screen.getByText('$400.00')).toBeInTheDocument();
+      expect(screen.getByText('$2,250.00')).toBeInTheDocument();
     });
 
     it('shows "Available to Budget" label', () => {

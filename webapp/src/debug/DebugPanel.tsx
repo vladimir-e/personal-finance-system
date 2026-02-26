@@ -119,10 +119,10 @@ export function DebugPanel() {
 
   const handleDumpJson = useCallback(() => {
     const json = JSON.stringify(state, null, 2);
-    navigator.clipboard.writeText(json).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard.writeText(json).then(
+      () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
+      () => { /* non-secure context or denied — silent fail for debug tool */ },
+    );
   }, [state]);
 
   const hasAccounts = state.accounts.length > 0;

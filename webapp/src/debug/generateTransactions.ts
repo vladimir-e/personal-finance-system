@@ -111,28 +111,15 @@ const SEED_ACCOUNTS: { name: string; type: AccountType; institution: string; bal
  * including multiple per group and one archived account.
  */
 export function seedAccounts(
-  mutations: Pick<DataStoreMutations, 'createAccount' | 'createTransaction' | 'archiveAccount'>,
+  mutations: Pick<DataStoreMutations, 'createAccount' | 'archiveAccount'>,
 ): void {
   for (const seed of SEED_ACCOUNTS) {
-    // createAccount always emits an income-type opening balance,
-    // which must be >= 0. For debt accounts, create with 0 then
-    // add a separate expense transaction for the negative balance.
-    const isDebt = seed.balance < 0;
     const account = mutations.createAccount({
       name: seed.name,
       type: seed.type,
       institution: seed.institution,
-      startingBalance: isDebt ? 0 : seed.balance,
+      startingBalance: seed.balance,
     });
-    if (isDebt) {
-      mutations.createTransaction({
-        type: 'expense',
-        accountId: account.id,
-        date: new Date().toISOString().slice(0, 10),
-        amount: seed.balance,
-        description: 'Opening balance',
-      });
-    }
     if (seed.archived) {
       mutations.archiveAccount(account.id, true);
     }

@@ -99,12 +99,13 @@ function createMutations(
         createdAt: now,
       };
 
+      const isDebt = parsed.startingBalance < 0;
       const transaction: Transaction = {
         id: crypto.randomUUID(),
-        type: 'income',
+        type: isDebt ? 'expense' : 'income',
         accountId: account.id,
         date: now.slice(0, 10),
-        categoryId: incomeCategory?.id ?? '',
+        categoryId: isDebt ? '' : (incomeCategory?.id ?? ''),
         description: 'Opening Balance',
         payee: '',
         transferPairId: '',

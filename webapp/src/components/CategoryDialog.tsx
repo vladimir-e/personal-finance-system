@@ -1,23 +1,33 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useDataStore } from '../store';
 import { CreateCategoryInput, parseMoney } from 'pfs-lib';
-import type { Currency } from 'pfs-lib';
+import type { Currency, Category } from 'pfs-lib';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
 export interface CategoryDialogProps {
   existingGroups: string[];
   onClose: () => void;
+  category?: Category;
 }
 
-export function CategoryDialog({ existingGroups, onClose }: CategoryDialogProps) {
-  const { state, createCategory } = useDataStore();
+export function CategoryDialog({ existingGroups, onClose, category }: CategoryDialogProps) {
+  const { state, createCategory, updateCategory } = useDataStore();
+  const isEdit = !!category;
 
-  const [name, setName] = useState('');
-  const [group, setGroup] = useState(existingGroups[0] ?? 'Personal');
-  const [useCustomGroup, setUseCustomGroup] = useState(false);
-  const [customGroup, setCustomGroup] = useState('');
-  const [assigned, setAssigned] = useState('0.00');
+  const [name, setName] = useState(category?.name ?? '');
+  const [group, setGroup] = useState(category?.group ?? existingGroups[0] ?? 'Personal');
+  const [useCustomGroup, setUseCustomGroup] = useState(
+    category ? !existingGroups.includes(category.group) : false,
+  );
+  const [customGroup, setCustomGroup] = useState(
+    category && !existingGroups.includes(category.group) ? category.group : '',
+  );
+  const [assigned, setAssigned] = useState(
+    category
+      ? (category.assigned / 10 ** CURRENCY.precision).toFixed(CURRENCY.precision)
+      : '0.00',
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const nameRef = useRef<HTMLInputElement>(null);
@@ -48,27 +58,54 @@ export function CategoryDialog({ existingGroups, onClose }: CategoryDialogProps)
       return;
     }
 
-    const groupCats = state.categories.filter(c => c.group === selectedGroup);
-    const maxSort = groupCats.reduce((max, c) => Math.max(max, c.sortOrder), 0);
-
-    const result = CreateCategoryInput.safeParse({
-      name: name.trim(),
-      group: selectedGroup,
-      assigned: parsedAssigned,
-      sortOrder: maxSort + 1,
-    });
-
-    if (!result.success) {
-      const errs: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        errs[issue.path[0]?.toString() ?? 'name'] = issue.message;
+    if (isEdit) {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        setErrors({ name: 'Name is required' });
+        return;
       }
-      setErrors(errs);
-      return;
-    }
+      if (!selectedGroup) {
+        setErrors({ group: 'Group is required' });
+        return;
+      }
 
-    createCategory(result.data);
-    onClose();
+      const updates: Partial<Pick<Category, 'name' | 'group' | 'assigned' | 'sortOrder'>> = {
+        name: trimmedName,
+        group: selectedGroup,
+        assigned: parsedAssigned,
+      };
+
+      if (selectedGroup !== category!.group) {
+        const groupCats = state.categories.filter((c) => c.group === selectedGroup && !c.archived);
+        const maxSort = groupCats.reduce((max, c) => Math.max(max, c.sortOrder), 0);
+        updates.sortOrder = maxSort + 1;
+      }
+
+      updateCategory(category!.id, updates);
+      onClose();
+    } else {
+      const groupCats = state.categories.filter((c) => c.group === selectedGroup);
+      const maxSort = groupCats.reduce((max, c) => Math.max(max, c.sortOrder), 0);
+
+      const result = CreateCategoryInput.safeParse({
+        name: name.trim(),
+        group: selectedGroup,
+        assigned: parsedAssigned,
+        sortOrder: maxSort + 1,
+      });
+
+      if (!result.success) {
+        const errs: Record<string, string> = {};
+        for (const issue of result.error.issues) {
+          errs[issue.path[0]?.toString() ?? 'name'] = issue.message;
+        }
+        setErrors(errs);
+        return;
+      }
+
+      createCategory(result.data);
+      onClose();
+    }
   };
 
   const inputClass =
@@ -83,7 +120,7 @@ export function CategoryDialog({ existingGroups, onClose }: CategoryDialogProps)
     >
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-xl border border-edge bg-surface p-6 shadow-xl">
-        <h2 id="cat-dialog-title" className="mb-4 text-lg font-semibold text-heading">Add Category</h2>
+        <h2 id="cat-dialog-title" className="mb-4 text-lg font-semibold text-heading">{isEdit ? 'Edit Category' : 'Add Category'}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -181,7 +218,7 @@ export function CategoryDialog({ existingGroups, onClose }: CategoryDialogProps)
               type="submit"
               className="min-h-[44px] rounded-lg bg-accent px-4 text-sm font-medium text-white transition-colors hover:bg-accent/90"
             >
-              Create
+              {isEdit ? 'Save' : 'Create'}
             </button>
           </div>
         </form>

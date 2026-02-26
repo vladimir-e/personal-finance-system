@@ -35,6 +35,7 @@ export const GROUP_ORDER = ['Income', 'Fixed', 'Daily Living', 'Personal', 'Irre
 type DialogState =
   | null
   | { type: 'create' }
+  | { type: 'edit'; category: Category }
   | { type: 'confirm-delete'; category: Category; transactionCount: number };
 
 interface ActionMenuState {
@@ -88,6 +89,16 @@ function DragHandle({ dragHandleProps }: { dragHandleProps: DragHandleProps }) {
     >
       <GripVerticalIcon className="h-4 w-4" />
     </button>
+  );
+}
+
+// ── Sticky name column (mobile horizontal scroll) ─────────
+
+function StickyName({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`sticky left-0 z-10 -ml-4 flex items-center gap-1 bg-surface pl-4 w-[200px] md:static md:ml-0 md:pl-0 md:w-auto md:flex-1 md:bg-transparent ${className}`}>
+      {children}
+    </div>
   );
 }
 
@@ -324,17 +335,19 @@ function BudgetCategoryRow({
 
   return (
     <div className="flex items-center gap-1 px-4 py-1 transition-colors hover:bg-hover/50">
-      <DragHandle dragHandleProps={dragHandleProps} />
-      <div className="min-w-0 flex-1">
-        <InlineEditName
-          value={cat.name}
-          isEditing={isEditingName}
-          onStartEdit={() => handlers.onStartEdit({ categoryId: cat.id, field: 'name' })}
-          onCancelEdit={handlers.onCancelEdit}
-          onSave={(name) => handlers.onUpdateName(cat.id, name)}
-        />
-      </div>
-      <div className="flex-shrink-0">
+      <StickyName>
+        <DragHandle dragHandleProps={dragHandleProps} />
+        <div className="min-w-0 flex-1">
+          <InlineEditName
+            value={cat.name}
+            isEditing={isEditingName}
+            onStartEdit={() => handlers.onStartEdit({ categoryId: cat.id, field: 'name' })}
+            onCancelEdit={handlers.onCancelEdit}
+            onSave={(name) => handlers.onUpdateName(cat.id, name)}
+          />
+        </div>
+      </StickyName>
+      <div className="w-24 flex-shrink-0 text-right">
         <InlineEditAmount
           value={cat.assigned}
           isEditing={isEditingAssigned}
@@ -406,21 +419,19 @@ function BudgetGroup({
       <button
         onClick={() => setCollapsed(!collapsed)}
         aria-expanded={!collapsed}
-        className="flex min-h-[44px] w-full items-center gap-2 px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
+        className="flex min-h-[44px] w-full items-center px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
       >
-        <ChevronRightIcon
-          className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-90'}`}
-        />
-        <span className="flex-1 text-left">{group.name}</span>
-        {isIncome ? (
-          <span className="tabular-nums text-positive">
-            {formatMoney(group.totalSpent, CURRENCY)}
-          </span>
-        ) : (
-          <span className="tabular-nums text-muted">
-            {group.categories.length}
-          </span>
-        )}
+        <div className="sticky left-0 z-10 -ml-4 flex items-center gap-2 bg-surface pl-4 pr-2 md:static md:ml-0 md:flex-1 md:bg-transparent md:pl-0 md:pr-0">
+          <ChevronRightIcon
+            className={`h-4 w-4 flex-shrink-0 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          />
+          <span className="text-left md:flex-1">{group.name}</span>
+          {isIncome && (
+            <span className="tabular-nums text-positive">
+              {formatMoney(group.totalSpent, CURRENCY)}
+            </span>
+          )}
+        </div>
       </button>
 
       {/* Category rows */}
@@ -429,8 +440,10 @@ function BudgetGroup({
           {/* Column labels for non-income groups */}
           {!isIncome && itemIds.length > 0 && (
             <div className="flex items-center gap-1 px-4 py-1 text-[11px] font-medium uppercase tracking-wider text-muted">
-              <span className="w-[44px] flex-shrink-0" />
-              <span className="min-w-0 flex-1">Category</span>
+              <StickyName>
+                <span className="w-[44px] flex-shrink-0" />
+                <span className="min-w-0 flex-1">Category</span>
+              </StickyName>
               <span className="w-24 flex-shrink-0 text-right">Assigned</span>
               <span className="w-20 flex-shrink-0 text-right">Spent</span>
               <span className="w-20 flex-shrink-0 text-right">Available</span>
@@ -448,18 +461,20 @@ function BudgetGroup({
                   <SortableItem key={catId} id={catId}>
                     {({ dragHandleProps }) => (
                       <div className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50">
-                        <DragHandle dragHandleProps={dragHandleProps} />
-                        <div className="min-w-0 flex-1">
-                          <InlineEditName
-                            value={rawCat.name}
-                            isEditing={isEditingName}
-                            onStartEdit={() =>
-                              handlers.onStartEdit({ categoryId: catId, field: 'name' })
-                            }
-                            onCancelEdit={handlers.onCancelEdit}
-                            onSave={(name) => handlers.onUpdateName(catId, name)}
-                          />
-                        </div>
+                        <StickyName>
+                          <DragHandle dragHandleProps={dragHandleProps} />
+                          <div className="min-w-0 flex-1">
+                            <InlineEditName
+                              value={rawCat.name}
+                              isEditing={isEditingName}
+                              onStartEdit={() =>
+                                handlers.onStartEdit({ categoryId: catId, field: 'name' })
+                              }
+                              onCancelEdit={handlers.onCancelEdit}
+                              onSave={(name) => handlers.onUpdateName(catId, name)}
+                            />
+                          </div>
+                        </StickyName>
                         <span className="flex-shrink-0 text-sm font-medium tabular-nums text-positive">
                           {cat ? formatMoney(cat.spent, CURRENCY) : '$0.00'}
                         </span>
@@ -492,8 +507,10 @@ function BudgetGroup({
           {/* Group subtotals (non-income only) */}
           {!isIncome && itemIds.length > 0 && (
             <div className="flex items-center gap-1 border-t border-edge/50 px-4 py-2 text-xs font-medium">
-              <span className="w-[44px] flex-shrink-0" />
-              <span className="min-w-0 flex-1 text-muted">Total</span>
+              <StickyName>
+                <span className="w-[44px] flex-shrink-0" />
+                <span className="min-w-0 flex-1 text-muted">Total</span>
+              </StickyName>
               <span className="w-24 flex-shrink-0 text-right tabular-nums text-muted">
                 {formatMoney(group.totalAssigned, CURRENCY)}
               </span>
@@ -529,6 +546,14 @@ export function BudgetScreen() {
   }, []);
 
   const closeMenu = useCallback(() => setActionMenu(null), []);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!actionMenu) return;
+    const onScroll = () => closeMenu();
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', onScroll, { capture: true });
+  }, [actionMenu, closeMenu]);
 
   const summary = useMemo(
     () => computeMonthlySummary(state, month),
@@ -704,6 +729,8 @@ export function BudgetScreen() {
         onDragCancel={handleDragCancel}
       >
         <div className="overflow-hidden rounded-lg border border-edge bg-surface">
+          <div className="overflow-x-auto" ref={scrollRef}>
+            <div className="min-w-[540px] md:min-w-0">
           {orderedGroups.map((group) => (
             <BudgetGroup
               key={group.name}
@@ -736,18 +763,20 @@ export function BudgetScreen() {
               <button
                 onClick={() => setArchivedCollapsed((v) => !v)}
                 aria-expanded={!archivedCollapsed}
-                className="flex min-h-[44px] w-full items-center gap-2 px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
+                className="flex min-h-[44px] w-full items-center px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
               >
-                <ChevronRightIcon
-                  className={`h-4 w-4 transition-transform ${archivedCollapsed ? '' : 'rotate-90'}`}
-                />
-                <span className="flex-1 text-left">Archived</span>
-                {isOverArchived && archivedCollapsed && (
-                  <span className="text-[10px] font-normal normal-case tracking-normal text-accent">
-                    Drop to archive
-                  </span>
-                )}
-                <span className="tabular-nums text-muted">{archivedItemIds.length}</span>
+                <div className="sticky left-0 z-10 -ml-4 flex items-center gap-2 bg-surface pl-4 pr-2 md:static md:ml-0 md:flex-1 md:bg-transparent md:pl-0 md:pr-0">
+                  <ChevronRightIcon
+                    className={`h-4 w-4 flex-shrink-0 transition-transform ${archivedCollapsed ? '' : 'rotate-90'}`}
+                  />
+                  <span className="text-left md:flex-1">Archived</span>
+                  {isOverArchived && archivedCollapsed && (
+                    <span className="text-[10px] font-normal normal-case tracking-normal text-accent">
+                      Drop to archive
+                    </span>
+                  )}
+                  <span className="tabular-nums text-muted">{archivedItemIds.length}</span>
+                </div>
               </button>
               {!archivedCollapsed && (
                 <SortableContext
@@ -761,20 +790,22 @@ export function BudgetScreen() {
                       <SortableItem key={catId} id={catId}>
                         {({ dragHandleProps }) => (
                           <div className="flex items-center gap-1 px-4 py-1.5 transition-colors hover:bg-hover/50">
-                            <DragHandle dragHandleProps={dragHandleProps} />
-                            <div className="min-w-0 flex-1">
-                              <InlineEditName
-                                value={cat.name}
-                                isEditing={
-                                  editing?.categoryId === cat.id && editing.field === 'name'
-                                }
-                                onStartEdit={() =>
-                                  handlers.onStartEdit({ categoryId: cat.id, field: 'name' })
-                                }
-                                onCancelEdit={handlers.onCancelEdit}
-                                onSave={(name) => handlers.onUpdateName(cat.id, name)}
-                              />
-                            </div>
+                            <StickyName>
+                              <DragHandle dragHandleProps={dragHandleProps} />
+                              <div className="min-w-0 flex-1">
+                                <InlineEditName
+                                  value={cat.name}
+                                  isEditing={
+                                    editing?.categoryId === cat.id && editing.field === 'name'
+                                  }
+                                  onStartEdit={() =>
+                                    handlers.onStartEdit({ categoryId: cat.id, field: 'name' })
+                                  }
+                                  onCancelEdit={handlers.onCancelEdit}
+                                  onSave={(name) => handlers.onUpdateName(cat.id, name)}
+                                />
+                              </div>
+                            </StickyName>
                             <CategoryMoreButton category={cat} onMenuOpen={handleMenuOpen} />
                           </div>
                         )}
@@ -785,6 +816,8 @@ export function BudgetScreen() {
               )}
             </div>
           )}
+            </div>
+          </div>
         </div>
 
         <DragOverlay>
@@ -816,6 +849,15 @@ export function BudgetScreen() {
         />
       )}
 
+      {/* Edit dialog */}
+      {dialog?.type === 'edit' && (
+        <CategoryDialog
+          existingGroups={existingGroupNames}
+          category={dialog.category}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
       {/* Delete confirmation */}
       {dialog?.type === 'confirm-delete' && (
         <ConfirmDialog
@@ -837,7 +879,7 @@ export function BudgetScreen() {
         <CategoryActionMenu
           menu={actionMenu}
           onEdit={() => {
-            handlers.onStartEdit({ categoryId: actionMenu.category.id, field: 'name' });
+            setDialog({ type: 'edit', category: actionMenu.category });
             closeMenu();
           }}
           onArchive={() => {

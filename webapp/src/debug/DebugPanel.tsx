@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useDataStore } from '../store/DataStoreContext';
 import { createDefaultState } from '../store/DataStoreContext';
 import { createUnderwaterPreset, createPaycheckPreset, createAffluentPreset } from './presets';
-import { generateAccounts, generateTransactions } from './generateTransactions';
+import { seedAccounts, generateTransactions } from './generateTransactions';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 // ── Icons ───────────────────────────────────────────────────
@@ -109,8 +109,8 @@ export function DebugPanel() {
     });
   }, [dispatch]);
 
-  const handleGenerateAccounts = useCallback((count: number) => {
-    generateAccounts(store, count);
+  const handleSeedAccounts = useCallback(() => {
+    seedAccounts(store);
   }, [store]);
 
   const handleGenerateTxns = useCallback((count: number) => {
@@ -179,14 +179,7 @@ export function DebugPanel() {
                   <Btn onClick={handleClearAll} danger>Clear All Data</Btn>
                   <Btn onClick={handleResetDefaults}>Reset Default Categories</Btn>
                 </div>
-                <div>
-                  <span className="text-xs text-muted">Random accounts </span>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {[3, 5].map((n) => (
-                      <Btn key={n} onClick={() => handleGenerateAccounts(n)}>{n}</Btn>
-                    ))}
-                  </div>
-                </div>
+                <Btn onClick={handleSeedAccounts}>Seed Accounts</Btn>
                 <div>
                   <span className="text-xs text-muted">Random transactions </span>
                   <div className="mt-1 flex flex-wrap gap-2">

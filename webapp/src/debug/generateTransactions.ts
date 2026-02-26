@@ -92,27 +92,37 @@ function randomAmount(type: TransactionType): number {
   return type === 'income' ? cents : -cents;
 }
 
-const ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'credit_card', 'cash', 'loan', 'asset'];
-const INSTITUTIONS = ['Chase', 'Bank of America', 'Wells Fargo', 'Citi', 'Capital One', 'Ally', 'Vanguard', 'Fidelity', 'Local Credit Union', ''];
+const SEED_ACCOUNTS: { name: string; type: AccountType; institution: string; balance: number; archived?: boolean }[] = [
+  { name: 'Checking',        type: 'checking',    institution: 'Chase',        balance: 245000 },
+  { name: 'Savings',         type: 'savings',     institution: 'Chase',        balance: 1820000 },
+  { name: 'Emergency Fund',  type: 'savings',     institution: 'Ally',         balance: 750000 },
+  { name: 'Cash Wallet',     type: 'cash',        institution: '',             balance: 8500 },
+  { name: 'Visa Platinum',   type: 'credit_card', institution: 'Citi',         balance: -185000 },
+  { name: 'Travel Rewards',  type: 'credit_card', institution: 'Capital One',  balance: -42000 },
+  { name: 'Auto Loan',       type: 'loan',        institution: 'Wells Fargo',  balance: -1450000 },
+  { name: 'Student Loan',    type: 'loan',        institution: 'FedLoan',      balance: -2800000 },
+  { name: 'Brokerage',       type: 'asset',       institution: 'Vanguard',     balance: 8500000 },
+  { name: 'Bitcoin',         type: 'crypto',      institution: 'Coinbase',     balance: 320000 },
+  { name: 'Old Savings',     type: 'savings',     institution: 'Local CU',     balance: 0, archived: true },
+];
 
 /**
- * Generate random accounts using the DataStore mutation interface.
+ * Seed a fixed set of accounts covering all account types,
+ * including multiple per group and one archived account.
  */
-export function generateAccounts(
-  mutations: Pick<DataStoreMutations, 'createAccount'>,
-  count: number,
+export function seedAccounts(
+  mutations: Pick<DataStoreMutations, 'createAccount' | 'archiveAccount'>,
 ): void {
-  for (let i = 0; i < count; i++) {
-    const type = faker.helpers.arrayElement(ACCOUNT_TYPES);
-    const balance = type === 'credit_card' || type === 'loan'
-      ? -faker.number.int({ min: 50000, max: 2000000 })
-      : faker.number.int({ min: 0, max: 5000000 });
-    mutations.createAccount({
-      name: `${faker.word.adjective()} ${type.replace('_', ' ')}`,
-      type,
-      institution: faker.helpers.arrayElement(INSTITUTIONS),
-      startingBalance: balance,
+  for (const seed of SEED_ACCOUNTS) {
+    const account = mutations.createAccount({
+      name: seed.name,
+      type: seed.type,
+      institution: seed.institution,
+      startingBalance: seed.balance,
     });
+    if (seed.archived) {
+      mutations.archiveAccount(account.id, true);
+    }
   }
 }
 

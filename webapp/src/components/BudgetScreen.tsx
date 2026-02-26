@@ -657,6 +657,9 @@ export function BudgetScreen() {
     return archivedCategories.map((c) => c.id);
   }, [containerItems, archivedCategories]);
 
+  const transactionsRef = useRef(state.transactions);
+  transactionsRef.current = state.transactions;
+
   const handlers = useMemo<CategoryHandlers>(
     () => ({
       onStartEdit: setEditing,
@@ -665,11 +668,11 @@ export function BudgetScreen() {
       onUpdateAssigned: (id, assigned) => updateCategory(id, { assigned }),
       onArchive: (category) => updateCategory(category.id, { archived: !category.archived }),
       onDelete: (category) => {
-        const count = state.transactions.filter((t) => t.categoryId === category.id).length;
+        const count = transactionsRef.current.filter((t) => t.categoryId === category.id).length;
         setDialog({ type: 'confirm-delete', category, transactionCount: count });
       },
     }),
-    [state.transactions, updateCategory],
+    [updateCategory],
   );
 
   const handleConfirmDelete = useCallback(() => {

@@ -57,22 +57,6 @@ export function PlusIcon({ className }: { className?: string }) {
   );
 }
 
-export function ArrowUpIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 19V5M5 12l7-7 7 7" />
-    </svg>
-  );
-}
-
-export function ArrowDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12l7 7 7-7" />
-    </svg>
-  );
-}
-
 export function ArchiveIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -124,6 +108,19 @@ export function MoreIcon({ className }: { className?: string }) {
       <circle cx="12" cy="6" r="1.5" />
       <circle cx="12" cy="12" r="1.5" />
       <circle cx="12" cy="18" r="1.5" />
+    </svg>
+  );
+}
+
+export function GripVerticalIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="9" cy="6" r="1.5" />
+      <circle cx="15" cy="6" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="12" r="1.5" />
+      <circle cx="9" cy="18" r="1.5" />
+      <circle cx="15" cy="18" r="1.5" />
     </svg>
   );
 }

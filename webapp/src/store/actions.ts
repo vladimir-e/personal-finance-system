@@ -25,7 +25,8 @@ export type TransactionAction =
 export type CategoryAction =
   | { type: 'ADD_CATEGORY'; category: Category }
   | { type: 'UPDATE_CATEGORY'; id: string; changes: Partial<Category> }
-  | { type: 'DELETE_CATEGORY'; id: string; transactions: Transaction[] };
+  | { type: 'DELETE_CATEGORY'; id: string; transactions: Transaction[] }
+  | { type: 'REORDER_CATEGORIES'; updates: Array<{ id: string; changes: Partial<Category> }> };
 
 // ── Composite ───────────────────────────────────────────────
 

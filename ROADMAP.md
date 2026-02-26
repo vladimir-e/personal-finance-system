@@ -72,13 +72,13 @@ Segmented control: Expense / Income / Transfer. Fields: amount, date (defaults t
 ### [x] 20. Category management
 Within Budget tab. Create category: name, group (select or new), assigned amount. Edit: inline name and assigned amount. Archive/unarchive. Delete: confirmation warning "This will remove the category from N transactions." Reorder within group via sortOrder. Categories are organized under their group headers.
 
-### [ ] 21. Budget screen
+### [x] 21. Budget screen
 Monthly view: month selector with prev/next navigation. Available to Budget header value. Category groups rendered as sections. Per-category row: name, assigned (editable inline), spent, available. Color-code available (positive = under budget, negative = overspent). Group subtotals. Income group: show total income only, no assigned/available columns. Uncategorized pseudo-row showing spent only.
 
-### [ ] 22. Empty states
+### [x] 22. Empty states
 Helpful messages with CTAs: no accounts → "Create your first account to start tracking", no transactions → "Record your first transaction", no filter matches → "No transactions match your filters." Loading skeleton during DataStore initialization.
 
-### [ ] 23. Webapp component tests
+### [x] 23. Webapp component tests
 Tests for: account sidebar, account CRUD flows, transaction list (sort, filter, search), add/edit transaction (all types including transfers), category management, budget screen (math correctness, month navigation), empty states. All via `src/test/render` helper with storageless DataStore. Test data from `src/test/factories.ts`.
 
 ## Storage, server, and persistence (24–30)

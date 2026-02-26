@@ -12,6 +12,50 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-25 — Mobile horizontal scroll with sticky columns
+- Budget table scrolls horizontally on mobile; drag handle + category name freeze in place via sticky positioning
+- Group headers and archived header remain visible during horizontal scroll
+- Edit action in "..." menu now opens the full category dialog (name, group, assigned) instead of inline name edit
+- Actions popup dismisses on any scroll event
+
+## 2026-02-25 — Fix available-to-budget double-counting budgeted spending
+- Changed formula from `spendable_balance − total_assigned` to `spendable_balance − total_remaining_in_envelopes`
+- Remaining per envelope: `max(0, assigned + month_spent)` — spending within budget reduces only the envelope, not the full assignment
+- Prevents Available to Budget from dropping by 2× the expense amount for budgeted categories
+
+## 2026-02-25 — Category actions behind "..." menu
+- Replaced inline archive/delete icon buttons with a single "..." (More) button per category row
+- Portal-based popup menu with Edit, Archive/Unarchive, and Delete actions
+- Edit triggers inline name editing (existing mechanism, now discoverable from the menu)
+- Smart positioning (flips vertically near viewport bottom), Escape + backdrop dismissal
+- Matches the established ActionMenu pattern from AccountSidebar
+
+## 2026-02-25 — Drag-and-drop category reordering
+- Replaced arrow up/down buttons with drag-and-drop reordering using @dnd-kit
+- Grip handle on every category row (active and archived) for intuitive repositioning
+- Within-group, cross-group, archive (drop on archived section), and unarchive (drag out) all supported
+- Keyboard accessible: Tab to handle, Space to grab, Arrow keys to move, Space to drop
+- Touch friendly: long-press handle (250ms) to start drag
+- `computeReorder` pure function with 8 unit tests covering all reorder scenarios
+- Archived section auto-expands when dragging over it, with "Drop to archive" hint
+
+## 2026-02-24 — Unified budget view with inline category management
+- Merged BudgetScreen and CategoryManagement into a single unified view
+- Each budget row now supports inline name editing, reorder (up/down), archive/unarchive, and delete
+- "Add Category" button in the budget header opens the create dialog
+- Archived categories shown in a collapsed section at the bottom of the budget groups
+- Income category rows gain inline name editing and action controls
+- Deleted standalone CategoryManagement component (functionality absorbed into BudgetScreen)
+- 39 tests covering budget display + category CRUD in a single test suite
+
+## 2026-02-24 — Budget screen, empty states, and component tests
+- Monthly budget view with prev/next month navigation and Available to Budget header
+- Category groups as collapsible sections: per-category assigned (editable inline), spent, available with color-coded amounts
+- Income group shows total income only; uncategorized pseudo-row surfaces forgotten categorization
+- Group subtotals for assigned, spent, and available
+- Enhanced EmptyState component with optional CTA button; budget-specific empty state for no categories
+- 26 new component tests for BudgetScreen (month navigation, budget math, inline editing, groups, uncategorized) and EmptyState (rendering, CTA, accessibility)
+
 ## 2026-02-24 — Category management within Budget tab
 - Category management UI in the Budget tab: categories organized under collapsible group headers (Income, Fixed, Daily Living, Personal, Irregular)
 - Create category: dialog with name, group selector (existing groups + custom), monthly budget amount, Zod validation

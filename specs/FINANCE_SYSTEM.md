@@ -59,12 +59,14 @@ An **overspent** category (negative available) means spending exceeded the plan.
 The budget screen shows an "Available to Budget" figure at the top. This is the user's total liquid cash minus the total amount committed to budget envelopes — how much money is not spoken for by any category.
 
 ```
-available_to_budget = spendable_balance - total_assigned
+available_to_budget = spendable_balance - total_remaining_in_envelopes
 ```
 
 Where:
 - `spendable_balance` = sum of derived balances across all non-archived **spendable** accounts (`cash`, `checking`, `savings`, `credit_card`)
-- `total_assigned` = sum of `assigned` values for all non-archived, non-Income categories
+- `total_remaining_in_envelopes` = sum of `max(0, assigned + month_spent)` for all non-archived, non-Income categories
+
+The formula uses remaining envelope amounts (not raw assigned) to avoid double-counting. When you spend from a budgeted category, the money leaves both the account (reducing `spendable_balance`) and the envelope (reducing `remaining`). If the formula used `total_assigned` instead, spending within budget would be subtracted twice — once from the account balance and once from the static assignment.
 
 Credit card balances are included because credit card debt represents money already spent (or committed to be repaid) from the user's liquid cash. A user with $5,000 in checking and -$4,000 on a credit card has $1,000 truly available, not $5,000.
 

@@ -248,11 +248,11 @@ describe('computeMonthlySummary', () => {
 });
 
 describe('computeAvailableToBudget', () => {
-  it('computes spendable balance minus assigned', () => {
+  it('computes spendable balance minus remaining envelope amounts', () => {
     const store: DataStore = {
       accounts: [makeAccount()],
       transactions: [
-        makeTx({ id: '1', type: 'income', amount: 500000 }),
+        makeTx({ id: '1', type: 'income', amount: 500000, categoryId: '1' }),
       ],
       categories: [
         makeCat({ id: '5', assigned: 50000, group: 'Daily Living' }),
@@ -260,7 +260,7 @@ describe('computeAvailableToBudget', () => {
       ],
     };
 
-    expect(computeAvailableToBudget(store)).toBe(450000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(450000);
   });
 
   it('includes credit card in spendable balance', () => {
@@ -270,14 +270,19 @@ describe('computeAvailableToBudget', () => {
         makeAccount({ id: 'cc', type: 'credit_card' }),
       ],
       transactions: [
-        makeTx({ id: '1', accountId: 'checking', type: 'income', amount: 500000 }),
-        makeTx({ id: '2', accountId: 'cc', type: 'expense', amount: -100000 }),
+        makeTx({ id: '1', accountId: 'checking', type: 'income', amount: 500000, categoryId: '1' }),
+        makeTx({ id: '2', accountId: 'cc', type: 'expense', amount: -100000, categoryId: '5' }),
       ],
-      categories: [makeCat({ assigned: 50000 })],
+      categories: [
+        makeCat({ assigned: 50000 }),
+        makeCat({ id: '1', name: 'Income', group: 'Income', assigned: 0, sortOrder: 1 }),
+      ],
     };
 
-    // 500000 + (-100000) - 50000 = 350000
-    expect(computeAvailableToBudget(store)).toBe(350000);
+    // spendable: 500000 + (-100000) = 400000
+    // Groceries: assigned 50000, spent -100000 → remaining max(0, -50000) = 0 (overspent)
+    // ATB: 400000 - 0 = 400000
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(400000);
   });
 
   it('excludes loan, asset, crypto from spendable', () => {
@@ -289,15 +294,15 @@ describe('computeAvailableToBudget', () => {
         makeAccount({ id: 'btc', type: 'crypto' }),
       ],
       transactions: [
-        makeTx({ id: '1', accountId: 'checking', type: 'income', amount: 100000 }),
-        makeTx({ id: '2', accountId: 'loan', type: 'income', amount: -500000 }),
-        makeTx({ id: '3', accountId: 'house', type: 'income', amount: 30000000 }),
-        makeTx({ id: '4', accountId: 'btc', type: 'income', amount: 100000000 }),
+        makeTx({ id: '1', accountId: 'checking', type: 'income', amount: 100000, categoryId: '' }),
+        makeTx({ id: '2', accountId: 'loan', type: 'income', amount: -500000, categoryId: '' }),
+        makeTx({ id: '3', accountId: 'house', type: 'income', amount: 30000000, categoryId: '' }),
+        makeTx({ id: '4', accountId: 'btc', type: 'income', amount: 100000000, categoryId: '' }),
       ],
       categories: [],
     };
 
-    expect(computeAvailableToBudget(store)).toBe(100000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(100000);
   });
 
   it('excludes archived accounts', () => {
@@ -307,49 +312,49 @@ describe('computeAvailableToBudget', () => {
         makeAccount({ id: 'old', archived: true }),
       ],
       transactions: [
-        makeTx({ id: '1', accountId: 'active', type: 'income', amount: 100000 }),
-        makeTx({ id: '2', accountId: 'old', type: 'income', amount: 50000 }),
+        makeTx({ id: '1', accountId: 'active', type: 'income', amount: 100000, categoryId: '' }),
+        makeTx({ id: '2', accountId: 'old', type: 'income', amount: 50000, categoryId: '' }),
       ],
       categories: [],
     };
 
-    expect(computeAvailableToBudget(store)).toBe(100000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(100000);
   });
 
-  it('excludes Income group from total assigned', () => {
+  it('excludes Income group from envelope calculation', () => {
     const store: DataStore = {
       accounts: [makeAccount()],
-      transactions: [makeTx({ id: '1', type: 'income', amount: 100000 })],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 100000, categoryId: '1' })],
       categories: [
         makeCat({ id: '1', name: 'Income', group: 'Income', assigned: 0, sortOrder: 1 }),
         makeCat({ id: '5', assigned: 30000 }),
       ],
     };
 
-    expect(computeAvailableToBudget(store)).toBe(70000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(70000);
   });
 
   it('returns 0 for empty data store', () => {
     const store: DataStore = { accounts: [], transactions: [], categories: [] };
-    expect(computeAvailableToBudget(store)).toBe(0);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(0);
   });
 
   it('returns negative when assigned exceeds balance', () => {
     const store: DataStore = {
       accounts: [makeAccount()],
-      transactions: [makeTx({ id: '1', type: 'income', amount: 10000 })],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 10000, categoryId: '' })],
       categories: [makeCat({ assigned: 50000 })],
     };
-    expect(computeAvailableToBudget(store)).toBe(-40000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(-40000);
   });
 
   it('returns full balance when no categories exist', () => {
     const store: DataStore = {
       accounts: [makeAccount()],
-      transactions: [makeTx({ id: '1', type: 'income', amount: 100000 })],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 100000, categoryId: '' })],
       categories: [],
     };
-    expect(computeAvailableToBudget(store)).toBe(100000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(100000);
   });
 
   it('includes savings and cash in spendable balance', () => {
@@ -359,23 +364,81 @@ describe('computeAvailableToBudget', () => {
         makeAccount({ id: 'cash', type: 'cash' }),
       ],
       transactions: [
-        makeTx({ id: '1', accountId: 'savings', type: 'income', amount: 50000 }),
-        makeTx({ id: '2', accountId: 'cash', type: 'income', amount: 30000 }),
+        makeTx({ id: '1', accountId: 'savings', type: 'income', amount: 50000, categoryId: '' }),
+        makeTx({ id: '2', accountId: 'cash', type: 'income', amount: 30000, categoryId: '' }),
       ],
       categories: [],
     };
-    expect(computeAvailableToBudget(store)).toBe(80000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(80000);
   });
 
-  it('excludes archived categories from total assigned', () => {
+  it('excludes archived categories from envelope calculation', () => {
     const store: DataStore = {
       accounts: [makeAccount()],
-      transactions: [makeTx({ id: '1', type: 'income', amount: 100000 })],
+      transactions: [makeTx({ id: '1', type: 'income', amount: 100000, categoryId: '' })],
       categories: [
         makeCat({ id: '5', assigned: 30000 }),
         makeCat({ id: '6', assigned: 20000, archived: true }),
       ],
     };
-    expect(computeAvailableToBudget(store)).toBe(70000);
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(70000);
+  });
+
+  it('does not double-count budgeted spending', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [
+        makeTx({ id: '1', type: 'income', amount: 500000, categoryId: '1' }),
+        makeTx({ id: '2', type: 'expense', amount: -400000, categoryId: '5' }),
+      ],
+      categories: [
+        makeCat({ id: '1', name: 'Salary', group: 'Income', assigned: 0, sortOrder: 1 }),
+        makeCat({ id: '5', name: 'Housing', assigned: 400000, sortOrder: 2, group: 'Fixed' }),
+      ],
+    };
+
+    // spendable: 500000 + (-400000) = 100000
+    // Housing: assigned 400000, spent -400000 → remaining max(0, 0) = 0
+    // ATB: 100000 - 0 = 100000
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(100000);
+  });
+
+  it('caps overspent envelopes at zero', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [
+        makeTx({ id: '1', type: 'income', amount: 500000, categoryId: '1' }),
+        makeTx({ id: '2', type: 'expense', amount: -60000, categoryId: '5' }),
+      ],
+      categories: [
+        makeCat({ id: '1', name: 'Salary', group: 'Income', assigned: 0, sortOrder: 1 }),
+        makeCat({ id: '5', assigned: 50000 }),
+      ],
+    };
+
+    // spendable: 500000 + (-60000) = 440000
+    // Groceries: assigned 50000, spent -60000 → remaining max(0, -10000) = 0
+    // ATB: 440000 - 0 = 440000
+    expect(computeAvailableToBudget(store, '2026-01')).toBe(440000);
+  });
+
+  it('only considers spending in the given month', () => {
+    const store: DataStore = {
+      accounts: [makeAccount()],
+      transactions: [
+        makeTx({ id: '1', type: 'income', amount: 500000, date: '2026-01-01', categoryId: '1' }),
+        makeTx({ id: '2', type: 'expense', amount: -30000, date: '2026-01-15', categoryId: '5' }),
+        makeTx({ id: '3', type: 'expense', amount: -20000, date: '2026-02-10', categoryId: '5' }),
+      ],
+      categories: [
+        makeCat({ id: '1', name: 'Salary', group: 'Income', assigned: 0, sortOrder: 1 }),
+        makeCat({ id: '5', assigned: 50000 }),
+      ],
+    };
+
+    // February: spendable = 500000 - 30000 - 20000 = 450000
+    // Groceries in Feb: assigned 50000, spent -20000 → remaining 30000
+    // ATB: 450000 - 30000 = 420000
+    expect(computeAvailableToBudget(store, '2026-02')).toBe(420000);
   });
 });

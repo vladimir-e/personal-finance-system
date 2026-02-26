@@ -15,18 +15,28 @@ function txInMonth(tx: Transaction, month: string): boolean {
   return tx.date.startsWith(month);
 }
 
-export function computeAvailableToBudget(dataStore: DataStore): number {
+export function computeAvailableToBudget(dataStore: DataStore, month: string): number {
   const { accounts, transactions, categories } = dataStore;
 
   const spendableBalance = accounts
     .filter((a) => !a.archived && SPENDABLE_TYPES.includes(a.type))
     .reduce((sum, a) => sum + computeBalance(transactions, a.id), 0);
 
-  const totalAssigned = categories
-    .filter((c) => !c.archived && c.group !== 'Income')
-    .reduce((sum, c) => sum + c.assigned, 0);
+  const monthTxs = transactions.filter((tx) => txInMonth(tx, month));
+  const spentByCategory = new Map<string, number>();
+  for (const tx of monthTxs) {
+    if (tx.categoryId === '') continue;
+    spentByCategory.set(tx.categoryId, (spentByCategory.get(tx.categoryId) ?? 0) + tx.amount);
+  }
 
-  return spendableBalance - totalAssigned;
+  const totalRemaining = categories
+    .filter((c) => !c.archived && c.group !== 'Income')
+    .reduce((sum, c) => {
+      const spent = spentByCategory.get(c.id) ?? 0;
+      return sum + Math.max(0, c.assigned + spent);
+    }, 0);
+
+  return spendableBalance - totalRemaining;
 }
 
 export function computeMonthlySummary(dataStore: DataStore, month: string): MonthlySummary {
@@ -98,7 +108,7 @@ export function computeMonthlySummary(dataStore: DataStore, month: string): Mont
 
   return {
     month,
-    availableToBudget: computeAvailableToBudget(dataStore),
+    availableToBudget: computeAvailableToBudget(dataStore, month),
     totalIncome,
     totalAssigned,
     groups,

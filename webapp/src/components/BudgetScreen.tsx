@@ -805,7 +805,9 @@ export function BudgetScreen() {
                     Drop to archive
                   </span>
                 )}
-                <span className="tabular-nums text-muted">{archivedItemIds.length}</span>
+                {archivedCollapsed && archivedCategories.length > 0 && (
+                  <span className="tabular-nums text-muted">{archivedCategories.length}</span>
+                )}
               </div>
             </button>
             {!archivedCollapsed && archivedItemIds.length > 0 && (

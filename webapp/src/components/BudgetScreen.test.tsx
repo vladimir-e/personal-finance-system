@@ -396,6 +396,49 @@ describe('BudgetScreen', () => {
       await user.keyboard('{Escape}');
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+
+    it('dialog closes on overlay click', async () => {
+      const user = userEvent.setup();
+      renderBudget();
+
+      await user.click(screen.getByRole('button', { name: /Add Category/i }));
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+
+      // The overlay is the bg-black/50 backdrop behind the dialog content
+      const overlay = dialog.querySelector('.bg-black\\/50')!;
+      await user.click(overlay);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('dialog validates empty name', async () => {
+      const user = userEvent.setup();
+      renderBudget();
+
+      await user.click(screen.getByRole('button', { name: /Add Category/i }));
+      // Submit without entering a name
+      await user.click(screen.getByRole('button', { name: 'Create' }));
+
+      // Dialog should still be open (validation prevented submission)
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('dialog validates empty custom group', async () => {
+      const user = userEvent.setup();
+      renderBudget();
+
+      await user.click(screen.getByRole('button', { name: /Add Category/i }));
+
+      // Switch to custom group input
+      await user.click(screen.getByRole('button', { name: 'New' }));
+
+      // Enter a name but leave custom group empty
+      await user.type(screen.getByLabelText('Name'), 'Test Category');
+      await user.click(screen.getByRole('button', { name: 'Create' }));
+
+      // Dialog should still be open (validation prevented submission)
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
   });
 
   describe('delete category', () => {
@@ -523,7 +566,7 @@ describe('BudgetScreen', () => {
       expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
     });
 
-    it('edit menu item triggers inline name editing', async () => {
+    it('edit menu item opens edit dialog with category data', async () => {
       const user = userEvent.setup();
       renderBudget();
 
@@ -533,7 +576,8 @@ describe('BudgetScreen', () => {
       // Menu should close
       expect(screen.queryByRole('menu')).not.toBeInTheDocument();
 
-      // Name should be in edit mode
+      // Edit dialog should open with the category name pre-populated
+      expect(screen.getByRole('dialog', { name: /Edit Category/i })).toBeInTheDocument();
       const input = screen.getByDisplayValue('Rent');
       expect(input.tagName).toBe('INPUT');
     });

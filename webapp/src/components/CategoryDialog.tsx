@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useDataStore } from '../store';
-import { CreateCategoryInput, parseMoney } from 'pfs-lib';
+import { CreateCategoryInput, UpdateCategoryInput, parseMoney } from 'pfs-lib';
 import type { Currency, Category } from 'pfs-lib';
+import { useFocusTrap } from '../utils/useFocusTrap';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -31,7 +32,9 @@ export function CategoryDialog({ existingGroups, onClose, category }: CategoryDi
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const nameRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
+  useFocusTrap(dialogRef);
   useEffect(() => { nameRef.current?.focus(); }, []);
 
   useEffect(() => {
@@ -59,18 +62,8 @@ export function CategoryDialog({ existingGroups, onClose, category }: CategoryDi
     }
 
     if (isEdit) {
-      const trimmedName = name.trim();
-      if (!trimmedName) {
-        setErrors({ name: 'Name is required' });
-        return;
-      }
-      if (!selectedGroup) {
-        setErrors({ group: 'Group is required' });
-        return;
-      }
-
-      const updates: Partial<Pick<Category, 'name' | 'group' | 'assigned' | 'sortOrder'>> = {
-        name: trimmedName,
+      const updates: Record<string, unknown> = {
+        name: name.trim(),
         group: selectedGroup,
         assigned: parsedAssigned,
       };
@@ -81,7 +74,17 @@ export function CategoryDialog({ existingGroups, onClose, category }: CategoryDi
         updates.sortOrder = maxSort + 1;
       }
 
-      updateCategory(category!.id, updates);
+      const result = UpdateCategoryInput.safeParse(updates);
+      if (!result.success) {
+        const errs: Record<string, string> = {};
+        for (const issue of result.error.issues) {
+          errs[issue.path[0]?.toString() ?? 'name'] = issue.message;
+        }
+        setErrors(errs);
+        return;
+      }
+
+      updateCategory(category!.id, result.data);
       onClose();
     } else {
       const groupCats = state.categories.filter((c) => c.group === selectedGroup);
@@ -113,6 +116,7 @@ export function CategoryDialog({ existingGroups, onClose, category }: CategoryDi
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"

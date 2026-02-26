@@ -274,8 +274,38 @@ function CategoryActionMenu({
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    // Focus first menu item on mount
+    const firstItem = menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]');
+    firstItem?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+
+      const items = Array.from(
+        menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
+      );
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      if (current === -1) return;
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        items[(current + 1) % items.length].focus();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        items[(current - 1 + items.length) % items.length].focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        items[0].focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        items[items.length - 1].focus();
+      }
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -288,23 +318,24 @@ function CategoryActionMenu({
     : menu.y + 4;
 
   const itemClass =
-    'flex min-h-[44px] w-full items-center px-4 text-sm transition-colors hover:bg-hover';
+    'flex min-h-[44px] w-full items-center px-4 text-sm transition-colors hover:bg-hover focus:bg-hover focus:outline-none';
 
   return createPortal(
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
+        ref={menuRef}
         className="fixed z-50 w-40 overflow-hidden rounded-lg border border-edge bg-surface py-1 shadow-lg"
         style={{ top, left }}
         role="menu"
       >
-        <button onClick={onEdit} className={`${itemClass} text-body`} role="menuitem">
+        <button onClick={onEdit} className={`${itemClass} text-body`} role="menuitem" tabIndex={-1}>
           Edit
         </button>
-        <button onClick={onArchive} className={`${itemClass} text-body`} role="menuitem">
+        <button onClick={onArchive} className={`${itemClass} text-body`} role="menuitem" tabIndex={-1}>
           {menu.category.archived ? 'Unarchive' : 'Archive'}
         </button>
-        <button onClick={onDelete} className={`${itemClass} text-negative`} role="menuitem">
+        <button onClick={onDelete} className={`${itemClass} text-negative`} role="menuitem" tabIndex={-1}>
           Delete
         </button>
       </div>
@@ -476,7 +507,7 @@ function BudgetGroup({
                           </div>
                         </StickyName>
                         <span className="flex-shrink-0 text-sm font-medium tabular-nums text-positive">
-                          {cat ? formatMoney(cat.spent, CURRENCY) : '$0.00'}
+                          {formatMoney(cat?.spent ?? 0, CURRENCY)}
                         </span>
                         <CategoryMoreButton category={rawCat} onMenuOpen={onMenuOpen} />
                       </div>

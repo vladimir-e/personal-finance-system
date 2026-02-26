@@ -12,6 +12,17 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-25 — Mobile horizontal scroll with sticky columns
+- Budget table scrolls horizontally on mobile; drag handle + category name freeze in place via sticky positioning
+- Group headers and archived header remain visible during horizontal scroll
+- Edit action in "..." menu now opens the full category dialog (name, group, assigned) instead of inline name edit
+- Actions popup dismisses on any scroll event
+
+## 2026-02-25 — Fix available-to-budget double-counting budgeted spending
+- Changed formula from `spendable_balance − total_assigned` to `spendable_balance − total_remaining_in_envelopes`
+- Remaining per envelope: `max(0, assigned + month_spent)` — spending within budget reduces only the envelope, not the full assignment
+- Prevents Available to Budget from dropping by 2× the expense amount for budgeted categories
+
 ## 2026-02-25 — Category actions behind "..." menu
 - Replaced inline archive/delete icon buttons with a single "..." (More) button per category row
 - Portal-based popup menu with Edit, Archive/Unarchive, and Delete actions

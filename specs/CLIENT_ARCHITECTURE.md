@@ -137,6 +137,12 @@ Help screen is accessible from a secondary location (settings/more menu), not a 
 
 **Theme toggle:** 3-state cycle icon in nav bar (sun → moon → auto).
 
+**Drag-and-drop reordering:** Uses `@dnd-kit` (DndContext, SortableContext, DragOverlay, useSortable, useDroppable). Categories can be reordered within a group, moved across groups, archived (drop on archived section), and unarchived (drag out of archived). A dedicated drag handle (grip icon) initiates the drag. Activation constraints: 8px pointer movement for mouse, 250ms long-press for touch. Keyboard accessible: Tab to handle, Space to grab, Arrow keys to move, Space to drop. A `DragOverlay` renders the dragged item outside the normal flow. Reorder logic lives in `computeReorder` (pure function producing patches) and `useBudgetDnd` (hook managing DnD state and sensors).
+
+**Action menus (portal-based):** Triggered by a "..." (More) button on entity rows. Rendered via `createPortal` to `document.body` to escape overflow clipping. Menu is positioned relative to the trigger button's bounding rect, flipping vertically when near the viewport bottom. Dismissed on Escape keydown, backdrop click, or any scroll event (captured via window capture-phase listener). Used in both AccountSidebar and BudgetScreen.
+
+**Mobile horizontal scroll with sticky columns:** Data-dense table-like views (budget groups) use an `overflow-x-auto` container with a `min-w-[540px]` inner div to guarantee column spacing. The first column (drag handle + category name) uses `position: sticky; left: 0` with a surface background to remain visible during horizontal scroll. On desktop (`md:` breakpoint), sticky resets to static layout and the min-width constraint is removed.
+
 ## Shared Validation
 
 Zod schemas are defined in `pfs-lib` and used in both layers:

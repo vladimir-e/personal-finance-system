@@ -115,24 +115,25 @@ Transfers are excluded (they always have `categoryId = ""`). Income-type transac
 
 | id | name | group | assigned | sortOrder |
 |----|------|-------|----------|-----------|
-| 1 | Income | Income | 0 | 1 |
-| 2 | Housing | Fixed | 0 | 2 |
-| 3 | Bills & Utilities | Fixed | 0 | 3 |
-| 4 | Subscriptions | Fixed | 0 | 4 |
-| 5 | Groceries | Daily Living | 0 | 5 |
-| 6 | Dining Out | Daily Living | 0 | 6 |
-| 7 | Transportation | Daily Living | 0 | 7 |
-| 8 | Alcohol & Smoking | Personal | 0 | 8 |
-| 9 | Health & Beauty | Personal | 0 | 9 |
-| 10 | Clothing | Personal | 0 | 10 |
-| 11 | Fun & Hobbies | Personal | 0 | 11 |
-| 12 | Allowances | Personal | 0 | 12 |
-| 13 | Education & Business | Personal | 0 | 13 |
-| 14 | Gifts & Giving | Personal | 0 | 14 |
-| 15 | Housekeeping & Maintenance | Irregular | 0 | 15 |
-| 16 | Big Purchases | Irregular | 0 | 16 |
-| 17 | Travel | Irregular | 0 | 17 |
-| 18 | Taxes & Fees | Irregular | 0 | 18 |
+| 1 | Paycheck | Income | 0 | 1 |
+| 2 | Other | Income | 0 | 2 |
+| 3 | Housing | Fixed | 0 | 3 |
+| 4 | Bills & Utilities | Fixed | 0 | 4 |
+| 5 | Subscriptions | Fixed | 0 | 5 |
+| 6 | Groceries | Daily Living | 0 | 6 |
+| 7 | Dining Out | Daily Living | 0 | 7 |
+| 8 | Transportation | Daily Living | 0 | 8 |
+| 9 | Alcohol & Smoking | Personal | 0 | 9 |
+| 10 | Health & Beauty | Personal | 0 | 10 |
+| 11 | Clothing | Personal | 0 | 11 |
+| 12 | Fun & Hobbies | Personal | 0 | 12 |
+| 13 | Allowances | Personal | 0 | 13 |
+| 14 | Education & Business | Personal | 0 | 14 |
+| 15 | Gifts & Giving | Personal | 0 | 15 |
+| 16 | Housekeeping & Maintenance | Irregular | 0 | 16 |
+| 17 | Big Purchases | Irregular | 0 | 17 |
+| 18 | Travel | Irregular | 0 | 18 |
+| 19 | Taxes & Fees | Irregular | 0 | 19 |
 
 ---
 

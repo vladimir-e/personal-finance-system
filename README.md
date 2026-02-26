@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) to use the app. On first run you'll be prompted to create a budget — choose a name, currency, and storage backend (CSV is the default, no extra setup needed).
+Open [http://localhost:5173](http://localhost:5173) to use the app. The app starts with default budget categories ready to go.
 
 ## Spec-Driven Development
 

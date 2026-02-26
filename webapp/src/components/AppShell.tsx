@@ -3,6 +3,7 @@ import { useTheme } from './ThemeProvider';
 import { TransactionsPage } from '../pages/TransactionsPage';
 import { BudgetPage } from '../pages/BudgetPage';
 import { PlusIcon } from './icons';
+import { DebugPanel } from '../debug/DebugPanel';
 
 type Tab = 'transactions' | 'budget';
 
@@ -122,6 +123,8 @@ export function AppShell() {
           : <BudgetPage />
         }
       </main>
+
+      <DebugPanel />
 
       {/* Mobile bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-edge bg-surface md:hidden" aria-label="Main navigation">

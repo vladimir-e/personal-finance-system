@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import type { DataStoreMutations } from '../store/DataStoreContext';
-import type { DataStore, TransactionType } from 'pfs-lib';
+import type { AccountType, DataStore, TransactionType } from 'pfs-lib';
 
 function getMonthString(offset: number): string {
   const d = new Date();
@@ -90,6 +90,30 @@ function randomAmount(type: TransactionType): number {
   }
 
   return type === 'income' ? cents : -cents;
+}
+
+const ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'credit_card', 'cash', 'loan', 'asset'];
+const INSTITUTIONS = ['Chase', 'Bank of America', 'Wells Fargo', 'Citi', 'Capital One', 'Ally', 'Vanguard', 'Fidelity', 'Local Credit Union', ''];
+
+/**
+ * Generate random accounts using the DataStore mutation interface.
+ */
+export function generateAccounts(
+  mutations: Pick<DataStoreMutations, 'createAccount'>,
+  count: number,
+): void {
+  for (let i = 0; i < count; i++) {
+    const type = faker.helpers.arrayElement(ACCOUNT_TYPES);
+    const balance = type === 'credit_card' || type === 'loan'
+      ? -faker.number.int({ min: 50000, max: 2000000 })
+      : faker.number.int({ min: 0, max: 5000000 });
+    mutations.createAccount({
+      name: `${faker.word.adjective()} ${type.replace('_', ' ')}`,
+      type,
+      institution: faker.helpers.arrayElement(INSTITUTIONS),
+      startingBalance: balance,
+    });
+  }
 }
 
 /**

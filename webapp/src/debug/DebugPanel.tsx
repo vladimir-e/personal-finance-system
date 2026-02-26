@@ -1,13 +1,9 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useDataStore } from '../store/DataStoreContext';
 import { createDefaultState } from '../store/DataStoreContext';
 import { createUnderwaterPreset, createPaycheckPreset, createAffluentPreset } from './presets';
-import { generateTransactions } from './generateTransactions';
+import { generateAccounts, generateTransactions } from './generateTransactions';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Account, Transaction, Category, AccountType, TransactionType, TransactionSource } from 'pfs-lib';
-import { formatMoney } from 'pfs-lib';
-
-const USD = { code: 'USD', precision: 2 };
 
 // ── Icons ───────────────────────────────────────────────────
 
@@ -15,22 +11,6 @@ function WrenchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-function ChevronIcon({ open, className }: { open: boolean; className?: string }) {
-  return (
-    <svg className={`${className ?? 'h-4 w-4'} transition-transform ${open ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 18l6-6-6-6" />
     </svg>
   );
 }
@@ -71,186 +51,12 @@ function Btn({ onClick, children, danger }: { onClick: () => void; children: Rea
   );
 }
 
-// ── Inline field editor ─────────────────────────────────────
-
-const inputClass = 'w-full rounded border border-edge bg-page px-2 py-1 text-xs text-body font-mono';
-
-function Field({ label, value, onChange, type = 'text' }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-[10px] font-medium uppercase text-muted">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} />
-    </label>
-  );
-}
-
-function SelectField({ label, value, onChange, options }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: readonly string[];
-}) {
-  return (
-    <label className="block">
-      <span className="text-[10px] font-medium uppercase text-muted">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </label>
-  );
-}
-
-function CheckField({ label, checked, onChange }: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className="text-[10px] font-medium uppercase text-muted">{label}</span>
-    </label>
-  );
-}
-
-// ── Account editor ──────────────────────────────────────────
-
-const ACCOUNT_TYPES: readonly AccountType[] = ['cash', 'checking', 'savings', 'credit_card', 'loan', 'asset', 'crypto'];
-
-function AccountEditor({ account, onSave, onCancel }: {
-  account: Account;
-  onSave: (id: string, changes: Partial<Account>) => void;
-  onCancel: () => void;
-}) {
-  const [name, setName] = useState(account.name);
-  const [type, setType] = useState<string>(account.type);
-  const [institution, setInstitution] = useState(account.institution);
-  const [archived, setArchived] = useState(account.archived);
-
-  return (
-    <div className="space-y-2 rounded-lg border border-accent/30 bg-surface p-3">
-      <Field label="name" value={name} onChange={setName} />
-      <SelectField label="type" value={type} onChange={setType} options={ACCOUNT_TYPES} />
-      <Field label="institution" value={institution} onChange={setInstitution} />
-      <CheckField label="archived" checked={archived} onChange={setArchived} />
-      <div className="flex gap-2 pt-1">
-        <button onClick={() => onSave(account.id, { name, type: type as AccountType, institution, archived })} className="rounded bg-accent px-3 py-1 text-xs font-medium text-white">Save</button>
-        <button onClick={onCancel} className="rounded px-3 py-1 text-xs font-medium text-muted hover:text-body">Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-// ── Transaction editor ──────────────────────────────────────
-
-const TRANSACTION_TYPES: readonly TransactionType[] = ['income', 'expense', 'transfer'];
-const TRANSACTION_SOURCES: readonly TransactionSource[] = ['manual', 'ai_agent', 'import'];
-
-function TransactionEditor({ transaction, onSave, onCancel }: {
-  transaction: Transaction;
-  onSave: (id: string, changes: Partial<Transaction>) => void;
-  onCancel: () => void;
-}) {
-  const [type, setType] = useState<string>(transaction.type);
-  const [accountId, setAccountId] = useState(transaction.accountId);
-  const [date, setDate] = useState(transaction.date);
-  const [categoryId, setCategoryId] = useState(transaction.categoryId);
-  const [description, setDescription] = useState(transaction.description);
-  const [payee, setPayee] = useState(transaction.payee);
-  const [amount, setAmount] = useState(String(transaction.amount));
-  const [notes, setNotes] = useState(transaction.notes);
-  const [source, setSource] = useState<string>(transaction.source);
-
-  const { state } = useDataStore();
-  const accountIds = state.accounts.map((a) => a.id);
-  const categoryIds = ['', ...state.categories.map((c) => c.id)];
-
-  return (
-    <div className="space-y-2 rounded-lg border border-accent/30 bg-surface p-3">
-      <SelectField label="type" value={type} onChange={setType} options={TRANSACTION_TYPES} />
-      <SelectField label="accountId" value={accountId} onChange={setAccountId} options={accountIds} />
-      <Field label="date" value={date} onChange={setDate} />
-      <SelectField label="categoryId" value={categoryId} onChange={setCategoryId} options={categoryIds} />
-      <Field label="description" value={description} onChange={setDescription} />
-      <Field label="payee" value={payee} onChange={setPayee} />
-      <Field label="amount (cents)" value={amount} onChange={setAmount} type="number" />
-      <Field label="notes" value={notes} onChange={setNotes} />
-      <SelectField label="source" value={source} onChange={setSource} options={TRANSACTION_SOURCES} />
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={() => onSave(transaction.id, {
-            type: type as TransactionType,
-            accountId,
-            date,
-            categoryId,
-            description,
-            payee,
-            amount: parseInt(amount, 10) || 0,
-            notes,
-            source: source as TransactionSource,
-          })}
-          className="rounded bg-accent px-3 py-1 text-xs font-medium text-white"
-        >
-          Save
-        </button>
-        <button onClick={onCancel} className="rounded px-3 py-1 text-xs font-medium text-muted hover:text-body">Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-// ── Category editor ─────────────────────────────────────────
-
-function CategoryEditor({ category, onSave, onCancel }: {
-  category: Category;
-  onSave: (id: string, changes: Partial<Category>) => void;
-  onCancel: () => void;
-}) {
-  const [name, setName] = useState(category.name);
-  const [group, setGroup] = useState(category.group);
-  const [assigned, setAssigned] = useState(String(category.assigned));
-  const [sortOrder, setSortOrder] = useState(String(category.sortOrder));
-  const [archived, setArchived] = useState(category.archived);
-
-  return (
-    <div className="space-y-2 rounded-lg border border-accent/30 bg-surface p-3">
-      <Field label="name" value={name} onChange={setName} />
-      <Field label="group" value={group} onChange={setGroup} />
-      <Field label="assigned (cents)" value={assigned} onChange={setAssigned} type="number" />
-      <Field label="sortOrder" value={sortOrder} onChange={setSortOrder} type="number" />
-      <CheckField label="archived" checked={archived} onChange={setArchived} />
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={() => onSave(category.id, {
-            name,
-            group,
-            assigned: parseInt(assigned, 10) || 0,
-            sortOrder: parseInt(sortOrder, 10) || 0,
-            archived,
-          })}
-          className="rounded bg-accent px-3 py-1 text-xs font-medium text-white"
-        >
-          Save
-        </button>
-        <button onClick={onCancel} className="rounded px-3 py-1 text-xs font-medium text-muted hover:text-body">Cancel</button>
-      </div>
-    </div>
-  );
-}
-
 // ── Main DebugPanel ─────────────────────────────────────────
 
 export function DebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [expanded, setExpanded] = useState<'accounts' | 'transactions' | 'categories' | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
 
   const store = useDataStore();
   const { state, dispatch } = store;
@@ -275,11 +81,7 @@ export function DebugPanel() {
     }
   }, [isOpen]);
 
-  const close = useCallback(() => {
-    setIsOpen(false);
-    setExpanded(null);
-    setEditingId(null);
-  }, []);
+  const close = useCallback(() => setIsOpen(false), []);
 
   const loadPreset = useCallback((factory: () => import('pfs-lib').DataStore) => {
     dispatch({ type: 'RESET', state: factory() });
@@ -307,42 +109,21 @@ export function DebugPanel() {
     });
   }, [dispatch]);
 
-  const handleGenerate = useCallback((count: number) => {
+  const handleGenerateAccounts = useCallback((count: number) => {
+    generateAccounts(store, count);
+  }, [store]);
+
+  const handleGenerateTxns = useCallback((count: number) => {
     generateTransactions(store, state, count);
   }, [store, state]);
 
-  const handleDeleteRecord = useCallback((type: 'account' | 'transaction' | 'category', id: string, label: string) => {
-    setConfirm({
-      title: `Delete ${type}`,
-      message: `Delete "${label}"? This cannot be undone.`,
-      onConfirm: () => {
-        try {
-          if (type === 'account') store.deleteAccount(id);
-          else if (type === 'transaction') store.deleteTransaction(id);
-          else store.deleteCategory(id);
-        } catch (e) {
-          alert(e instanceof Error ? e.message : 'Delete failed');
-        }
-        setConfirm(null);
-        setEditingId(null);
-      },
+  const handleDumpJson = useCallback(() => {
+    const json = JSON.stringify(state, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
-  }, [store]);
-
-  const handleSaveAccount = useCallback((id: string, changes: Partial<Account>) => {
-    try { store.updateAccount(id, changes); setEditingId(null); }
-    catch (e) { alert(e instanceof Error ? e.message : 'Save failed'); }
-  }, [store]);
-
-  const handleSaveTransaction = useCallback((id: string, changes: Partial<Transaction>) => {
-    try { store.updateTransaction(id, changes); setEditingId(null); }
-    catch (e) { alert(e instanceof Error ? e.message : 'Save failed'); }
-  }, [store]);
-
-  const handleSaveCategory = useCallback((id: string, changes: Partial<Category>) => {
-    try { store.updateCategory(id, changes); setEditingId(null); }
-    catch (e) { alert(e instanceof Error ? e.message : 'Save failed'); }
-  }, [store]);
+  }, [state]);
 
   const hasAccounts = state.accounts.length > 0;
 
@@ -365,7 +146,6 @@ export function DebugPanel() {
 
           {/* Panel */}
           <div
-            ref={panelRef}
             className="absolute bottom-0 right-0 top-0 w-full max-w-sm overflow-y-auto border-l border-edge bg-page shadow-2xl"
             role="dialog"
             aria-modal="true"
@@ -400,10 +180,18 @@ export function DebugPanel() {
                   <Btn onClick={handleResetDefaults}>Reset Default Categories</Btn>
                 </div>
                 <div>
-                  <span className="text-xs text-muted">Generate random txns </span>
+                  <span className="text-xs text-muted">Random accounts </span>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {[3, 5].map((n) => (
+                      <Btn key={n} onClick={() => handleGenerateAccounts(n)}>{n}</Btn>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-xs text-muted">Random transactions </span>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {[10, 50, 100].map((n) => (
-                      <Btn key={n} onClick={() => handleGenerate(n)}>
+                      <Btn key={n} onClick={() => handleGenerateTxns(n)}>
                         {hasAccounts ? String(n) : `${n} (need accounts)`}
                       </Btn>
                     ))}
@@ -412,131 +200,15 @@ export function DebugPanel() {
               </div>
             </Section>
 
-            {/* Data Browser */}
-            <Section label="Data Browser">
-              <div className="space-y-1">
-                {/* Accounts */}
-                <button
-                  onClick={() => setExpanded(expanded === 'accounts' ? null : 'accounts')}
-                  className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-body hover:bg-hover"
-                >
-                  <span>Accounts ({state.accounts.length})</span>
-                  <ChevronIcon open={expanded === 'accounts'} />
-                </button>
-                {expanded === 'accounts' && (
-                  <div className="space-y-1 pb-2 pl-2">
-                    {state.accounts.map((a) => (
-                      <div key={a.id}>
-                        {editingId === a.id ? (
-                          <AccountEditor account={a} onSave={handleSaveAccount} onCancel={() => setEditingId(null)} />
-                        ) : (
-                          <div className="flex items-center gap-2 rounded px-2 py-1 hover:bg-hover">
-                            <button
-                              onClick={() => setEditingId(a.id)}
-                              className="flex-1 text-left text-xs"
-                            >
-                              <span className="font-medium text-body">{a.name}</span>
-                              <span className="ml-2 text-muted">{a.type}</span>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRecord('account', a.id, a.name)}
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted hover:bg-negative/10 hover:text-negative"
-                              aria-label={`Delete ${a.name}`}
-                            >
-                              <TrashIcon className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {state.accounts.length === 0 && <p className="px-2 text-xs text-muted">No accounts</p>}
-                  </div>
-                )}
-
-                {/* Transactions */}
-                <button
-                  onClick={() => setExpanded(expanded === 'transactions' ? null : 'transactions')}
-                  className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-body hover:bg-hover"
-                >
-                  <span>Transactions ({state.transactions.length})</span>
-                  <ChevronIcon open={expanded === 'transactions'} />
-                </button>
-                {expanded === 'transactions' && (
-                  <div className="space-y-1 pb-2 pl-2">
-                    {state.transactions.slice(0, 200).map((tx) => (
-                      <div key={tx.id}>
-                        {editingId === tx.id ? (
-                          <TransactionEditor transaction={tx} onSave={handleSaveTransaction} onCancel={() => setEditingId(null)} />
-                        ) : (
-                          <div className="flex items-center gap-2 rounded px-2 py-1 hover:bg-hover">
-                            <button
-                              onClick={() => setEditingId(tx.id)}
-                              className="flex-1 text-left text-xs"
-                            >
-                              <span className="text-muted">{tx.date}</span>
-                              <span className="ml-2 font-medium text-body">{tx.description || '(no desc)'}</span>
-                              <span className={`ml-2 tabular-nums ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`}>
-                                {formatMoney(tx.amount, USD)}
-                              </span>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRecord('transaction', tx.id, tx.description || tx.id)}
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted hover:bg-negative/10 hover:text-negative"
-                              aria-label={`Delete transaction ${tx.id}`}
-                            >
-                              <TrashIcon className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {state.transactions.length > 200 && (
-                      <p className="px-2 text-xs text-muted">Showing first 200 of {state.transactions.length}</p>
-                    )}
-                    {state.transactions.length === 0 && <p className="px-2 text-xs text-muted">No transactions</p>}
-                  </div>
-                )}
-
-                {/* Categories */}
-                <button
-                  onClick={() => setExpanded(expanded === 'categories' ? null : 'categories')}
-                  className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-body hover:bg-hover"
-                >
-                  <span>Categories ({state.categories.length})</span>
-                  <ChevronIcon open={expanded === 'categories'} />
-                </button>
-                {expanded === 'categories' && (
-                  <div className="space-y-1 pb-2 pl-2">
-                    {state.categories.map((cat) => (
-                      <div key={cat.id}>
-                        {editingId === cat.id ? (
-                          <CategoryEditor category={cat} onSave={handleSaveCategory} onCancel={() => setEditingId(null)} />
-                        ) : (
-                          <div className="flex items-center gap-2 rounded px-2 py-1 hover:bg-hover">
-                            <button
-                              onClick={() => setEditingId(cat.id)}
-                              className="flex-1 text-left text-xs"
-                            >
-                              <span className="font-medium text-body">{cat.name}</span>
-                              <span className="ml-2 text-muted">{cat.group}</span>
-                              {cat.assigned > 0 && (
-                                <span className="ml-2 tabular-nums text-muted">{formatMoney(cat.assigned, USD)}</span>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRecord('category', cat.id, cat.name)}
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted hover:bg-negative/10 hover:text-negative"
-                              aria-label={`Delete ${cat.name}`}
-                            >
-                              <TrashIcon className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {state.categories.length === 0 && <p className="px-2 text-xs text-muted">No categories</p>}
-                  </div>
-                )}
+            {/* Data Dump */}
+            <Section label="Data">
+              <div className="space-y-2">
+                <p className="text-xs text-muted">
+                  {state.accounts.length} accounts, {state.transactions.length} transactions, {state.categories.length} categories
+                </p>
+                <Btn onClick={handleDumpJson}>
+                  {copied ? 'Copied!' : 'Copy JSON to clipboard'}
+                </Btn>
               </div>
             </Section>
           </div>

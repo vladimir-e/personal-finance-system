@@ -785,32 +785,31 @@ export function BudgetScreen() {
             </div>
           )}
 
-          {/* Archived section */}
-          {(archivedItemIds.length > 0 || isOverArchived) && (
-            <div
-              ref={setArchivedDropRef}
-              className={`border-b border-edge last:border-b-0 ${isOverArchived ? 'bg-hover/30' : ''}`}
+          {/* Archived section — always mounted so DnD drop target works even when empty */}
+          <div
+            ref={setArchivedDropRef}
+            className={`border-b border-edge last:border-b-0 ${isOverArchived ? 'bg-hover/30' : ''}`}
+          >
+            <button
+              onClick={() => setArchivedCollapsed((v) => !v)}
+              aria-expanded={!archivedCollapsed}
+              className="flex min-h-[44px] w-full items-center px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
             >
-              <button
-                onClick={() => setArchivedCollapsed((v) => !v)}
-                aria-expanded={!archivedCollapsed}
-                className="flex min-h-[44px] w-full items-center px-4 text-xs font-medium uppercase tracking-wider text-muted transition-colors hover:bg-hover"
-              >
-                <div className="sticky left-0 z-10 -ml-4 flex items-center gap-2 bg-surface pl-4 pr-2 md:static md:ml-0 md:flex-1 md:bg-transparent md:pl-0 md:pr-0">
-                  <ChevronRightIcon
-                    className={`h-4 w-4 flex-shrink-0 transition-transform ${archivedCollapsed ? '' : 'rotate-90'}`}
-                  />
-                  <span className="text-left md:flex-1">Archived</span>
-                  {isOverArchived && archivedCollapsed && (
-                    <span className="text-[10px] font-normal normal-case tracking-normal text-accent">
-                      Drop to archive
-                    </span>
-                  )}
-                  <span className="tabular-nums text-muted">{archivedItemIds.length}</span>
-                </div>
-              </button>
-              {!archivedCollapsed && (
-                <SortableContext
+              <div className="sticky left-0 z-10 -ml-4 flex items-center gap-2 bg-surface pl-4 pr-2 md:static md:ml-0 md:flex-1 md:bg-transparent md:pl-0 md:pr-0">
+                <ChevronRightIcon
+                  className={`h-4 w-4 flex-shrink-0 transition-transform ${archivedCollapsed ? '' : 'rotate-90'}`}
+                />
+                <span className="text-left md:flex-1">Archived</span>
+                {isOverArchived && archivedCollapsed && (
+                  <span className="text-[10px] font-normal normal-case tracking-normal text-accent">
+                    Drop to archive
+                  </span>
+                )}
+                <span className="tabular-nums text-muted">{archivedItemIds.length}</span>
+              </div>
+            </button>
+            {!archivedCollapsed && archivedItemIds.length > 0 && (
+              <SortableContext
                   items={archivedItemIds}
                   strategy={verticalListSortingStrategy}
                 >
@@ -845,8 +844,7 @@ export function BudgetScreen() {
                   })}
                 </SortableContext>
               )}
-            </div>
-          )}
+          </div>
             </div>
           </div>
         </div>

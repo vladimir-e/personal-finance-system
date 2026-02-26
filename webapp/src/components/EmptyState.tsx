@@ -15,6 +15,7 @@ export function EmptyState({
       <p className="mt-1 text-sm text-muted">{message}</p>
       {actionLabel && onAction && (
         <button
+          type="button"
           onClick={onAction}
           className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-accent px-4 text-sm font-medium text-white transition-colors hover:bg-accent/90"
         >

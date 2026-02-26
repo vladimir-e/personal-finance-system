@@ -45,7 +45,8 @@ export function useBudgetDnd(
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
-      const cat = categories.find((c) => c.id === event.active.id);
+      const activeId = String(event.active.id);
+      const cat = categories.find((c) => c.id === activeId);
       if (!cat) return;
       setActiveItem(cat);
       setContainerItems(buildContainerItems());
@@ -110,22 +111,22 @@ export function useBudgetDnd(
         return;
       }
 
-      // Handle within-container reorder (compute locally, don't mutate state)
+      // Determine source group from the original category
+      const sourceGroup = activeItem.archived ? ARCHIVED_GROUP : activeItem.group;
+
+      // Handle within-container reorder (only when drag stayed in the same container)
       let targetOrder = containerItems.get(activeContainer) ?? [];
-      if (over) {
+      if (over && sourceGroup === activeContainer) {
         const overContainer = findContainer(String(over.id), containerItems);
         if (overContainer && activeContainer === overContainer) {
           const ids = [...targetOrder];
           const oldIdx = ids.indexOf(String(active.id));
           const newIdx = ids.indexOf(String(over.id));
-          if (oldIdx !== newIdx) {
+          if (oldIdx >= 0 && newIdx >= 0 && oldIdx !== newIdx) {
             targetOrder = arrayMove(ids, oldIdx, newIdx);
           }
         }
       }
-
-      // Determine source group from the original category
-      const sourceGroup = activeItem.archived ? ARCHIVED_GROUP : activeItem.group;
       const sourceOrder =
         sourceGroup !== activeContainer ? (containerItems.get(sourceGroup) ?? []) : [];
 

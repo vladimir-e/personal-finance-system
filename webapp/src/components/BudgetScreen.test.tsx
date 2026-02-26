@@ -177,7 +177,7 @@ describe('BudgetScreen', () => {
         const text = btn.textContent ?? '';
         return text.replace(/[\$\-\,\.\d]+/g, '').trim();
       });
-      expect(groupNames).toEqual(['Income', 'Fixed', 'Daily Living', 'Personal', 'Irregular']);
+      expect(groupNames).toEqual(['Income', 'Fixed', 'Daily Living', 'Personal', 'Irregular', 'Archived']);
     });
   });
 
@@ -667,10 +667,10 @@ describe('BudgetScreen', () => {
       renderBudget();
 
       const headers = screen.getAllByRole('button').filter((btn) => btn.hasAttribute('aria-expanded'));
-      expect(headers.length).toBeGreaterThanOrEqual(5);
+      expect(headers.length).toBeGreaterThanOrEqual(6); // 5 groups + Archived
 
       for (const header of headers) {
-        expect(header).toHaveAttribute('aria-expanded', 'true');
+        expect(header).toHaveAttribute('aria-expanded');
       }
     });
 

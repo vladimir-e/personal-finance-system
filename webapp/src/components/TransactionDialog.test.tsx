@@ -113,8 +113,9 @@ describe('TransactionDialog', () => {
     it('pre-selects defaultAccountId', () => {
       renderCreate({ defaultAccountId: 'acct-savings' });
 
-      const select = screen.getByLabelText('Account') as HTMLSelectElement;
-      expect(select.value).toBe('acct-savings');
+      // The trigger button should show the selected account name
+      const trigger = screen.getByLabelText('Account');
+      expect(trigger).toHaveTextContent('Savings');
     });
 
     it('has Add submit button', () => {
@@ -123,12 +124,17 @@ describe('TransactionDialog', () => {
       expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
     });
 
-    it('shows category groups in dropdown', () => {
+    it('shows category groups in dropdown', async () => {
+      const user = userEvent.setup();
       renderCreate();
 
-      const select = screen.getByLabelText('Category');
-      const optgroups = select.querySelectorAll('optgroup');
-      expect(optgroups.length).toBeGreaterThan(0);
+      // Open the category dropdown
+      await user.click(screen.getByLabelText('Category'));
+
+      // Group headers should be visible
+      // Default categories have groups like "Housing", "Daily Living", etc.
+      const groupHeaders = document.querySelectorAll('.uppercase.tracking-wider');
+      expect(groupHeaders.length).toBeGreaterThan(0);
     });
 
     it('shows error for empty amount', async () => {
@@ -191,9 +197,17 @@ describe('TransactionDialog', () => {
       await user.click(screen.getByRole('radio', { name: 'Transfer' }));
       await user.type(screen.getByLabelText('Amount'), '50.00');
 
-      // Set both to the same account
-      await user.selectOptions(screen.getByLabelText('From Account'), 'acct-checking');
-      await user.selectOptions(screen.getByLabelText('To Account'), 'acct-checking');
+      // From defaults to Checking. Change To to Checking as well.
+      // Open the To Account dropdown, search for "Check", then click the option.
+      const toTrigger = screen.getByLabelText('To Account');
+      await user.click(toTrigger);
+      // Type in the search input to narrow to just "Checking"
+      const searchInputs = screen.getAllByPlaceholderText('Search…');
+      const visibleSearch = searchInputs.find(el => el.offsetParent !== null) ?? searchInputs[searchInputs.length - 1];
+      await user.type(visibleSearch, 'Check');
+      // Now only the "Checking" option should be visible
+      const option = screen.getByRole('option', { name: 'Checking' });
+      await user.click(option);
 
       await user.click(screen.getByRole('button', { name: 'Add' }));
 

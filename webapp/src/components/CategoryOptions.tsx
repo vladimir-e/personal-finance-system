@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Category } from 'pfs-lib';
+import type { SelectOption } from './SearchableSelect';
 
 /**
  * Group categories by their `group` field, sorted by `sortOrder`.
@@ -15,6 +16,18 @@ export function groupCategories(categories: Category[]): Map<string, Category[]>
     groups.set(cat.group, list);
   }
   return groups;
+}
+
+/** Build SelectOption[] for SearchableSelect, grouped by category group. */
+export function buildCategoryOptions(categories: Category[]): SelectOption[] {
+  const groups = groupCategories(categories);
+  const result: SelectOption[] = [];
+  for (const [group, cats] of groups) {
+    for (const c of cats) {
+      result.push({ value: c.id, label: c.name, group });
+    }
+  }
+  return result;
 }
 
 /** Hook: memoized grouped categories from a filtered list. */

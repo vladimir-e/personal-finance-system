@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useMemo, type FormEvent } from 'react';
 import { useDataStore } from '../store';
 import { CreateTransactionInput, UpdateTransactionInput, parseMoney } from 'pfs-lib';
 import type { Transaction, TransactionType, Currency } from 'pfs-lib';
-import { CategoryOptions } from './CategoryOptions';
-import { AccountOptions } from './AccountOptions';
+import { buildCategoryOptions } from './CategoryOptions';
+import { buildAccountOptions } from './AccountOptions';
+import { SearchableSelect } from './SearchableSelect';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -262,65 +263,60 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           {type === 'transfer' ? (
             <>
               <div>
-                <label htmlFor="txn-from" className="mb-1 block text-sm font-medium text-body">
+                <label className="mb-1 block text-sm font-medium text-body">
                   From Account
                 </label>
-                <select
-                  id="txn-from"
+                <SearchableSelect
+                  options={buildAccountOptions(accounts)}
                   value={fromAccountId}
-                  onChange={e => setFromAccountId(e.target.value)}
+                  onChange={setFromAccountId}
                   disabled={isTransferEdit}
-                  className={`${inputClass} ${isTransferEdit ? 'opacity-60' : ''}`}
-                >
-                  <AccountOptions accounts={accounts} />
-                </select>
+                  aria-label="From Account"
+                  placeholder="Select account"
+                />
                 {errors.fromAccountId && <p className="mt-1 text-xs text-negative">{errors.fromAccountId}</p>}
               </div>
               <div>
-                <label htmlFor="txn-to" className="mb-1 block text-sm font-medium text-body">
+                <label className="mb-1 block text-sm font-medium text-body">
                   To Account
                 </label>
-                <select
-                  id="txn-to"
+                <SearchableSelect
+                  options={buildAccountOptions(accounts)}
                   value={toAccountId}
-                  onChange={e => setToAccountId(e.target.value)}
+                  onChange={setToAccountId}
                   disabled={isTransferEdit}
-                  className={`${inputClass} ${isTransferEdit ? 'opacity-60' : ''}`}
-                >
-                  <AccountOptions accounts={accounts} />
-                </select>
+                  aria-label="To Account"
+                  placeholder="Select account"
+                />
                 {errors.toAccountId && <p className="mt-1 text-xs text-negative">{errors.toAccountId}</p>}
               </div>
             </>
           ) : (
             <>
               <div>
-                <label htmlFor="txn-account" className="mb-1 block text-sm font-medium text-body">
+                <label className="mb-1 block text-sm font-medium text-body">
                   Account
                 </label>
-                <select
-                  id="txn-account"
+                <SearchableSelect
+                  options={buildAccountOptions(accounts)}
                   value={accountId}
-                  onChange={e => setAccountId(e.target.value)}
-                  className={inputClass}
-                >
-                  <AccountOptions accounts={accounts} />
-                </select>
+                  onChange={setAccountId}
+                  aria-label="Account"
+                  placeholder="Select account"
+                />
                 {errors.accountId && <p className="mt-1 text-xs text-negative">{errors.accountId}</p>}
               </div>
               <div>
-                <label htmlFor="txn-category" className="mb-1 block text-sm font-medium text-body">
+                <label className="mb-1 block text-sm font-medium text-body">
                   Category
                 </label>
-                <select
-                  id="txn-category"
+                <SearchableSelect
+                  options={[{ value: '', label: 'Uncategorized' }, ...buildCategoryOptions(categories)]}
                   value={categoryId}
-                  onChange={e => setCategoryId(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Uncategorized</option>
-                  <CategoryOptions categories={categories} />
-                </select>
+                  onChange={setCategoryId}
+                  aria-label="Category"
+                  placeholder="Select category"
+                />
                 {errors.categoryId && <p className="mt-1 text-xs text-negative">{errors.categoryId}</p>}
               </div>
             </>

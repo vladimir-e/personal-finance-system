@@ -130,9 +130,10 @@ describe('AccountSidebar', () => {
 
       render(<AccountSidebar {...defaultProps()} />, { initialState: state });
 
-      // Balance = 75000 - 25000 = 50000 — appears in net worth, subtotal, and row
+      // Balance = 75000 - 25000 = 50000 — appears in net worth and account row
+      // (group subtotal hidden when only 1 account in group)
       const balanceEls = screen.getAllByText(formatMoney(50000, CURRENCY));
-      expect(balanceEls.length).toBe(3); // net worth, group subtotal, account row
+      expect(balanceEls.length).toBe(2);
     });
   });
 
@@ -214,7 +215,7 @@ describe('AccountSidebar', () => {
       );
 
       const allBtn = screen.getByText('All Accounts').closest('button')!;
-      expect(allBtn.className).toContain('text-accent');
+      expect(allBtn.className).toContain('text-heading');
       expect(allBtn).toHaveAttribute('aria-current', 'page');
     });
 

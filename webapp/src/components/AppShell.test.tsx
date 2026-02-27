@@ -34,7 +34,7 @@ function mobileNav() {
 describe('AppShell', () => {
   it('defaults to Transactions tab', () => {
     renderShell();
-    expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open account selector' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Budget' })).not.toBeInTheDocument();
   });
 
@@ -67,7 +67,7 @@ describe('AppShell', () => {
     await user.click(within(mobileNav()).getByText('Budget'));
     await user.click(within(mobileNav()).getByText('Transactions'));
 
-    expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open account selector' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Budget' })).not.toBeInTheDocument();
   });
 
@@ -127,11 +127,11 @@ describe('AppShell', () => {
     const user = userEvent.setup();
 
     await user.click(within(mobileNav()).getByText('Budget'));
-    expect(screen.queryByRole('heading', { name: 'Transactions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open account selector' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add transaction' }));
 
-    expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open account selector' })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Add transaction' })).toBeInTheDocument();
   });
 });

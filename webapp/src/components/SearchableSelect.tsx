@@ -43,6 +43,7 @@ export function SearchableSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const dismissedRef = useRef(false);
+  const selectedRef = useRef(false);
 
   const selectedItem = useMemo(
     () => options.find(o => o.value === value) ?? null,
@@ -58,13 +59,14 @@ export function SearchableSelect({
   const handleIsOpenChange = useCallback(({ isOpen: open }: { isOpen: boolean }) => {
     if (!open) {
       setQuery('');
-      if (autoOpen && onDismiss && !dismissedRef.current) {
+      if (autoOpen && onDismiss && !dismissedRef.current && !selectedRef.current) {
         dismissedRef.current = true;
         onDismiss();
       } else {
         // Return focus to trigger so Tab advances to the next form field
         triggerRef.current?.focus();
       }
+      selectedRef.current = false;
     }
   }, [autoOpen, onDismiss]);
 
@@ -83,7 +85,10 @@ export function SearchableSelect({
     itemToString: item => item?.label ?? '',
     inputValue: query,
     onSelectedItemChange: ({ selectedItem: item }) => {
-      if (item) onChange(item.value);
+      if (item) {
+        selectedRef.current = true;
+        onChange(item.value);
+      }
     },
     onIsOpenChange: handleIsOpenChange,
     defaultIsOpen: autoOpen,
@@ -143,13 +148,12 @@ export function SearchableSelect({
     <div className={`relative ${className}`}>
       {/* Trigger */}
       <button
-        {...getToggleButtonProps({ ref: triggerRef })}
+        {...getToggleButtonProps({ ref: triggerRef, onKeyDown: handleTriggerKeyDown })}
         type="button"
         tabIndex={0}
         id={id}
         disabled={disabled}
         aria-label={ariaLabel}
-        onKeyDown={handleTriggerKeyDown}
         className={`flex min-h-[44px] w-full items-center justify-between rounded-lg border border-edge bg-page px-3 py-2 text-sm text-left transition-colors ${
           disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
         } ${isOpen ? 'border-accent' : ''}`}
@@ -160,11 +164,8 @@ export function SearchableSelect({
         <span className="flex items-center gap-1">
           {defaultValue !== undefined && value !== defaultValue && !disabled && (
             <span
-              role="button"
-              tabIndex={0}
-              aria-label="Clear selection"
+              aria-hidden="true"
               onClick={e => { e.stopPropagation(); onChange(defaultValue); }}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onChange(defaultValue); } }}
               className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors hover:bg-hover hover:text-body"
             >
               <CloseIcon className="h-3.5 w-3.5" />
@@ -195,6 +196,7 @@ export function SearchableSelect({
                   onChange: (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),
                 })}
                 type="text"
+                aria-label="Search options"
                 className="min-h-[36px] w-full rounded-md border border-edge bg-page px-3 text-sm text-body placeholder:text-muted outline-none focus:border-accent"
                 placeholder="Search…"
               />

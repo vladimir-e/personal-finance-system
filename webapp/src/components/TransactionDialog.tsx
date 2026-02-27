@@ -263,10 +263,11 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           {type === 'transfer' ? (
             <>
               <div>
-                <label className="mb-1 block text-sm font-medium text-body">
+                <label htmlFor="txn-from-account" className="mb-1 block text-sm font-medium text-body">
                   From Account
                 </label>
                 <SearchableSelect
+                  id="txn-from-account"
                   options={buildAccountOptions(accounts)}
                   value={fromAccountId}
                   onChange={setFromAccountId}
@@ -277,10 +278,11 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                 {errors.fromAccountId && <p className="mt-1 text-xs text-negative">{errors.fromAccountId}</p>}
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-body">
+                <label htmlFor="txn-to-account" className="mb-1 block text-sm font-medium text-body">
                   To Account
                 </label>
                 <SearchableSelect
+                  id="txn-to-account"
                   options={buildAccountOptions(accounts)}
                   value={toAccountId}
                   onChange={setToAccountId}
@@ -294,10 +296,11 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           ) : (
             <>
               <div>
-                <label className="mb-1 block text-sm font-medium text-body">
+                <label htmlFor="txn-account" className="mb-1 block text-sm font-medium text-body">
                   Account
                 </label>
                 <SearchableSelect
+                  id="txn-account"
                   options={buildAccountOptions(accounts)}
                   value={accountId}
                   onChange={setAccountId}
@@ -307,10 +310,11 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                 {errors.accountId && <p className="mt-1 text-xs text-negative">{errors.accountId}</p>}
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-body">
+                <label htmlFor="txn-category" className="mb-1 block text-sm font-medium text-body">
                   Category
                 </label>
                 <SearchableSelect
+                  id="txn-category"
                   options={[{ value: '', label: 'Uncategorized' }, ...buildCategoryOptions(categories)]}
                   value={categoryId}
                   onChange={setCategoryId}

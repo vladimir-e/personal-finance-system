@@ -131,10 +131,9 @@ describe('TransactionDialog', () => {
       // Open the category dropdown
       await user.click(screen.getByLabelText('Category'));
 
-      // Group headers should be visible
-      // Default categories have groups like "Housing", "Daily Living", etc.
-      const groupHeaders = document.querySelectorAll('.uppercase.tracking-wider');
-      expect(groupHeaders.length).toBeGreaterThan(0);
+      // Default categories include groups like "Housing", "Daily Living", etc.
+      expect(screen.getByText('Housing')).toBeInTheDocument();
+      expect(screen.getByText('Daily Living')).toBeInTheDocument();
     });
 
     it('shows error for empty amount', async () => {

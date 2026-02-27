@@ -198,16 +198,11 @@ describe('TransactionDialog', () => {
       await user.type(screen.getByLabelText('Amount'), '50.00');
 
       // From defaults to Checking. Change To to Checking as well.
-      // Open the To Account dropdown, search for "Check", then click the option.
-      const toTrigger = screen.getByLabelText('To Account');
-      await user.click(toTrigger);
-      // Type in the search input to narrow to just "Checking"
-      const searchInputs = screen.getAllByPlaceholderText('Search…');
-      const visibleSearch = searchInputs.find(el => el.offsetParent !== null) ?? searchInputs[searchInputs.length - 1];
-      await user.type(visibleSearch, 'Check');
-      // Now only the "Checking" option should be visible
-      const option = screen.getByRole('option', { name: 'Checking' });
-      await user.click(option);
+      // Open the To Account dropdown, type to filter, pick the option.
+      await user.click(screen.getByLabelText('To Account'));
+      // Search input is focused after open — type into it
+      await user.keyboard('Check');
+      await user.click(screen.getByRole('option', { name: 'Checking' }));
 
       await user.click(screen.getByRole('button', { name: 'Add' }));
 

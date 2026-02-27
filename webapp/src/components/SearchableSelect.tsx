@@ -61,6 +61,9 @@ export function SearchableSelect({
       if (autoOpen && onDismiss && !dismissedRef.current) {
         dismissedRef.current = true;
         onDismiss();
+      } else {
+        // Return focus to trigger so Tab advances to the next form field
+        triggerRef.current?.focus();
       }
     }
   }, [autoOpen, onDismiss]);

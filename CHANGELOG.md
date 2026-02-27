@@ -12,6 +12,12 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-26 — UI polish: layout, sidebar, searchable dropdowns
+- Full-bleed layout with permanent desktop sidebar
+- Searchable grouped dropdowns (downshift) replace native selects in transaction dialog/list
+- Consistent account ordering across sidebar and dropdowns
+- Fix pre-existing test failures in AccountSidebar and AppShell
+
 ## 2026-02-26 — Debug panel for testing UI layouts and budget scenarios
 - Slide-over debug drawer with keyboard shortcut toggle
 - Seed budget presets

@@ -3,6 +3,7 @@ import { useDataStore } from '../store';
 import { CreateTransactionInput, UpdateTransactionInput, parseMoney } from 'pfs-lib';
 import type { Transaction, TransactionType, Currency } from 'pfs-lib';
 import { CategoryOptions } from './CategoryOptions';
+import { AccountOptions } from './AccountOptions';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -271,9 +272,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   disabled={isTransferEdit}
                   className={`${inputClass} ${isTransferEdit ? 'opacity-60' : ''}`}
                 >
-                  {accounts.map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
+                  <AccountOptions accounts={accounts} />
                 </select>
                 {errors.fromAccountId && <p className="mt-1 text-xs text-negative">{errors.fromAccountId}</p>}
               </div>
@@ -288,9 +287,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   disabled={isTransferEdit}
                   className={`${inputClass} ${isTransferEdit ? 'opacity-60' : ''}`}
                 >
-                  {accounts.map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
+                  <AccountOptions accounts={accounts} />
                 </select>
                 {errors.toAccountId && <p className="mt-1 text-xs text-negative">{errors.toAccountId}</p>}
               </div>
@@ -307,9 +304,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   onChange={e => setAccountId(e.target.value)}
                   className={inputClass}
                 >
-                  {accounts.map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
+                  <AccountOptions accounts={accounts} />
                 </select>
                 {errors.accountId && <p className="mt-1 text-xs text-negative">{errors.accountId}</p>}
               </div>

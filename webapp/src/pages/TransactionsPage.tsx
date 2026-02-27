@@ -141,8 +141,8 @@ export function TransactionsPage({ showAddTransaction, onCloseAddTransaction }: 
   return (
     <div className="flex gap-6">
       {/* Desktop sidebar — permanent */}
-      <aside className="hidden w-64 flex-shrink-0 md:block">
-        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-lg border border-edge bg-surface">
+      <aside className="hidden min-w-56 max-w-80 flex-[0_0_18%] md:block">
+        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden rounded-lg border border-edge bg-surface">
           <AccountSidebar {...sidebarProps} />
         </div>
       </aside>
@@ -159,8 +159,6 @@ export function TransactionsPage({ showAddTransaction, onCloseAddTransaction }: 
           <span className="truncate">{selectedLabel}</span>
           <ChevronDownIcon className="ml-auto h-4 w-4 flex-shrink-0 text-muted" />
         </button>
-
-        <h1 className="text-2xl font-bold text-heading">Transactions</h1>
 
         <TransactionList selectedAccountId={selectedAccountId} onDeleteTransaction={handleDeleteTransaction} />
       </div>

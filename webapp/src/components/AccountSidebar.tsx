@@ -5,20 +5,9 @@ import { formatMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
 import { ChevronRightIcon, ReconcileIcon, PlusIcon, MoreIcon } from './icons';
 import { amountClass } from '../utils/amountClass';
+import { TYPE_TO_GROUP, GROUP_ORDER } from '../utils/accountOrder';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
-
-const TYPE_TO_GROUP: Record<AccountType, string> = {
-  cash: 'Cash',
-  checking: 'Checking',
-  savings: 'Savings',
-  credit_card: 'Credit',
-  asset: 'Investment',
-  crypto: 'Investment',
-  loan: 'Loans',
-};
-
-const GROUP_ORDER = ['Cash', 'Checking', 'Savings', 'Credit', 'Investment', 'Loans'];
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -101,15 +90,15 @@ function AccountRow({
   return (
     <div
       className={`flex items-center transition-colors ${
-        selected ? 'bg-accent/10' : 'hover:bg-hover'
+        selected ? 'border-l-2 border-accent bg-hover' : 'border-l-2 border-transparent hover:bg-hover'
       }`}
     >
       <button
         onClick={onSelect}
         aria-current={selected ? 'page' : undefined}
-        className={`flex min-h-[44px] flex-1 items-center justify-between py-2 pl-4 pr-1 text-sm ${
+        className={`flex min-h-[44px] flex-1 items-center justify-between py-2 pl-3.5 pr-1 text-sm ${
           selected
-            ? 'text-accent'
+            ? 'font-medium text-heading'
             : account.archived
               ? 'text-muted'
               : 'text-body'
@@ -123,7 +112,7 @@ function AccountRow({
             </span>
           )}
         </span>
-        <span className={`ml-3 flex-shrink-0 tabular-nums ${selected ? '' : amountClass(balance)}`}>
+        <span className={`ml-3 flex-shrink-0 tabular-nums ${amountClass(balance)}`}>
           {formatMoney(balance, CURRENCY)}
         </span>
       </button>
@@ -132,9 +121,7 @@ function AccountRow({
           e.stopPropagation();
           onMenuOpen(account, e.currentTarget.getBoundingClientRect());
         }}
-        className={`flex min-h-[44px] min-w-[44px] items-center justify-center transition-colors ${
-          selected ? 'text-accent/60 hover:text-accent' : 'text-muted hover:text-heading'
-        }`}
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center text-muted transition-colors hover:text-heading"
         aria-label={`Actions for ${account.name}`}
       >
         <MoreIcon className="h-4 w-4" />
@@ -252,10 +239,10 @@ export function AccountSidebar({
       <button
         onClick={() => onSelectAccount(null)}
         aria-current={selectedAccountId === null ? 'page' : undefined}
-        className={`flex min-h-[44px] items-center px-4 text-sm font-medium transition-colors ${
+        className={`flex min-h-[44px] items-center text-sm font-medium transition-colors ${
           selectedAccountId === null
-            ? 'bg-accent/10 text-accent'
-            : 'text-body hover:bg-hover'
+            ? 'border-l-2 border-accent bg-hover pl-3.5 text-heading'
+            : 'border-l-2 border-transparent pl-3.5 text-body hover:bg-hover'
         }`}
       >
         All Accounts
@@ -268,9 +255,11 @@ export function AccountSidebar({
             <span className="text-xs font-medium uppercase tracking-wider text-muted">
               {group.label}
             </span>
-            <span className={`text-xs font-medium tabular-nums ${amountClass(group.subtotal)}`}>
-              {formatMoney(group.subtotal, CURRENCY)}
-            </span>
+            {group.items.length > 1 && (
+              <span className="text-xs font-medium tabular-nums text-muted">
+                {formatMoney(group.subtotal, CURRENCY)}
+              </span>
+            )}
           </div>
           {group.items.map(({ account, balance }) => (
             <AccountRow

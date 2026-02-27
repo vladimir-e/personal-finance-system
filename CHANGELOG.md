@@ -12,6 +12,11 @@ Newest entries go at the top.
 
 ---
 
+## 2026-02-26 — Debug panel for testing UI layouts and budget scenarios
+- Slide-over debug drawer with keyboard shortcut toggle
+- Seed budget presets
+- Quick actions: clear data, reset categories, generate random transactions
+
 ## 2026-02-25 — Budget UX polish
 - Mobile horizontal scroll with sticky columns
 - Drag-and-drop category reordering

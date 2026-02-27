@@ -113,8 +113,9 @@ describe('TransactionDialog', () => {
     it('pre-selects defaultAccountId', () => {
       renderCreate({ defaultAccountId: 'acct-savings' });
 
-      const select = screen.getByLabelText('Account') as HTMLSelectElement;
-      expect(select.value).toBe('acct-savings');
+      // The trigger button should show the selected account name
+      const trigger = screen.getByLabelText('Account');
+      expect(trigger).toHaveTextContent('Savings');
     });
 
     it('has Add submit button', () => {
@@ -123,12 +124,16 @@ describe('TransactionDialog', () => {
       expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
     });
 
-    it('shows category groups in dropdown', () => {
+    it('shows category groups in dropdown', async () => {
+      const user = userEvent.setup();
       renderCreate();
 
-      const select = screen.getByLabelText('Category');
-      const optgroups = select.querySelectorAll('optgroup');
-      expect(optgroups.length).toBeGreaterThan(0);
+      // Open the category dropdown
+      await user.click(screen.getByLabelText('Category'));
+
+      // Default categories include groups like "Housing", "Daily Living", etc.
+      expect(screen.getByText('Housing')).toBeInTheDocument();
+      expect(screen.getByText('Daily Living')).toBeInTheDocument();
     });
 
     it('shows error for empty amount', async () => {
@@ -191,9 +196,12 @@ describe('TransactionDialog', () => {
       await user.click(screen.getByRole('radio', { name: 'Transfer' }));
       await user.type(screen.getByLabelText('Amount'), '50.00');
 
-      // Set both to the same account
-      await user.selectOptions(screen.getByLabelText('From Account'), 'acct-checking');
-      await user.selectOptions(screen.getByLabelText('To Account'), 'acct-checking');
+      // From defaults to Checking. Change To to Checking as well.
+      // Open the To Account dropdown, type to filter, pick the option.
+      await user.click(screen.getByLabelText('To Account'));
+      // Search input is focused after open — type into it
+      await user.keyboard('Check');
+      await user.click(screen.getByRole('option', { name: 'Checking' }));
 
       await user.click(screen.getByRole('button', { name: 'Add' }));
 

@@ -251,7 +251,9 @@ describe('TransactionList', () => {
       const user = userEvent.setup();
       renderList();
 
-      await user.selectOptions(screen.getByLabelText('Filter by category'), 'cat-1');
+      // Open the SearchableSelect and pick a category by role
+      await user.click(screen.getByLabelText('Filter by category'));
+      await user.click(screen.getByRole('option', { name: 'Groceries' }));
 
       const table = getTable();
       expect(within(table).getByText('Weekly groceries')).toBeInTheDocument();

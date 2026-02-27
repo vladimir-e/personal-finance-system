@@ -76,7 +76,7 @@ export function AppShell() {
     <div className="min-h-screen bg-page pb-16 md:pb-0">
       {/* Top nav bar */}
       <nav className="sticky top-0 z-10 border-b border-edge bg-surface">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+        <div className="flex h-14 items-center justify-between px-6">
           <span className="text-lg font-semibold text-heading">PFS</span>
 
           {/* Desktop tabs */}
@@ -117,7 +117,7 @@ export function AppShell() {
       </nav>
 
       {/* Main content */}
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="px-6 py-6">
         {activeTab === 'transactions'
           ? <TransactionsPage showAddTransaction={showAddTxn} onCloseAddTransaction={() => setShowAddTxn(false)} />
           : <BudgetPage />

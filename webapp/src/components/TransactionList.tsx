@@ -3,7 +3,9 @@ import { useDataStore } from '../store';
 import { formatMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
 import { TransactionDialog } from './TransactionDialog';
-import { CategoryOptions } from './CategoryOptions';
+import { buildCategoryOptions } from './CategoryOptions';
+import { buildAccountOptions } from './AccountOptions';
+import { SearchableSelect } from './SearchableSelect';
 import { SearchIcon, ChevronUpIcon, ChevronDownIcon, EditIcon, TrashIcon } from './icons';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useTransactionFilters, SORT_LABELS } from '../hooks/useTransactionFilters';
@@ -86,34 +88,27 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
         case 'account':
           return (
             <td key={field} className="px-1 py-1">
-              <select
+              <SearchableSelect
+                options={buildAccountOptions(activeAccounts)}
                 value={editValue}
-                onChange={e => handleSelectCommit(tx.id, 'account', e.target.value)}
-                onKeyDown={e => { if (e.key === 'Escape') cancelEdit(); }}
-                onBlur={() => { if (!committedRef.current) commitEdit(); }}
-                autoFocus
-                className={editInputClass}
-              >
-                {activeAccounts.map(a => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
+                onChange={v => handleSelectCommit(tx.id, 'account', v)}
+                autoOpen
+                onDismiss={cancelEdit}
+                aria-label="Select account"
+              />
             </td>
           );
         case 'category':
           return (
             <td key={field} className="px-1 py-1">
-              <select
+              <SearchableSelect
+                options={[{ value: '', label: 'Uncategorized' }, ...buildCategoryOptions(activeCategories)]}
                 value={editValue}
-                onChange={e => handleSelectCommit(tx.id, 'category', e.target.value)}
-                onKeyDown={e => { if (e.key === 'Escape') cancelEdit(); }}
-                onBlur={() => { if (!committedRef.current) commitEdit(); }}
-                autoFocus
-                className={editInputClass}
-              >
-                <option value="">Uncategorized</option>
-                <CategoryOptions categories={activeCategories} />
-              </select>
+                onChange={v => handleSelectCommit(tx.id, 'category', v)}
+                autoOpen
+                onDismiss={cancelEdit}
+                aria-label="Select category"
+              />
             </td>
           );
         case 'description':
@@ -234,15 +229,14 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           />
         </div>
 
-        <select
+        <SearchableSelect
+          options={[{ value: '', label: 'All Categories' }, ...buildCategoryOptions(activeCategories)]}
           value={categoryFilter}
-          onChange={e => setCategoryFilter(e.target.value)}
-          className="min-h-[44px] rounded-lg border border-edge bg-surface px-3 text-sm text-body transition-colors focus:border-accent focus:outline-none sm:w-48"
+          onChange={setCategoryFilter}
+          defaultValue=""
           aria-label="Filter by category"
-        >
-          <option value="">All Categories</option>
-          <CategoryOptions categories={activeCategories} />
-        </select>
+          className="sm:w-48"
+        />
 
         {/* Mobile sort selector */}
         <select

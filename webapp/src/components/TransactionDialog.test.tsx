@@ -61,13 +61,30 @@ describe('TransactionDialog', () => {
       expect(screen.getByText('Add Transaction')).toBeInTheDocument();
     });
 
-    it('shows all form fields', () => {
+    it('shows primary form fields', () => {
       renderCreate();
 
       expect(screen.getByLabelText('Amount')).toBeInTheDocument();
       expect(screen.getByLabelText('Date')).toBeInTheDocument();
       expect(screen.getByLabelText('Account')).toBeInTheDocument();
       expect(screen.getByLabelText('Category')).toBeInTheDocument();
+    });
+
+    it('collapses details section by default in create mode', () => {
+      renderCreate();
+
+      const toggle = screen.getByRole('button', { name: /add details/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('expands details section on toggle click', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      const toggle = screen.getByRole('button', { name: /add details/i });
+      await user.click(toggle);
+
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
       expect(screen.getByLabelText(/Description/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Payee/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Notes/)).toBeInTheDocument();
@@ -113,7 +130,6 @@ describe('TransactionDialog', () => {
     it('pre-selects defaultAccountId', () => {
       renderCreate({ defaultAccountId: 'acct-savings' });
 
-      // The trigger button should show the selected account name
       const trigger = screen.getByLabelText('Account');
       expect(trigger).toHaveTextContent('Savings');
     });
@@ -128,10 +144,8 @@ describe('TransactionDialog', () => {
       const user = userEvent.setup();
       renderCreate();
 
-      // Open the category dropdown
       await user.click(screen.getByLabelText('Category'));
 
-      // Default categories include groups like "Housing", "Daily Living", etc.
       expect(screen.getByText('Housing')).toBeInTheDocument();
       expect(screen.getByText('Daily Living')).toBeInTheDocument();
     });
@@ -196,10 +210,7 @@ describe('TransactionDialog', () => {
       await user.click(screen.getByRole('radio', { name: 'Transfer' }));
       await user.type(screen.getByLabelText('Amount'), '50.00');
 
-      // From defaults to Checking. Change To to Checking as well.
-      // Open the To Account dropdown, type to filter, pick the option.
       await user.click(screen.getByLabelText('To Account'));
-      // Search input is focused after open — type into it
       await user.keyboard('Check');
       await user.click(screen.getByRole('option', { name: 'Checking' }));
 
@@ -218,7 +229,7 @@ describe('TransactionDialog', () => {
       expect(screen.getByText('Edit Transaction')).toBeInTheDocument();
     });
 
-    it('pre-populates form fields from transaction', () => {
+    it('pre-populates amount and date', () => {
       renderEdit();
 
       const amountInput = screen.getByLabelText('Amount') as HTMLInputElement;
@@ -226,6 +237,13 @@ describe('TransactionDialog', () => {
 
       const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
       expect(dateInput.value).toBe('2026-01-15');
+    });
+
+    it('auto-expands details when content exists', () => {
+      renderEdit();
+
+      const toggle = screen.getByRole('button', { name: /groceries/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
       const descInput = screen.getByLabelText(/Description/) as HTMLInputElement;
       expect(descInput.value).toBe('Groceries');
@@ -235,6 +253,13 @@ describe('TransactionDialog', () => {
 
       const notesInput = screen.getByLabelText(/Notes/) as HTMLTextAreaElement;
       expect(notesInput.value).toBe('Weekly shop');
+    });
+
+    it('collapses details when no detail content exists', () => {
+      renderEdit({ description: '', payee: '', notes: '' });
+
+      const toggle = screen.getByRole('button', { name: /add details/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
     });
 
     it('has Save submit button', () => {
@@ -301,6 +326,167 @@ describe('TransactionDialog', () => {
     });
   });
 
+  describe('type-aware amount input', () => {
+    it('shows negative styling for expense type', () => {
+      renderCreate();
+
+      const amountInput = screen.getByLabelText('Amount');
+      expect(amountInput.className).toContain('text-negative');
+    });
+
+    it('shows positive styling for income type', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      await user.click(screen.getByRole('radio', { name: 'Income' }));
+
+      const amountInput = screen.getByLabelText('Amount');
+      expect(amountInput.className).toContain('text-positive');
+    });
+
+    it('shows neutral styling for transfer type', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      await user.click(screen.getByRole('radio', { name: 'Transfer' }));
+
+      const amountInput = screen.getByLabelText('Amount');
+      expect(amountInput.className).toContain('text-body');
+    });
+
+    it('typing + switches to income when amount is empty', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      const amountInput = screen.getByLabelText('Amount');
+      await user.type(amountInput, '+');
+
+      expect(screen.getByRole('radio', { name: 'Income' })).toHaveAttribute('aria-checked', 'true');
+      expect((amountInput as HTMLInputElement).value).toBe('');
+    });
+
+    it('typing - switches to expense when in income mode', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      await user.click(screen.getByRole('radio', { name: 'Income' }));
+      const amountInput = screen.getByLabelText('Amount');
+      await user.type(amountInput, '-');
+
+      expect(screen.getByRole('radio', { name: 'Expense' })).toHaveAttribute('aria-checked', 'true');
+      expect((amountInput as HTMLInputElement).value).toBe('');
+    });
+
+    it('sign shortcuts do not apply in transfer mode', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      await user.click(screen.getByRole('radio', { name: 'Transfer' }));
+      const amountInput = screen.getByLabelText('Amount');
+      await user.type(amountInput, '+42');
+
+      expect(screen.getByRole('radio', { name: 'Transfer' })).toHaveAttribute('aria-checked', 'true');
+      expect((amountInput as HTMLInputElement).value).toBe('42');
+    });
+  });
+
+  describe('semantic type control', () => {
+    it('expense uses negative color when active', () => {
+      renderCreate();
+
+      const expenseBtn = screen.getByRole('radio', { name: 'Expense' });
+      expect(expenseBtn.className).toContain('bg-negative');
+    });
+
+    it('income uses positive color when active', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      await user.click(screen.getByRole('radio', { name: 'Income' }));
+
+      const incomeBtn = screen.getByRole('radio', { name: 'Income' });
+      expect(incomeBtn.className).toContain('bg-positive');
+    });
+
+    it('transfer uses accent color when active', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      await user.click(screen.getByRole('radio', { name: 'Transfer' }));
+
+      const transferBtn = screen.getByRole('radio', { name: 'Transfer' });
+      expect(transferBtn.className).toContain('bg-accent');
+    });
+
+    it('type buttons are excluded from tab order', () => {
+      renderCreate();
+
+      const buttons = screen.getAllByRole('radio');
+      for (const btn of buttons) {
+        expect(btn).toHaveAttribute('tabindex', '-1');
+      }
+    });
+  });
+
+  describe('flexible date input', () => {
+    it('accepts ISO format', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+      await user.clear(dateInput);
+      await user.type(dateInput, '2026-03-15');
+      await user.tab();
+
+      expect(dateInput.value).toBe('2026-03-15');
+    });
+
+    it('accepts short US format M/D', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+      await user.clear(dateInput);
+      await user.type(dateInput, '3/15');
+      await user.tab();
+
+      const year = new Date().getFullYear();
+      expect(dateInput.value).toBe(`${year}-03-15`);
+    });
+
+    it('accepts bare day number', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+      await user.clear(dateInput);
+      await user.type(dateInput, '5');
+      await user.tab();
+
+      const now = new Date();
+      const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-05`;
+      expect(dateInput.value).toBe(expected);
+    });
+
+    it('shows error for invalid date', async () => {
+      const user = userEvent.setup();
+      renderCreate();
+
+      const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
+      await user.clear(dateInput);
+      await user.type(dateInput, 'not-a-date');
+      await user.tab();
+
+      expect(screen.getByText('Invalid date')).toBeInTheDocument();
+    });
+
+    it('has a calendar button', () => {
+      renderCreate();
+
+      expect(screen.getByRole('button', { name: 'Open calendar' })).toBeInTheDocument();
+    });
+  });
+
   describe('dialog dismissal', () => {
     it('closes on Cancel button click', async () => {
       const user = userEvent.setup();
@@ -356,6 +542,21 @@ describe('TransactionDialog', () => {
       renderCreate();
 
       expect(screen.getByRole('radio', { name: 'Expense' }).className).toContain('min-h-[44px]');
+    });
+
+    it('details toggle has aria-expanded and aria-controls', () => {
+      renderCreate();
+
+      const toggle = screen.getByRole('button', { name: /add details/i });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle).toHaveAttribute('aria-controls', 'txn-details');
+    });
+
+    it('details toggle meets 44px touch target', () => {
+      renderCreate();
+
+      const toggle = screen.getByRole('button', { name: /add details/i });
+      expect(toggle.className).toContain('min-h-[44px]');
     });
   });
 });

@@ -39,7 +39,7 @@ The core problems:
 
 ### Out of Scope
 
-- Full calendar widget / date picker popup (too much new UI surface for this task; the flexible text input is the right middle ground)
+- Advanced calendar features (multi-date selection, recurring event editors, full-page calendar views); this task covers only the simple single-date calendar popup for the transaction date field
 - Recurring transactions or templates
 - Receipt attachment or image capture
 - Changes to the TransactionDialog props interface or how it is opened/closed from parent components
@@ -77,7 +77,7 @@ Move the type control to sit directly below the amount input — they are concep
 
 This replaces the current uniform `bg-accent` on all active states. The color shift when switching types reinforces the type-amount connection — the amount styling changes simultaneously with the control color.
 
-**Keyboard shortcuts:** Add `Cmd/Ctrl+1` for expense, `Cmd/Ctrl+2` for income, `Cmd/Ctrl+3` for transfer. These work regardless of which field has focus. The same edit-mode constraints apply (cannot switch to/from transfer). Display these shortcuts as subtle hints below the control on desktop (hidden on mobile where they are not useful). Use a `hidden md:block` approach.
+**Keyboard shortcuts:** Type `+` or `-` in an empty amount field to switch between income and expense. `Cmd/Ctrl+Enter` submits from any field. The same edit-mode constraints apply (cannot switch to/from transfer).
 
 ### 3. Field Order
 
@@ -150,7 +150,7 @@ The complete keyboard flow for a quick expense entry:
 
 Six keystrokes for a simple expense. No mouse needed.
 
-For switching to income mid-entry: type `+` in the amount field (if at start/empty), or `Cmd+2` from any field.
+For switching to income mid-entry: type `+` in the amount field (if at start/empty).
 
 Full shortcut reference:
 | Shortcut | Action |
@@ -196,7 +196,7 @@ The amount input keeps its ref for auto-focus. The sign prefix and background ti
 - [ ] Details section is pre-expanded in edit mode when any detail field has content
 - [ ] Tab flow in create mode: Amount -> Date -> Account -> Category -> Details toggle -> Submit (5-6 stops for quick entry)
 - [ ] `Cmd/Ctrl+Enter` submits from any field
-- [ ] `Cmd/Ctrl+1/2/3` switches transaction type from any field
+- [ ] `+`/`-` in empty amount switches transaction type
 - [ ] All interactive elements maintain 44px minimum touch targets
 - [ ] Form works correctly on mobile (numeric keyboard for amount, touch targets, no hover-only interactions)
 - [ ] Keyboard shortcut hints are visible on desktop, hidden on mobile

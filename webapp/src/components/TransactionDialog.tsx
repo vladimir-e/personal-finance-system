@@ -73,7 +73,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
   const calendarBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { amountRef.current?.focus(); }, []);
 
-  // ── Keyboard shortcuts (Escape, Cmd+Enter, Cmd+1/2/3) ──────
+  // ── Keyboard shortcuts (Escape, Cmd+Enter) ─────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onClose(); return; }
@@ -84,18 +84,6 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
         const form = amountRef.current?.closest('form');
         form?.requestSubmit();
         return;
-      }
-      if (mod && e.key === '1' && !isTypeDisabled('expense')) {
-        e.preventDefault();
-        setType('expense');
-      }
-      if (mod && e.key === '2' && !isTypeDisabled('income')) {
-        e.preventDefault();
-        setType('income');
-      }
-      if (mod && e.key === '3' && !isTypeDisabled('transfer')) {
-        e.preventDefault();
-        setType('transfer');
       }
     };
     document.addEventListener('keydown', onKey);
@@ -426,9 +414,6 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                 );
               })}
             </div>
-            <p className="mt-1 hidden text-xs text-muted md:block" aria-hidden="true">
-              {'\u2318'}1/{'\u2318'}2/{'\u2318'}3 to switch &middot; type +/&minus; in amount
-            </p>
           </div>
 
           {/* ── Fields: Category+Account or From+To ────────── */}

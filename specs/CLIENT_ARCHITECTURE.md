@@ -120,7 +120,7 @@ Help screen is accessible from a secondary location (settings/more menu), not a 
 
 ## Interaction Patterns
 
-**Add-transaction modal:** Hero amount input at the top (large text, type-aware coloring: red/minus for expense, green/plus for income, neutral for transfer). Semantic segmented control below it (per-type colors). Flexible date text input with calendar popup (accepts `2/15`, `15`, `yesterday`, ISO — parsed by `parseFlexDate` in `webapp/src/utils/dateParser.ts`). Account and category selectors. Description, payee, and notes collapsed behind a "Details" toggle (expanded in edit mode when populated). Pre-selects the currently viewed account. Keyboard shortcuts: `Cmd/Ctrl+1/2/3` for type switching, `+`/`-` in amount field for type switching, `Cmd/Ctrl+Enter` to submit from any field. After save, modal closes and returns to the list.
+**Add-transaction modal:** Hero amount input at the top (large text, type-aware coloring: red/minus for expense, green/plus for income, neutral for transfer). Semantic segmented control below it (per-type colors). Flexible date text input with calendar popup (accepts `2/15`, `15`, `yesterday`, ISO — parsed by `parseFlexDate` in `webapp/src/utils/dateParser.ts`). Account and category selectors. Description, payee, and notes collapsed behind a "Details" toggle (expanded in edit mode when populated). Pre-selects the currently viewed account. Keyboard shortcuts: `+`/`-` in amount field for type switching, `Cmd/Ctrl+Enter` to submit from any field. After save, modal closes and returns to the list.
 
 **Confirmation dialogs** for destructive actions:
 - Delete transaction: if transfer, warn "This will also delete the matching transfer in [Account]."

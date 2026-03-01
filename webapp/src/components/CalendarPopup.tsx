@@ -29,7 +29,7 @@ export function CalendarPopup({ value, onChange, onClose, anchorRef }: CalendarP
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
 
   // Position relative to anchor (right-aligned, below)
-  const [pos, setPos] = useState({ top: 0, left: 0, flip: false });
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   useEffect(() => {
     if (!anchorRef.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
@@ -39,7 +39,7 @@ export function CalendarPopup({ value, onChange, onClose, anchorRef }: CalendarP
     if (left < 8) left = 8;
     const flip = rect.bottom + popupH + 8 > window.innerHeight;
     const top = flip ? rect.top - popupH - 4 : rect.bottom + 4;
-    setPos({ top, left, flip });
+    setPos({ top, left });
   }, [anchorRef]);
 
   // Focus selected day on mount

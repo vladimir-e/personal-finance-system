@@ -18,7 +18,7 @@ Newest entries go at the top.
 - Progressive disclosure: description, payee, notes collapse behind "Details" toggle
 - Flexible date input replacing native date picker (accepts `2/15`, `15`, `yesterday`, ISO)
 - Calendar popup for touch-friendly date selection
-- Keyboard shortcuts: Cmd+1/2/3 type switching, +/- in amount field, Cmd+Enter submit
+- Keyboard shortcuts: +/- in amount field for type switching, Cmd+Enter submit
 - SearchableSelect: type-to-filter on focus without opening dropdown
 
 ## 2026-02-26 — UI polish: layout, sidebar, searchable dropdowns

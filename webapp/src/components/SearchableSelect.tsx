@@ -214,6 +214,7 @@ export function SearchableSelect({
             type="button"
             tabIndex={-1}
             className="flex h-6 w-6 items-center justify-center text-muted"
+            aria-label={isOpen ? 'Close options' : 'Open options'}
           >
             <ChevronDownIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </button>

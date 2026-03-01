@@ -256,19 +256,18 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
         />
 
         {/* Mobile sort selector */}
-        <select
-          value={`${sort.field}:${sort.dir}`}
-          onChange={e => {
-            const [field, dir] = e.target.value.split(':') as [SortField, SortDir];
-            setSort({ field, dir });
-          }}
-          className="min-h-[44px] rounded-lg border border-edge bg-surface px-3 text-sm text-body transition-colors focus:border-accent focus:outline-none lg:hidden"
-          aria-label="Sort transactions"
-        >
-          {Object.entries(SORT_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
+        <div className="lg:hidden">
+          <SearchableSelect
+            options={Object.entries(SORT_LABELS).map(([value, label]) => ({ value, label }))}
+            value={`${sort.field}:${sort.dir}`}
+            onChange={v => {
+              const [field, dir] = v.split(':') as [SortField, SortDir];
+              setSort({ field, dir });
+            }}
+            searchable={false}
+            aria-label="Sort transactions"
+          />
+        </div>
       </div>
 
       {/* ── Filter count ─────────────────────────────────── */}

@@ -43,7 +43,7 @@ describe('AccountDialog', () => {
     it('renders all form fields', () => {
       renderCreateDialog();
 
-      expect(screen.getByLabelText('Name')).toBeInTheDocument();
+      expect(screen.getByLabelText('Account Name')).toBeInTheDocument();
       expect(screen.getByLabelText('Type')).toBeInTheDocument();
       expect(screen.getByLabelText(/Institution/)).toBeInTheDocument();
       expect(screen.getByLabelText('Starting Balance')).toBeInTheDocument();
@@ -65,19 +65,14 @@ describe('AccountDialog', () => {
       const user = userEvent.setup();
       renderCreateDialog();
 
-      const select = screen.getByLabelText('Type');
-      expect(select).toBeInTheDocument();
+      const input = screen.getByLabelText('Type');
+      expect(input).toBeInTheDocument();
 
-      // Check that options exist
-      const options = select.querySelectorAll('option');
-      const labels = Array.from(options).map((o) => o.textContent);
-      expect(labels).toContain('Checking');
-      expect(labels).toContain('Savings');
-      expect(labels).toContain('Cash');
-      expect(labels).toContain('Credit Card');
-      expect(labels).toContain('Loan');
-      expect(labels).toContain('Asset');
-      expect(labels).toContain('Crypto');
+      // Open dropdown and check items
+      await user.click(input);
+      for (const label of ['Checking', 'Savings', 'Cash', 'Credit Card', 'Loan', 'Asset', 'Crypto']) {
+        expect(screen.getByText(label)).toBeInTheDocument();
+      }
     });
 
     it('validates required name field', async () => {
@@ -85,7 +80,7 @@ describe('AccountDialog', () => {
       const { props } = renderCreateDialog();
 
       // Clear the name and submit with just whitespace
-      const nameInput = screen.getByLabelText('Name');
+      const nameInput = screen.getByLabelText('Account Name');
       await user.clear(nameInput);
       await user.click(screen.getByRole('button', { name: 'Create' }));
 
@@ -99,9 +94,12 @@ describe('AccountDialog', () => {
       const onClose = vi.fn();
       renderCreateDialog({ onCreated, onClose });
 
-      await user.clear(screen.getByLabelText('Name'));
-      await user.type(screen.getByLabelText('Name'), 'New Savings');
-      await user.selectOptions(screen.getByLabelText('Type'), 'savings');
+      await user.clear(screen.getByLabelText('Account Name'));
+      await user.type(screen.getByLabelText('Account Name'), 'New Savings');
+
+      // Select "Savings" from SearchableSelect dropdown
+      await user.click(screen.getByLabelText('Type'));
+      await user.click(screen.getByText('Savings'));
 
       const balanceInput = screen.getByLabelText('Starting Balance');
       await user.clear(balanceInput);
@@ -117,7 +115,7 @@ describe('AccountDialog', () => {
       const user = userEvent.setup();
       const { props } = renderCreateDialog();
 
-      await user.type(screen.getByLabelText('Name'), 'Test');
+      await user.type(screen.getByLabelText('Account Name'), 'Test');
 
       const balanceInput = screen.getByLabelText('Starting Balance');
       await user.clear(balanceInput);
@@ -148,12 +146,12 @@ describe('AccountDialog', () => {
     it('pre-populates form with account data', () => {
       renderEditDialog();
 
-      const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
-      const typeSelect = screen.getByLabelText('Type') as HTMLSelectElement;
+      const nameInput = screen.getByLabelText('Account Name') as HTMLInputElement;
+      const typeInput = screen.getByLabelText('Type') as HTMLInputElement;
       const institutionInput = screen.getByLabelText(/Institution/) as HTMLInputElement;
 
       expect(nameInput.value).toBe('My Checking');
-      expect(typeSelect.value).toBe('savings');
+      expect(typeInput.value).toBe('Savings');
       expect(institutionInput.value).toBe('Chase');
     });
 
@@ -173,7 +171,7 @@ describe('AccountDialog', () => {
       const user = userEvent.setup();
       const { props } = renderEditDialog();
 
-      const nameInput = screen.getByLabelText('Name');
+      const nameInput = screen.getByLabelText('Account Name');
       await user.clear(nameInput);
       await user.type(nameInput, 'Updated Name');
 
@@ -225,13 +223,13 @@ describe('AccountDialog', () => {
     it('auto-focuses the name input', () => {
       renderCreateDialog();
 
-      expect(screen.getByLabelText('Name')).toHaveFocus();
+      expect(screen.getByLabelText('Account Name')).toHaveFocus();
     });
 
     it('form inputs have associated labels', () => {
       renderCreateDialog();
 
-      expect(screen.getByLabelText('Name')).toBeInTheDocument();
+      expect(screen.getByLabelText('Account Name')).toBeInTheDocument();
       expect(screen.getByLabelText('Type')).toBeInTheDocument();
       expect(screen.getByLabelText(/Institution/)).toBeInTheDocument();
       expect(screen.getByLabelText('Starting Balance')).toBeInTheDocument();

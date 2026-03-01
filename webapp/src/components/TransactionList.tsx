@@ -171,7 +171,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           <td
             key={field}
             onClick={canEdit ? () => startEdit(tx.id, field) : undefined}
-            className={`px-4 py-3 text-body ${canEdit ? 'cursor-pointer' : ''}`}
+            className={`max-w-0 truncate px-4 py-3 text-body ${canEdit ? 'cursor-pointer' : ''}`}
           >
             {accountMap.get(tx.accountId) ?? '\u2014'}
           </td>
@@ -179,7 +179,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
       case 'category':
         if (isTransfer) {
           return (
-            <td key={field} colSpan={2} className="px-4 py-3 text-muted italic">
+            <td key={field} colSpan={2} className="max-w-0 truncate px-4 py-3 text-muted italic">
               Transfer: {transferLabel(tx)}
             </td>
           );
@@ -188,7 +188,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           <td
             key={field}
             onClick={canEdit ? () => startEdit(tx.id, field) : undefined}
-            className={`px-4 py-3 text-muted ${canEdit ? 'cursor-pointer' : ''}`}
+            className={`max-w-0 truncate px-4 py-3 text-muted ${canEdit ? 'cursor-pointer' : ''}`}
           >
             {categoryMap.get(tx.categoryId) ?? '\u2014'}
           </td>
@@ -199,7 +199,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           <td
             key={field}
             onClick={() => startEdit(tx.id, field)}
-            className="px-4 py-3 text-body cursor-pointer"
+            className="max-w-0 truncate px-4 py-3 text-body cursor-pointer"
           >
             {tx.description || <span className="text-muted">{'\u2014'}</span>}
           </td>
@@ -289,7 +289,15 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
       {filtered.length > 0 && (
         <div className="hidden rounded-lg border border-edge bg-surface md:block">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-[12%]" />{/* date */}
+                <col className="w-[15%]" />{/* account */}
+                <col className="w-[18%]" />{/* category */}
+                <col />{/* description — takes remaining space */}
+                <col className="w-[12%]" />{/* amount */}
+                <col className="w-24" />{/* actions */}
+              </colgroup>
               <thead>
                 <tr className="border-b border-edge text-xs font-medium uppercase tracking-wider text-muted">
                   {columns.map(field => (

@@ -218,7 +218,7 @@ export function SearchableSelect({
           readOnly={!searchable}
           aria-label={ariaLabel}
           placeholder={placeholder}
-          className={`min-h-[44px] flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
+          className={`min-h-[44px] min-w-0 flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
             !isEditing && selectedItem ? 'text-body' : 'text-body placeholder:text-muted'
           } ${disabled ? 'cursor-not-allowed' : searchable ? '' : 'cursor-pointer'}`}
         />
@@ -258,7 +258,7 @@ export function SearchableSelect({
           style={{
             top: pos.top,
             left: pos.left,
-            width: pos.width || undefined,
+            minWidth: pos.width || undefined,
             display: isOpen ? undefined : 'none',
           }}
         >
@@ -295,7 +295,7 @@ export function SearchableSelect({
                             isHighlighted ? 'bg-hover' : ''
                           } ${isSelected ? 'font-medium text-accent' : 'text-body'}`}
                         >
-                          <span className="flex-1">{opt.label}</span>
+                          <span className="flex-1 whitespace-nowrap">{opt.label}</span>
                           {isSelected && (
                             <svg className="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M5 13l4 4L19 7" />

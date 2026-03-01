@@ -252,7 +252,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           onChange={setCategoryFilter}
           defaultValue=""
           aria-label="Filter by category"
-          className="sm:w-48"
+          className="sm:w-48 lg:w-72"
         />
 
         {/* Mobile sort selector */}

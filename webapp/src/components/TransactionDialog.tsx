@@ -5,6 +5,8 @@ import type { Transaction, TransactionType, Currency } from 'pfs-lib';
 import { buildCategoryOptions } from './CategoryOptions';
 import { buildAccountOptions } from './AccountOptions';
 import { SearchableSelect } from './SearchableSelect';
+import { parseFlexDate } from '../utils/dateParser';
+import { CalendarPopup } from './CalendarPopup';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -29,7 +31,6 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
 
   const resolveTransferAccounts = () => {
     if (transaction?.type === 'transfer' && pairedTx) {
-      // Negative amount = outflow (from) side
       return transaction.amount < 0
         ? { from: transaction.accountId, to: pairedTx.accountId }
         : { from: pairedTx.accountId, to: transaction.accountId };
@@ -44,48 +45,165 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
   const initTransfer = resolveTransferAccounts();
 
   // ── Form state ──────────────────────────────────────────────
-  const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
+  const [type, setTypeRaw] = useState<TransactionType>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(() => {
     if (!transaction) return '';
     return (Math.abs(transaction.amount) / 10 ** CURRENCY.precision).toFixed(CURRENCY.precision);
   });
   const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().slice(0, 10));
+  const [dateDisplay, setDateDisplay] = useState(transaction?.date ?? new Date().toISOString().slice(0, 10));
   const [accountId, setAccountId] = useState(transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? '');
-  const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? '');
+  const [categoryId, setCategoryIdRaw] = useState(transaction?.categoryId ?? '');
+  // Track the category the user had before auto-select, so switching back restores it
+  const prevCategoryRef = useRef(transaction?.categoryId ?? '');
+  const autoSelectedRef = useRef(false);
+
+  const firstIncomeCategory = useMemo(
+    () => categories.find(c => c.group === 'Income')?.id ?? '',
+    [categories],
+  );
+
+  const setCategoryId = (id: string) => {
+    autoSelectedRef.current = false;
+    setCategoryIdRaw(id);
+  };
+
+  const setType = (next: TransactionType) => {
+    setTypeRaw(prev => {
+      if (prev === next) return prev;
+      // Switching to income: auto-select first income category if none chosen
+      if (next === 'income' && firstIncomeCategory) {
+        const currentCat = autoSelectedRef.current ? prevCategoryRef.current : categoryId;
+        if (!currentCat || !categories.find(c => c.id === currentCat && c.group === 'Income')) {
+          prevCategoryRef.current = currentCat;
+          autoSelectedRef.current = true;
+          setCategoryIdRaw(firstIncomeCategory);
+        }
+      }
+      // Switching away from income: restore previous category if we auto-selected
+      if (prev === 'income' && autoSelectedRef.current) {
+        autoSelectedRef.current = false;
+        setCategoryIdRaw(prevCategoryRef.current);
+      }
+      return next;
+    });
+  };
   const [fromAccountId, setFromAccountId] = useState(initTransfer.from);
   const [toAccountId, setToAccountId] = useState(initTransfer.to);
   const [description, setDescription] = useState(transaction?.description ?? '');
   const [payee, setPayee] = useState(transaction?.payee ?? '');
   const [notes, setNotes] = useState(transaction?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [detailsOpen, setDetailsOpen] = useState(() => {
+    if (mode === 'edit') return !!(transaction?.description || transaction?.payee || transaction?.notes);
+    return false;
+  });
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const isTransferEdit = mode === 'edit' && transaction?.type === 'transfer';
 
   const amountRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLInputElement>(null);
+  const calendarBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { amountRef.current?.focus(); }, []);
 
+  // ── Keyboard shortcuts (Escape, Cmd+Enter) ─────────────────
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 'Enter') {
+        e.preventDefault();
+        const form = amountRef.current?.closest('form');
+        form?.requestSubmit();
+        return;
+      }
+    };
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose, mode, transaction?.type]);
 
   // ── Type control constraints ────────────────────────────────
-  // Cannot change type to/from transfer (enforced by mutation layer too)
   const isTypeDisabled = (value: TransactionType) => {
     if (mode === 'create') return false;
     if (transaction?.type === 'transfer') return value !== 'transfer';
     return value === 'transfer';
   };
 
+  // ── Amount input handler with sign shortcuts ────────────────
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+
+    // Sign shortcuts: typing +/- at start switches type (not for transfers)
+    if (type !== 'transfer' && !isTransferEdit) {
+      if (raw === '+' || (raw.startsWith('+') && amount === '')) {
+        setType('income');
+        setAmount(raw.slice(1));
+        return;
+      }
+      if (raw === '-' || (raw.startsWith('-') && amount === '')) {
+        setType('expense');
+        setAmount(raw.slice(1));
+        return;
+      }
+    }
+
+    // Only allow digits and a single decimal point
+    const cleaned = raw.replace(/[^\d.]/g, '');
+    const parts = cleaned.split('.');
+    const value = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
+    setAmount(value);
+  };
+
+  // ── Date helpers ────────────────────────────────────────────
+  const adjustDate = (delta: number) => {
+    const parsed = parseFlexDate(dateDisplay) ?? date;
+    const [y, m, d] = parsed.split('-').map(Number);
+    const newDate = new Date(y, m - 1, d + delta);
+    const iso = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
+    setDate(iso);
+    setDateDisplay(iso);
+    setErrors(prev => { const { date: _, ...rest } = prev; return rest; });
+  };
+
+  const handleDateKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowUp') { e.preventDefault(); adjustDate(1); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); adjustDate(-1); }
+  };
+
+  const handleDateBlur = () => {
+    const parsed = parseFlexDate(dateDisplay);
+    if (parsed) {
+      setDate(parsed);
+      setDateDisplay(parsed);
+      setErrors(prev => { const { date: _, ...rest } = prev; return rest; });
+    } else if (dateDisplay !== date) {
+      setErrors(prev => ({ ...prev, date: 'Invalid date' }));
+    }
+  };
+
+  const handleCalendarSelect = (iso: string) => {
+    setDate(iso);
+    setDateDisplay(iso);
+    setErrors(prev => { const { date: _, ...rest } = prev; return rest; });
+  };
+
   // ── Submit ──────────────────────────────────────────────────
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    const parsedDate = parseFlexDate(dateDisplay);
+    if (!parsedDate) {
+      setErrors({ date: 'Invalid date' });
+      return;
+    }
 
     let parsedAmount: number;
     try {
@@ -105,19 +223,18 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           setErrors({ toAccountId: 'Must be different from source account' });
           return;
         }
-        createTransfer(fromAccountId, toAccountId, parsedAmount, date, {
+        createTransfer(fromAccountId, toAccountId, parsedAmount, parsedDate, {
           description: description.trim(),
           payee: payee.trim(),
           notes: notes.trim(),
         });
       } else if (transaction) {
-        // Preserve the original sign direction for this side of the pair
         const signedAmount = transaction.amount < 0
           ? -Math.abs(parsedAmount)
           : Math.abs(parsedAmount);
         const result = UpdateTransactionInput.safeParse({
           amount: signedAmount,
-          date,
+          date: parsedDate,
           description: description.trim(),
           payee: payee.trim(),
           notes: notes.trim(),
@@ -129,7 +246,6 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
         updateTransaction(transaction.id, result.data);
       }
     } else {
-      // Expense = negative, income = positive
       const signedAmount = type === 'expense'
         ? -Math.abs(parsedAmount)
         : Math.abs(parsedAmount);
@@ -138,7 +254,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
         const result = CreateTransactionInput.safeParse({
           type,
           accountId,
-          date,
+          date: parsedDate,
           categoryId,
           description: description.trim(),
           payee: payee.trim(),
@@ -155,7 +271,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
         const result = UpdateTransactionInput.safeParse({
           type,
           accountId,
-          date,
+          date: parsedDate,
           categoryId,
           description: description.trim(),
           payee: payee.trim(),
@@ -183,6 +299,26 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
     { value: 'transfer', label: 'Transfer' },
   ];
 
+  // Type-aware amount styling (no background tint — the colored sign prefix + type button are enough)
+  const amountColor = type === 'expense' ? 'text-negative' : type === 'income' ? 'text-positive' : 'text-body';
+  const signPrefix = type === 'expense' ? '−' : type === 'income' ? '+' : '';
+  const prefixColor = type === 'expense' ? 'text-negative' : type === 'income' ? 'text-positive' : 'text-muted';
+
+  const typeActiveClass = (value: TransactionType) => {
+    if (value === 'expense') return 'bg-negative text-white';
+    if (value === 'income') return 'bg-positive text-white';
+    return 'bg-accent text-white';
+  };
+
+  // Details summary text
+  const detailsSummary = [description, payee].filter(Boolean).join(' \u00b7 ');
+  const hasDetails = !!(description || payee || notes);
+
+  // ── Layout ──────────────────────────────────────────────────
+  // CSS Grid: 2 columns [1fr_1fr]. Row 1: Amount + Date side by side.
+  // Tab order: Amount → Date → Type(skip) → Category → Account
+  // Transfer: Amount → Date → Type(skip) → From → To
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -197,38 +333,18 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           {mode === 'create' ? 'Add Transaction' : 'Edit Transaction'}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ── Type segmented control ─────────────────────── */}
-          <div className="flex rounded-lg border border-edge p-1" role="radiogroup" aria-label="Transaction type">
-            {TYPE_OPTIONS.map(opt => {
-              const disabled = isTypeDisabled(opt.value);
-              const active = type === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  disabled={disabled}
-                  onClick={() => setType(opt.value)}
-                  className={`min-h-[44px] flex-1 rounded-md text-sm font-medium transition-colors ${
-                    active ? 'bg-accent text-white' : 'text-muted hover:text-heading'
-                  } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Amount ─────────────────────────────────────── */}
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-2 gap-x-3 gap-y-4"
+        >
+          {/* ── Row 1, Col 1: Amount ─────────────────────── */}
           <div>
-            <label htmlFor="txn-amount" className="mb-1 block text-sm font-medium text-body">
+            <label htmlFor="txn-amount" className="sr-only">
               Amount
             </label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">
-                $
+            <div className={`relative rounded-lg border bg-page transition-colors ${errors.amount ? 'border-negative' : 'border-edge'}`}>
+              <span className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs tabular-nums ${prefixColor} transition-colors`}>
+                {signPrefix}$
               </span>
               <input
                 ref={amountRef}
@@ -236,33 +352,108 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                 type="text"
                 inputMode="decimal"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
-                className={`${inputClass} pl-7 tabular-nums`}
+                onChange={handleAmountChange}
+                className={`min-h-[44px] w-full rounded-lg bg-transparent px-3 text-lg font-semibold tabular-nums ${amountColor} placeholder:text-muted/40 transition-colors ${signPrefix ? 'pl-9' : 'pl-6'}`}
                 placeholder="0.00"
+                aria-label="Amount"
               />
             </div>
-            {errors.amount && <p className="mt-1 text-xs text-negative">{errors.amount}</p>}
+            {errors.amount && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.amount}</p>}
           </div>
 
-          {/* ── Date ───────────────────────────────────────── */}
-          <div>
-            <label htmlFor="txn-date" className="mb-1 block text-sm font-medium text-body">
-              Date
-            </label>
-            <input
-              id="txn-date"
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className={inputClass}
-            />
-            {errors.date && <p className="mt-1 text-xs text-negative">{errors.date}</p>}
+          {/* ── Row 1, Col 2: Date ────────────────────────── */}
+          <div className="flex items-center border-l border-edge pl-3">
+            <div className="flex w-full items-stretch">
+              <button
+                ref={calendarBtnRef}
+                type="button"
+                tabIndex={-1}
+                onClick={() => setCalendarOpen(!calendarOpen)}
+                className="flex w-[44px] shrink-0 items-center justify-center rounded-l-lg border border-r-0 border-edge bg-elevated text-muted hover:text-heading"
+                aria-label="Open calendar"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+              </button>
+              <div className="relative flex-1">
+                <input
+                  id="txn-date"
+                  type="text"
+                  value={dateDisplay}
+                  onChange={e => setDateDisplay(e.target.value)}
+                  onBlur={handleDateBlur}
+                  onFocus={e => e.target.select()}
+                  onKeyDown={handleDateKeyDown}
+                  className="peer min-h-[44px] w-full rounded-r-lg rounded-l-none border border-l-0 border-edge bg-page pl-2.5 pr-7 py-2 text-sm tabular-nums text-body placeholder:text-muted"
+                  placeholder="YYYY-MM-DD"
+                  aria-label="Date"
+                />
+                {/* Up/Down arrows — visible on focus, desktop only */}
+                <div className="pointer-events-none absolute right-1 top-1/2 hidden -translate-y-1/2 flex-col opacity-0 transition-opacity peer-focus:pointer-events-auto peer-focus:opacity-100 md:flex">
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onMouseDown={e => { e.preventDefault(); adjustDate(1); }}
+                    className="flex h-4 w-5 items-center justify-center text-muted hover:text-heading"
+                    aria-label="Next day"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M18 15l-6-6-6 6" /></svg>
+                  </button>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onMouseDown={e => { e.preventDefault(); adjustDate(-1); }}
+                    className="flex h-4 w-5 items-center justify-center text-muted hover:text-heading"
+                    aria-label="Previous day"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            {calendarOpen && (
+              <CalendarPopup
+                value={date}
+                onChange={handleCalendarSelect}
+                onClose={() => setCalendarOpen(false)}
+                anchorRef={calendarBtnRef}
+              />
+            )}
+            {errors.date && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.date}</p>}
           </div>
 
-          {/* ── Account fields (swap based on type) ────────── */}
+          {/* ── Type segmented control (skip tab) ─────────── */}
+          <div className="col-span-2">
+            <div className="flex rounded-lg border border-edge p-1" role="radiogroup" aria-label="Transaction type">
+              {TYPE_OPTIONS.map(opt => {
+                const disabled = isTypeDisabled(opt.value);
+                const active = type === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    tabIndex={-1}
+                    aria-checked={active}
+                    disabled={disabled}
+                    onClick={() => setType(opt.value)}
+                    className={`min-h-[44px] flex-1 rounded-md text-sm font-medium transition-colors ${
+                      active ? typeActiveClass(opt.value) : 'text-muted hover:text-heading'
+                    } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Fields: Category+Account or From+To ────────── */}
           {type === 'transfer' ? (
             <>
-              <div>
+              <div className="col-span-2">
                 <label htmlFor="txn-from-account" className="mb-1 block text-sm font-medium text-body">
                   From Account
                 </label>
@@ -275,9 +466,9 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="From Account"
                   placeholder="Select account"
                 />
-                {errors.fromAccountId && <p className="mt-1 text-xs text-negative">{errors.fromAccountId}</p>}
+                {errors.fromAccountId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.fromAccountId}</p>}
               </div>
-              <div>
+              <div className="col-span-2">
                 <label htmlFor="txn-to-account" className="mb-1 block text-sm font-medium text-body">
                   To Account
                 </label>
@@ -290,26 +481,12 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="To Account"
                   placeholder="Select account"
                 />
-                {errors.toAccountId && <p className="mt-1 text-xs text-negative">{errors.toAccountId}</p>}
+                {errors.toAccountId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.toAccountId}</p>}
               </div>
             </>
           ) : (
             <>
-              <div>
-                <label htmlFor="txn-account" className="mb-1 block text-sm font-medium text-body">
-                  Account
-                </label>
-                <SearchableSelect
-                  id="txn-account"
-                  options={buildAccountOptions(accounts)}
-                  value={accountId}
-                  onChange={setAccountId}
-                  aria-label="Account"
-                  placeholder="Select account"
-                />
-                {errors.accountId && <p className="mt-1 text-xs text-negative">{errors.accountId}</p>}
-              </div>
-              <div>
+              <div className="col-span-2">
                 <label htmlFor="txn-category" className="mb-1 block text-sm font-medium text-body">
                   Category
                 </label>
@@ -321,58 +498,110 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="Category"
                   placeholder="Select category"
                 />
-                {errors.categoryId && <p className="mt-1 text-xs text-negative">{errors.categoryId}</p>}
+                {errors.categoryId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.categoryId}</p>}
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="txn-account" className="mb-1 block text-sm font-medium text-body">
+                  Account
+                </label>
+                <SearchableSelect
+                  id="txn-account"
+                  options={buildAccountOptions(accounts)}
+                  value={accountId}
+                  onChange={setAccountId}
+                  aria-label="Account"
+                  placeholder="Select account"
+                />
+                {errors.accountId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.accountId}</p>}
               </div>
             </>
           )}
 
-          {/* ── Description ────────────────────────────────── */}
-          <div>
-            <label htmlFor="txn-desc" className="mb-1 block text-sm font-medium text-body">
-              Description <span className="text-muted">(optional)</span>
-            </label>
-            <input
-              id="txn-desc"
-              type="text"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              className={inputClass}
-              placeholder="e.g. Weekly groceries"
-            />
-          </div>
+          {/* ── Details (collapsible) ──────────────────────── */}
+          <div className="col-span-2">
+            <button
+              type="button"
+              onClick={() => {
+                const opening = !detailsOpen;
+                setDetailsOpen(opening);
+                if (opening) setTimeout(() => descRef.current?.focus(), 50);
+              }}
+              className="flex min-h-[44px] w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-hover hover:text-heading"
+              aria-expanded={detailsOpen}
+              aria-controls="txn-details"
+            >
+              <span className="truncate">
+                {hasDetails ? detailsSummary || 'Notes added' : 'Add details'}
+              </span>
+              <svg
+                className={`ml-2 h-4 w-4 shrink-0 transition-transform ${detailsOpen ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-          {/* ── Payee ──────────────────────────────────────── */}
-          <div>
-            <label htmlFor="txn-payee" className="mb-1 block text-sm font-medium text-body">
-              Payee <span className="text-muted">(optional)</span>
-            </label>
-            <input
-              id="txn-payee"
-              type="text"
-              value={payee}
-              onChange={e => setPayee(e.target.value)}
-              className={inputClass}
-              placeholder="e.g. Whole Foods"
-            />
-          </div>
-
-          {/* ── Notes ──────────────────────────────────────── */}
-          <div>
-            <label htmlFor="txn-notes" className="mb-1 block text-sm font-medium text-body">
-              Notes <span className="text-muted">(optional)</span>
-            </label>
-            <textarea
-              id="txn-notes"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              className={`${inputClass} resize-none`}
-              rows={2}
-              placeholder="Any additional notes…"
-            />
+            <div
+              id="txn-details"
+              className="grid transition-[grid-template-rows] duration-200 ease-out"
+              style={{ gridTemplateRows: detailsOpen ? '1fr' : '0fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className="space-y-4 pt-3">
+                  <div>
+                    <label htmlFor="txn-desc" className="mb-1 block text-sm font-medium text-body">
+                      Description
+                    </label>
+                    <input
+                      ref={descRef}
+                      id="txn-desc"
+                      type="text"
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      className={inputClass}
+                      placeholder="e.g. Weekly groceries"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="txn-payee" className="mb-1 block text-sm font-medium text-body">
+                      Payee
+                    </label>
+                    <input
+                      id="txn-payee"
+                      type="text"
+                      value={payee}
+                      onChange={e => setPayee(e.target.value)}
+                      className={inputClass}
+                      placeholder="e.g. Whole Foods"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="txn-notes" className="mb-1 block text-sm font-medium text-body">
+                      Notes
+                    </label>
+                    <textarea
+                      id="txn-notes"
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      className={`${inputClass} resize-none`}
+                      rows={2}
+                      placeholder="Any additional notes…"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* ── Actions ────────────────────────────────────── */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="col-span-2 flex items-center justify-end gap-3 pt-2">
+            <span className="mr-auto hidden text-xs text-muted md:block" aria-hidden="true">
+              {'\u2318'}Enter to submit
+            </span>
             <button
               type="button"
               onClick={onClose}

@@ -56,7 +56,7 @@ Record financial events with: amount, date, account, category, description, paye
 - **Income** — money in (positive amount)
 - **Transfer** — move money between accounts (creates two linked transactions with mutual `transferPairId`)
 
-The add-transaction modal has a segmented control for type. Transfer creation simultaneously generates the outflow and inflow legs. Deleting one leg cascades to delete the other.
+The add-transaction modal opens with a hero amount input (large, type-aware coloring) and a semantic segmented control for type (color-coded: red expense, green income, blue transfer). A flexible date input accepts shorthand formats (`2/15`, `15`, `yesterday`) with a calendar popup for touch selection. Secondary fields (description, payee, notes) are collapsed behind a "Details" toggle for fast entry. Keyboard shortcuts: `+`/`-` in the amount field switches type, `Cmd/Ctrl+Enter` submits from any field. Transfer creation simultaneously generates the outflow and inflow legs. Deleting one leg cascades to delete the other.
 
 ### Transaction list
 View transactions for a selected account or across all accounts.

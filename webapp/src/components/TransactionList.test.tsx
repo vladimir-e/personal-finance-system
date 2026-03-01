@@ -253,6 +253,7 @@ describe('TransactionList', () => {
 
       // Open the SearchableSelect and pick a category by role
       await user.click(screen.getByLabelText('Filter by category'));
+      await user.keyboard('{ArrowDown}');
       await user.click(screen.getByRole('option', { name: 'Groceries' }));
 
       const table = getTable();

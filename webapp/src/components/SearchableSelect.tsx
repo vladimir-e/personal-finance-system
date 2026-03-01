@@ -23,6 +23,8 @@ interface SearchableSelectProps {
   /** Opens immediately on mount; calls onDismiss on close without selection. */
   autoOpen?: boolean;
   onDismiss?: () => void;
+  /** When false, disables type-to-search — click-only selection. */
+  searchable?: boolean;
 }
 
 export function SearchableSelect({
@@ -37,6 +39,7 @@ export function SearchableSelect({
   defaultValue,
   autoOpen,
   onDismiss,
+  searchable = true,
 }: SearchableSelectProps) {
   const triggerRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -53,10 +56,10 @@ export function SearchableSelect({
   );
 
   const filtered = useMemo(() => {
-    if (!query) return options;
+    if (!searchable || !query) return options;
     const q = query.toLowerCase();
     return options.filter(o => o.label.toLowerCase().includes(q));
-  }, [options, query]);
+  }, [options, query, searchable]);
 
   // What the input displays: query when editing, selected label when idle
   const displayValue = isEditing ? query : (selectedItem?.label ?? '');
@@ -204,19 +207,20 @@ export function SearchableSelect({
         <input
           {...getInputProps({
             ref: triggerRef,
-            onChange: handleInputChange,
-            onMouseDown: handleInputMouseDown,
-            onFocus: handleInputFocus,
-            onClick: handleInputClick,
+            onChange: searchable ? handleInputChange : undefined,
+            onMouseDown: searchable ? handleInputMouseDown : undefined,
+            onFocus: searchable ? handleInputFocus : undefined,
+            onClick: searchable ? handleInputClick : () => { isOpen ? closeMenu() : openMenu(); },
           })}
           type="text"
           id={id}
           disabled={disabled}
+          readOnly={!searchable}
           aria-label={ariaLabel}
           placeholder={placeholder}
-          className={`min-h-[44px] flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
+          className={`min-h-[44px] min-w-0 flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
             !isEditing && selectedItem ? 'text-body' : 'text-body placeholder:text-muted'
-          } ${disabled ? 'cursor-not-allowed' : ''}`}
+          } ${disabled ? 'cursor-not-allowed' : searchable ? '' : 'cursor-pointer'}`}
         />
         <span className="flex items-center gap-1 pr-2">
           {defaultValue !== undefined && value !== defaultValue && !disabled && (
@@ -254,7 +258,7 @@ export function SearchableSelect({
           style={{
             top: pos.top,
             left: pos.left,
-            width: pos.width || undefined,
+            minWidth: pos.width || undefined,
             display: isOpen ? undefined : 'none',
           }}
         >
@@ -291,7 +295,7 @@ export function SearchableSelect({
                             isHighlighted ? 'bg-hover' : ''
                           } ${isSelected ? 'font-medium text-accent' : 'text-body'}`}
                         >
-                          <span className="flex-1">{opt.label}</span>
+                          <span className="flex-1 whitespace-nowrap">{opt.label}</span>
                           {isSelected && (
                             <svg className="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M5 13l4 4L19 7" />

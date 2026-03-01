@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDataStore } from '../store';
 import { formatMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
@@ -59,6 +59,21 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
   const [desktopEditTx, setDesktopEditTx] = useState<Transaction | null>(null);
 
   // ── Render helpers ──────────────────────────────────────
+
+  const txById = useMemo(() => {
+    const map = new Map<string, Transaction>();
+    for (const t of state.transactions) map.set(t.id, t);
+    return map;
+  }, [state.transactions]);
+
+  const transferLabel = (tx: Transaction): string => {
+    const thisAccount = accountMap.get(tx.accountId) ?? '\u2014';
+    const pair = txById.get(tx.transferPairId);
+    const otherAccount = pair ? (accountMap.get(pair.accountId) ?? '\u2014') : '\u2014';
+    const from = tx.amount < 0 ? thisAccount : otherAccount;
+    const to = tx.amount < 0 ? otherAccount : thisAccount;
+    return `${from} → ${to}`;
+  };
 
   const editInputClass =
     'h-9 w-full rounded border border-accent/50 bg-page px-2 text-sm text-body outline-none focus:border-accent';
@@ -162,29 +177,37 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           <td
             key={field}
             onClick={canEdit ? () => startEdit(tx.id, field) : undefined}
-            className={`px-4 py-3 text-body ${canEdit ? 'cursor-pointer' : ''}`}
+            className={`max-w-0 truncate px-4 py-3 text-body ${canEdit ? 'cursor-pointer' : ''}`}
           >
             {accountMap.get(tx.accountId) ?? '\u2014'}
           </td>
         );
       case 'category':
+        if (isTransfer) {
+          return (
+            <td key={field} colSpan={2} className="max-w-0 truncate px-4 py-3 text-muted italic">
+              Transfer: {transferLabel(tx)}
+            </td>
+          );
+        }
         return (
           <td
             key={field}
             onClick={canEdit ? () => startEdit(tx.id, field) : undefined}
-            className={`px-4 py-3 text-muted ${canEdit ? 'cursor-pointer' : ''}`}
+            className={`max-w-0 truncate px-4 py-3 text-muted ${canEdit ? 'cursor-pointer' : ''}`}
           >
             {categoryMap.get(tx.categoryId) ?? '\u2014'}
           </td>
         );
       case 'description':
+        if (isTransfer) return null;
         return (
           <td
             key={field}
             onClick={() => startEdit(tx.id, field)}
-            className="px-4 py-3 text-body cursor-pointer"
+            className="max-w-0 truncate px-4 py-3 text-body cursor-pointer"
           >
-            {tx.description || tx.payee || <span className="text-muted">{'\u2014'}</span>}
+            {tx.description || <span className="text-muted">{'\u2014'}</span>}
           </td>
         );
       case 'amount':
@@ -235,23 +258,22 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           onChange={setCategoryFilter}
           defaultValue=""
           aria-label="Filter by category"
-          className="sm:w-48"
+          className="sm:w-48 lg:w-72"
         />
 
         {/* Mobile sort selector */}
-        <select
-          value={`${sort.field}:${sort.dir}`}
-          onChange={e => {
-            const [field, dir] = e.target.value.split(':') as [SortField, SortDir];
-            setSort({ field, dir });
-          }}
-          className="min-h-[44px] rounded-lg border border-edge bg-surface px-3 text-sm text-body transition-colors focus:border-accent focus:outline-none md:hidden"
-          aria-label="Sort transactions"
-        >
-          {Object.entries(SORT_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
+        <div className="lg:hidden">
+          <SearchableSelect
+            options={Object.entries(SORT_LABELS).map(([value, label]) => ({ value, label }))}
+            value={`${sort.field}:${sort.dir}`}
+            onChange={v => {
+              const [field, dir] = v.split(':') as [SortField, SortDir];
+              setSort({ field, dir });
+            }}
+            searchable={false}
+            aria-label="Sort transactions"
+          />
+        </div>
       </div>
 
       {/* ── Filter count ─────────────────────────────────── */}
@@ -270,9 +292,17 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
       {/* ── Desktop table ────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="hidden rounded-lg border border-edge bg-surface md:block">
+        <div className="hidden rounded-lg border border-edge bg-surface lg:block">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-[12%]" />{/* date */}
+                <col className="w-[15%]" />{/* account */}
+                <col className="w-[18%]" />{/* category */}
+                <col />{/* description — takes remaining space */}
+                <col className="w-[12%]" />{/* amount */}
+                <col className="w-24" />{/* actions */}
+              </colgroup>
               <thead>
                 <tr className="border-b border-edge text-xs font-medium uppercase tracking-wider text-muted">
                   {columns.map(field => (
@@ -350,17 +380,33 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
       {/* ── Mobile cards ─────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="space-y-2 md:hidden">
+        <div className="space-y-2 lg:hidden">
           {paginated.map(tx => (
             <div
               key={tx.id}
               onClick={() => setMobileEditTx(tx)}
-              className="cursor-pointer rounded-lg border border-edge bg-surface px-4 py-3 transition-colors active:bg-hover"
+              className="cursor-pointer overflow-hidden rounded-lg border border-edge bg-surface px-4 py-3 transition-colors active:bg-hover"
             >
+              {/* Line 1: primary — category (+ payee) or transfer label | amount + delete */}
               <div className="flex items-start justify-between gap-2">
-                <span className="truncate font-medium text-body">
-                  {tx.description || tx.payee || '\u2014'}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-body">
+                    {tx.type === 'transfer'
+                      ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
+                      : (<>
+                          {categoryMap.get(tx.categoryId) ?? 'Uncategorized'}
+                          {tx.payee && (
+                            <span className="text-muted">
+                              {' \u00b7 '}{tx.payee}
+                            </span>
+                          )}
+                        </>)}
+                  </span>
+                  {/* Line 2: description (secondary, only if present) */}
+                  {tx.type !== 'transfer' && tx.description && (
+                    <p className="truncate text-sm text-body">{tx.description}</p>
+                  )}
+                </div>
                 <div className="flex flex-shrink-0 items-center gap-1">
                   <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>
                     {formatMoney(tx.amount, CURRENCY)}
@@ -374,16 +420,26 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                   </button>
                 </div>
               </div>
+              {/* Line 3: meta — date · account · notes indicator */}
               <div className="mt-1 flex items-center gap-2 text-xs text-muted">
                 <span>{formatDate(tx.date)}</span>
-                {!selectedAccountId && accountMap.has(tx.accountId) && (
+                {tx.type !== 'transfer' && !selectedAccountId && accountMap.has(tx.accountId) && (
                   <>
                     <span aria-hidden="true">&middot;</span>
                     <span className="truncate">{accountMap.get(tx.accountId)}</span>
                   </>
                 )}
-                <span aria-hidden="true">&middot;</span>
-                <span className="truncate">{categoryMap.get(tx.categoryId) ?? '\u2014'}</span>
+                {tx.notes && (
+                  <>
+                    <span aria-hidden="true">&middot;</span>
+                    <svg className="inline h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Has notes">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                  </>
+                )}
               </div>
             </div>
           ))}

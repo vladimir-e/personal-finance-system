@@ -363,6 +363,75 @@ describe('TransactionList', () => {
     });
   });
 
+  describe('transfer rendering', () => {
+    const outflow = makeTransaction({
+      id: 'tx-out',
+      accountId: 'acct-1',
+      type: 'transfer',
+      amount: -1000,
+      transferPairId: 'tx-in',
+      description: '',
+    });
+    const inflow = makeTransaction({
+      id: 'tx-in',
+      accountId: 'acct-2',
+      type: 'transfer',
+      amount: 1000,
+      transferPairId: 'tx-out',
+      description: '',
+    });
+
+    it('shows "Transfer: From → To" spanning category and description columns', () => {
+      renderList(null, { transactions: [outflow, inflow] });
+      const table = getTable();
+
+      const transferCells = within(table).getAllByText(/Transfer: Checking → Savings/);
+      expect(transferCells.length).toBeGreaterThan(0);
+      const td = transferCells[0]!.closest('td')!;
+      expect(td.getAttribute('colspan')).toBe('2');
+    });
+
+    it('does not render a separate description cell for transfers', () => {
+      renderList(null, { transactions: [outflow, inflow] });
+      const table = getTable();
+      const rows = within(table).getAllByRole('row');
+
+      // Data rows (skip header). Each transfer row: date + account + transfer(colSpan=2) + amount + actions = 5 cells
+      // A normal row would have 6 cells (date + account + category + description + amount + actions)
+      for (const row of rows.slice(1)) {
+        const cells = within(row).getAllByRole('cell');
+        expect(cells.length).toBe(5);
+      }
+    });
+  });
+
+  describe('description display', () => {
+    it('shows em-dash when description is empty', () => {
+      const noDesc = makeTransaction({
+        id: 'tx-nodesc',
+        accountId: 'acct-1',
+        type: 'expense',
+        amount: -500,
+        categoryId: 'cat-1',
+        description: '',
+        payee: 'SomePayee',
+      });
+      renderList(null, { transactions: [noDesc] });
+      const table = getTable();
+
+      // Should show em-dash, not the payee
+      expect(within(table).getByText('\u2014')).toBeInTheDocument();
+      expect(within(table).queryByText('SomePayee')).not.toBeInTheDocument();
+    });
+
+    it('shows description text when present', () => {
+      renderList();
+      const table = getTable();
+
+      expect(within(table).getByText('Weekly groceries')).toBeInTheDocument();
+    });
+  });
+
   describe('delete', () => {
     it('calls onDeleteTransaction when delete button is clicked', async () => {
       const user = userEvent.setup();

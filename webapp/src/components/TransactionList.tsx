@@ -262,7 +262,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             const [field, dir] = e.target.value.split(':') as [SortField, SortDir];
             setSort({ field, dir });
           }}
-          className="min-h-[44px] rounded-lg border border-edge bg-surface px-3 text-sm text-body transition-colors focus:border-accent focus:outline-none md:hidden"
+          className="min-h-[44px] rounded-lg border border-edge bg-surface px-3 text-sm text-body transition-colors focus:border-accent focus:outline-none lg:hidden"
           aria-label="Sort transactions"
         >
           {Object.entries(SORT_LABELS).map(([value, label]) => (
@@ -287,7 +287,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
       {/* ── Desktop table ────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="hidden rounded-lg border border-edge bg-surface md:block">
+        <div className="hidden rounded-lg border border-edge bg-surface lg:block">
           <div className="overflow-x-auto">
             <table className="w-full table-fixed text-sm">
               <colgroup>
@@ -375,7 +375,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
       {/* ── Mobile cards ─────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="space-y-2 md:hidden">
+        <div className="space-y-2 lg:hidden">
           {paginated.map(tx => (
             <div
               key={tx.id}

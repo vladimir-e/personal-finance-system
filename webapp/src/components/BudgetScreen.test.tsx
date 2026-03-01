@@ -430,7 +430,7 @@ describe('BudgetScreen', () => {
       await user.click(screen.getByRole('button', { name: /Add Category/i }));
 
       // Switch to custom group input
-      await user.click(screen.getByRole('button', { name: 'New' }));
+      await user.click(screen.getByRole('radio', { name: '+ New' }));
 
       // Enter a name but leave custom group empty
       await user.type(screen.getByLabelText('Name'), 'Test Category');

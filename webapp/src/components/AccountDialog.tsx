@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useDataStore } from '../store';
 import { CreateAccountInput, UpdateAccountInput, parseMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
-import { SearchableSelect } from './SearchableSelect';
+import { PillSelect } from './PillSelect';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -138,12 +138,11 @@ export function AccountDialog({ mode, account, prompt, onClose, onCreated }: Acc
             <span className="mb-1 block text-sm font-medium text-body">
               Type
             </span>
-            <SearchableSelect
+            <PillSelect
               aria-label="Type"
               options={ACCOUNT_TYPES}
               value={type}
               onChange={(v) => setType(v as AccountType)}
-              searchable={false}
             />
           </div>
 

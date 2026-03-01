@@ -3,6 +3,7 @@ import { useDataStore } from '../store';
 import { CreateCategoryInput, UpdateCategoryInput, parseMoney } from 'pfs-lib';
 import type { Currency, Category } from 'pfs-lib';
 import { useFocusTrap } from '../utils/useFocusTrap';
+import { PillSelect } from './PillSelect';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -144,47 +145,35 @@ export function CategoryDialog({ existingGroups, onClose, category }: CategoryDi
           </div>
 
           <div>
-            <label htmlFor="cat-group" className="mb-1 block text-sm font-medium text-body">
+            <span className="mb-1 block text-sm font-medium text-body">
               Group
-            </label>
-            {useCustomGroup ? (
-              <div className="flex gap-2">
-                <input
-                  id="cat-group"
-                  type="text"
-                  value={customGroup}
-                  onChange={(e) => setCustomGroup(e.target.value)}
-                  className={inputClass}
-                  placeholder="New group name"
-                />
-                <button
-                  type="button"
-                  onClick={() => setUseCustomGroup(false)}
-                  className="min-h-[44px] shrink-0 rounded-lg px-3 text-sm text-muted transition-colors hover:bg-hover hover:text-heading"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <select
-                  id="cat-group"
-                  value={group}
-                  onChange={(e) => setGroup(e.target.value)}
-                  className={inputClass}
-                >
-                  {existingGroups.map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setUseCustomGroup(true)}
-                  className="min-h-[44px] shrink-0 rounded-lg px-3 text-sm font-medium text-accent transition-colors hover:text-accent/80"
-                >
-                  New
-                </button>
-              </div>
+            </span>
+            <PillSelect
+              aria-label="Group"
+              options={[
+                ...existingGroups.map((g) => ({ value: g, label: g })),
+                { value: '__custom', label: '+ New' },
+              ]}
+              value={useCustomGroup ? '__custom' : group}
+              onChange={(v) => {
+                if (v === '__custom') {
+                  setUseCustomGroup(true);
+                } else {
+                  setUseCustomGroup(false);
+                  setGroup(v);
+                }
+              }}
+            />
+            {useCustomGroup && (
+              <input
+                id="cat-group"
+                type="text"
+                value={customGroup}
+                onChange={(e) => setCustomGroup(e.target.value)}
+                className={`${inputClass} mt-2`}
+                placeholder="New group name"
+                autoFocus
+              />
             )}
             {errors.group && <p className="mt-1 text-xs text-negative">{errors.group}</p>}
           </div>

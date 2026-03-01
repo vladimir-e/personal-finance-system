@@ -61,17 +61,14 @@ describe('AccountDialog', () => {
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     });
 
-    it('type selector has all account types', async () => {
-      const user = userEvent.setup();
+    it('type selector shows all account types as pills', () => {
       renderCreateDialog();
 
-      const input = screen.getByLabelText('Type');
-      expect(input).toBeInTheDocument();
+      const group = screen.getByRole('radiogroup', { name: 'Type' });
+      expect(group).toBeInTheDocument();
 
-      // Open dropdown and check items
-      await user.click(input);
       for (const label of ['Checking', 'Savings', 'Cash', 'Credit Card', 'Loan', 'Asset', 'Crypto']) {
-        expect(screen.getByText(label)).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: label })).toBeInTheDocument();
       }
     });
 
@@ -97,9 +94,7 @@ describe('AccountDialog', () => {
       await user.clear(screen.getByLabelText('Account Name'));
       await user.type(screen.getByLabelText('Account Name'), 'New Savings');
 
-      // Select "Savings" from SearchableSelect dropdown
-      await user.click(screen.getByLabelText('Type'));
-      await user.click(screen.getByText('Savings'));
+      await user.click(screen.getByRole('radio', { name: 'Savings' }));
 
       const balanceInput = screen.getByLabelText('Starting Balance');
       await user.clear(balanceInput);
@@ -147,11 +142,10 @@ describe('AccountDialog', () => {
       renderEditDialog();
 
       const nameInput = screen.getByLabelText('Account Name') as HTMLInputElement;
-      const typeInput = screen.getByLabelText('Type') as HTMLInputElement;
       const institutionInput = screen.getByLabelText(/Institution/) as HTMLInputElement;
 
       expect(nameInput.value).toBe('My Checking');
-      expect(typeInput.value).toBe('Savings');
+      expect(screen.getByRole('radio', { name: 'Savings' })).toHaveAttribute('aria-checked', 'true');
       expect(institutionInput.value).toBe('Chase');
     });
 

@@ -184,7 +184,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             onClick={() => startEdit(tx.id, field)}
             className="px-4 py-3 text-body cursor-pointer"
           >
-            {tx.description || tx.payee || <span className="text-muted">{'\u2014'}</span>}
+            {tx.description || <span className="text-muted">{'\u2014'}</span>}
           </td>
         );
       case 'amount':
@@ -359,7 +359,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="truncate font-medium text-body">
-                  {tx.description || tx.payee || '\u2014'}
+                  {tx.description || '\u2014'}
                 </span>
                 <div className="flex flex-shrink-0 items-center gap-1">
                   <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>

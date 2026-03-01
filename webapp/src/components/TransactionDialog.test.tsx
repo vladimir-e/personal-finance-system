@@ -131,7 +131,7 @@ describe('TransactionDialog', () => {
       renderCreate({ defaultAccountId: 'acct-savings' });
 
       const trigger = screen.getByLabelText('Account');
-      expect(trigger).toHaveTextContent('Savings');
+      expect(trigger).toHaveValue('Savings');
     });
 
     it('has Add submit button', () => {
@@ -145,6 +145,7 @@ describe('TransactionDialog', () => {
       renderCreate();
 
       await user.click(screen.getByLabelText('Category'));
+      await user.keyboard('{ArrowDown}');
 
       expect(screen.getByText('Housing')).toBeInTheDocument();
       expect(screen.getByText('Daily Living')).toBeInTheDocument();

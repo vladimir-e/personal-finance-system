@@ -38,10 +38,11 @@ export function SearchableSelect({
   autoOpen,
   onDismiss,
 }: SearchableSelectProps) {
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const dismissedRef = useRef(false);
   const selectedRef = useRef(false);
 
@@ -56,14 +57,17 @@ export function SearchableSelect({
     return options.filter(o => o.label.toLowerCase().includes(q));
   }, [options, query]);
 
+  // What the input displays: query when editing, selected label when idle
+  const displayValue = isEditing ? query : (selectedItem?.label ?? '');
+
   const handleIsOpenChange = useCallback(({ isOpen: open }: { isOpen: boolean }) => {
     if (!open) {
       setQuery('');
+      setIsEditing(false);
       if (autoOpen && onDismiss && !dismissedRef.current && !selectedRef.current) {
         dismissedRef.current = true;
         onDismiss();
       } else {
-        // Return focus to trigger so Tab advances to the next form field
         triggerRef.current?.focus();
       }
       selectedRef.current = false;
@@ -83,15 +87,25 @@ export function SearchableSelect({
     items: filtered,
     selectedItem,
     itemToString: item => item?.label ?? '',
-    inputValue: query,
+    inputValue: displayValue,
     onSelectedItemChange: ({ selectedItem: item }) => {
       if (item) {
         selectedRef.current = true;
         onChange(item.value);
+        setIsEditing(false);
+        setQuery('');
       }
     },
     onIsOpenChange: handleIsOpenChange,
     defaultIsOpen: autoOpen,
+    stateReducer: (_state, actionAndChanges) => {
+      const { type, changes } = actionAndChanges;
+      // Don't toggle open state on click — only typing and chevron open it
+      if (type === useCombobox.stateChangeTypes.InputClick) {
+        return { ...changes, isOpen: _state.isOpen };
+      }
+      return changes;
+    },
   });
 
   // Build grouped structure for rendering
@@ -111,19 +125,22 @@ export function SearchableSelect({
     return result;
   }, [filtered]);
 
-  // Position dropdown relative to trigger
+  // Position dropdown relative to wrapper
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
-    if (!isOpen || !triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
+    if (!isOpen || !wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
     setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
   }, [isOpen]);
 
-  // Focus search input when opened
+  // Auto-open: enter editing mode immediately
   useEffect(() => {
-    if (isOpen) inputRef.current?.focus();
-  }, [isOpen]);
+    if (autoOpen) {
+      setIsEditing(true);
+      triggerRef.current?.focus();
+    }
+  }, [autoOpen]);
 
   // Dismiss on any scroll outside the dropdown (capture phase catches all scrollable containers)
   useEffect(() => {
@@ -136,44 +153,72 @@ export function SearchableSelect({
     return () => window.removeEventListener('scroll', onScroll, true);
   }, [isOpen, closeMenu]);
 
-  // Keyboard handler for the trigger: open on Enter/Space/ArrowDown
-  const handleTriggerKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      openMenu();
-    }
-  }, [openMenu]);
+  // Input event handlers
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    setIsEditing(true);
+    if (!isOpen) openMenu();
+  }, [isOpen, openMenu]);
+
+  const handleInputFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    // Select all text so typing replaces the displayed label
+    e.target.select();
+  }, []);
+
+  const handleToggleClick = useCallback(() => {
+    if (!isOpen) setIsEditing(true);
+  }, [isOpen]);
 
   return (
     <div className={`relative ${className}`}>
-      {/* Trigger */}
-      <button
-        {...getToggleButtonProps({ ref: triggerRef, onKeyDown: handleTriggerKeyDown })}
-        type="button"
-        tabIndex={0}
-        id={id}
-        disabled={disabled}
-        aria-label={ariaLabel}
-        className={`flex min-h-[44px] w-full items-center justify-between rounded-lg border border-edge bg-page px-3 py-2 text-sm text-left transition-colors ${
-          disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-        } ${isOpen ? 'border-accent' : ''}`}
+      {/* Trigger: input + accessory buttons */}
+      <div
+        ref={wrapperRef}
+        className={`flex min-h-[44px] w-full items-center rounded-lg border border-edge bg-page text-sm transition-colors ${
+          disabled ? 'opacity-60 cursor-not-allowed' : ''
+        } ${isOpen ? 'border-accent' : 'focus-within:border-accent'}`}
       >
-        <span className={`flex-1 truncate ${selectedItem ? 'text-body' : 'text-muted'}`}>
-          {selectedItem?.label ?? placeholder}
-        </span>
-        <span className="flex items-center gap-1">
+        <input
+          {...getInputProps({
+            ref: triggerRef,
+            onChange: handleInputChange,
+            onFocus: handleInputFocus,
+          })}
+          type="text"
+          id={id}
+          disabled={disabled}
+          aria-label={ariaLabel}
+          placeholder={placeholder}
+          className={`min-h-[44px] flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
+            !isEditing && selectedItem ? 'text-body' : 'text-body placeholder:text-muted'
+          } ${disabled ? 'cursor-not-allowed' : ''}`}
+        />
+        <span className="flex items-center gap-1 pr-2">
           {defaultValue !== undefined && value !== defaultValue && !disabled && (
-            <span
-              aria-hidden="true"
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="Clear selection"
+              onMouseDown={e => e.preventDefault()}
               onClick={e => { e.stopPropagation(); onChange(defaultValue); }}
               className="flex h-5 w-5 items-center justify-center rounded-full text-muted transition-colors hover:bg-hover hover:text-body"
             >
               <CloseIcon className="h-3.5 w-3.5" />
-            </span>
+            </button>
           )}
-          <ChevronDownIcon className={`h-4 w-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <button
+            {...getToggleButtonProps({
+              onClick: handleToggleClick,
+              onMouseDown: (e: React.MouseEvent) => e.preventDefault(),
+            })}
+            type="button"
+            tabIndex={-1}
+            className="flex h-6 w-6 items-center justify-center text-muted"
+          >
+            <ChevronDownIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
         </span>
-      </button>
+      </div>
 
       {/* Dropdown (portal) — always mounted so downshift refs stay connected */}
       {createPortal(
@@ -188,21 +233,7 @@ export function SearchableSelect({
           }}
         >
           <div className="rounded-lg border border-edge bg-surface shadow-lg">
-            {/* Search input */}
-            <div className="border-b border-edge p-2">
-              <input
-                {...getInputProps({
-                  ref: inputRef,
-                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),
-                })}
-                type="text"
-                aria-label="Search options"
-                className="min-h-[36px] w-full rounded-md border border-edge bg-page px-3 text-sm text-body placeholder:text-muted outline-none focus:border-accent"
-                placeholder="Search…"
-              />
-            </div>
-
-            {/* Options */}
+            {/* Options — no separate search input; the trigger IS the search */}
             <ul
               {...getMenuProps()}
               className="max-h-60 overflow-y-auto py-1"

@@ -18,11 +18,12 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
 export interface AccountDialogProps {
   mode: 'create' | 'edit';
   account?: Account;
+  prompt?: string;
   onClose: () => void;
   onCreated?: (id: string) => void;
 }
 
-export function AccountDialog({ mode, account, onClose, onCreated }: AccountDialogProps) {
+export function AccountDialog({ mode, account, prompt, onClose, onCreated }: AccountDialogProps) {
   const { createAccount, updateAccount } = useDataStore();
 
   const [name, setName] = useState(account?.name ?? '');
@@ -110,6 +111,10 @@ export function AccountDialog({ mode, account, onClose, onCreated }: AccountDial
         <h2 className="mb-4 text-lg font-semibold text-heading">
           {mode === 'create' ? 'Create Account' : 'Edit Account'}
         </h2>
+
+        {prompt && (
+          <p className="mb-4 text-sm text-muted">{prompt}</p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

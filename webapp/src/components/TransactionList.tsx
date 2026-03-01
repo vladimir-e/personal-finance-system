@@ -385,22 +385,28 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             <div
               key={tx.id}
               onClick={() => setMobileEditTx(tx)}
-              className="cursor-pointer rounded-lg border border-edge bg-surface px-4 py-3 transition-colors active:bg-hover"
+              className="cursor-pointer overflow-hidden rounded-lg border border-edge bg-surface px-4 py-3 transition-colors active:bg-hover"
             >
               {/* Line 1: primary — category (+ payee) or transfer label | amount + delete */}
               <div className="flex items-start justify-between gap-2">
-                <span className="truncate font-medium text-body">
-                  {tx.type === 'transfer'
-                    ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
-                    : (<>
-                        {categoryMap.get(tx.categoryId) ?? 'Uncategorized'}
-                        {tx.payee && (
-                          <span className="text-muted">
-                            {' \u00b7 '}{tx.payee}
-                          </span>
-                        )}
-                      </>)}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-body">
+                    {tx.type === 'transfer'
+                      ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
+                      : (<>
+                          {categoryMap.get(tx.categoryId) ?? 'Uncategorized'}
+                          {tx.payee && (
+                            <span className="text-muted">
+                              {' \u00b7 '}{tx.payee}
+                            </span>
+                          )}
+                        </>)}
+                  </span>
+                  {/* Line 2: description (secondary, only if present) */}
+                  {tx.type !== 'transfer' && tx.description && (
+                    <p className="truncate text-sm text-body">{tx.description}</p>
+                  )}
+                </div>
                 <div className="flex flex-shrink-0 items-center gap-1">
                   <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>
                     {formatMoney(tx.amount, CURRENCY)}
@@ -414,10 +420,6 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                   </button>
                 </div>
               </div>
-              {/* Line 2: description (secondary, only if present) */}
-              {tx.type !== 'transfer' && tx.description && (
-                <p className="-mt-4 mb-1 truncate text-sm text-body">{tx.description}</p>
-              )}
               {/* Line 3: meta — date · account · notes indicator */}
               <div className="mt-1 flex items-center gap-2 text-xs text-muted">
                 <span>{formatDate(tx.date)}</span>

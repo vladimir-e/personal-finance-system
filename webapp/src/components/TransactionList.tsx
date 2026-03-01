@@ -381,11 +381,19 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
               onClick={() => setMobileEditTx(tx)}
               className="cursor-pointer rounded-lg border border-edge bg-surface px-4 py-3 transition-colors active:bg-hover"
             >
+              {/* Line 1: primary — category (+ payee) or transfer label | amount + delete */}
               <div className="flex items-start justify-between gap-2">
                 <span className="truncate font-medium text-body">
                   {tx.type === 'transfer'
                     ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
-                    : (tx.description || '\u2014')}
+                    : (<>
+                        {categoryMap.get(tx.categoryId) ?? 'Uncategorized'}
+                        {tx.payee && (
+                          <span className="text-muted">
+                            {' \u00b7 '}{tx.payee}
+                          </span>
+                        )}
+                      </>)}
                 </span>
                 <div className="flex flex-shrink-0 items-center gap-1">
                   <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>
@@ -400,6 +408,11 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                   </button>
                 </div>
               </div>
+              {/* Line 2: description (secondary, only if present) */}
+              {tx.type !== 'transfer' && tx.description && (
+                <p className="-mt-4 mb-1 truncate text-sm text-body">{tx.description}</p>
+              )}
+              {/* Line 3: meta — date · account · notes indicator */}
               <div className="mt-1 flex items-center gap-2 text-xs text-muted">
                 <span>{formatDate(tx.date)}</span>
                 {tx.type !== 'transfer' && !selectedAccountId && accountMap.has(tx.accountId) && (
@@ -408,10 +421,15 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                     <span className="truncate">{accountMap.get(tx.accountId)}</span>
                   </>
                 )}
-                {tx.type !== 'transfer' && (
+                {tx.notes && (
                   <>
                     <span aria-hidden="true">&middot;</span>
-                    <span className="truncate">{categoryMap.get(tx.categoryId) ?? '\u2014'}</span>
+                    <svg className="inline h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Has notes">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
                   </>
                 )}
               </div>

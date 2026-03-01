@@ -45,7 +45,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
   const initTransfer = resolveTransferAccounts();
 
   // ── Form state ──────────────────────────────────────────────
-  const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
+  const [type, setTypeRaw] = useState<TransactionType>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(() => {
     if (!transaction) return '';
     return (Math.abs(transaction.amount) / 10 ** CURRENCY.precision).toFixed(CURRENCY.precision);
@@ -53,7 +53,41 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
   const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().slice(0, 10));
   const [dateDisplay, setDateDisplay] = useState(transaction?.date ?? new Date().toISOString().slice(0, 10));
   const [accountId, setAccountId] = useState(transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? '');
-  const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? '');
+  const [categoryId, setCategoryIdRaw] = useState(transaction?.categoryId ?? '');
+  // Track the category the user had before auto-select, so switching back restores it
+  const prevCategoryRef = useRef(transaction?.categoryId ?? '');
+  const autoSelectedRef = useRef(false);
+
+  const firstIncomeCategory = useMemo(
+    () => categories.find(c => c.group === 'Income')?.id ?? '',
+    [categories],
+  );
+
+  const setCategoryId = (id: string) => {
+    autoSelectedRef.current = false;
+    setCategoryIdRaw(id);
+  };
+
+  const setType = (next: TransactionType) => {
+    setTypeRaw(prev => {
+      if (prev === next) return prev;
+      // Switching to income: auto-select first income category if none chosen
+      if (next === 'income' && firstIncomeCategory) {
+        const currentCat = autoSelectedRef.current ? prevCategoryRef.current : categoryId;
+        if (!currentCat || !categories.find(c => c.id === currentCat && c.group === 'Income')) {
+          prevCategoryRef.current = currentCat;
+          autoSelectedRef.current = true;
+          setCategoryIdRaw(firstIncomeCategory);
+        }
+      }
+      // Switching away from income: restore previous category if we auto-selected
+      if (prev === 'income' && autoSelectedRef.current) {
+        autoSelectedRef.current = false;
+        setCategoryIdRaw(prevCategoryRef.current);
+      }
+      return next;
+    });
+  };
   const [fromAccountId, setFromAccountId] = useState(initTransfer.from);
   const [toAccountId, setToAccountId] = useState(initTransfer.to);
   const [description, setDescription] = useState(transaction?.description ?? '');

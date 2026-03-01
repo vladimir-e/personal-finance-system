@@ -12,6 +12,15 @@ Newest entries go at the top.
 
 ---
 
+## 2026-03-01 — Transaction form redesign for speed and clarity
+- Hero amount input with type-aware coloring (red expense, green income, neutral transfer)
+- Semantic type segmented control with per-type colors
+- Progressive disclosure: description, payee, notes collapse behind "Details" toggle
+- Flexible date input replacing native date picker (accepts `2/15`, `15`, `yesterday`, ISO)
+- Calendar popup for touch-friendly date selection
+- Keyboard shortcuts: Cmd+1/2/3 type switching, +/- in amount field, Cmd+Enter submit
+- SearchableSelect: type-to-filter on focus without opening dropdown
+
 ## 2026-02-26 — UI polish: layout, sidebar, searchable dropdowns
 - Full-bleed layout with permanent desktop sidebar
 - Searchable grouped dropdowns (downshift) replace native selects in transaction dialog/list

@@ -45,6 +45,7 @@ export function SearchableSelect({
   const [isEditing, setIsEditing] = useState(false);
   const dismissedRef = useRef(false);
   const selectedRef = useRef(false);
+  const clickedRef = useRef(false);
 
   const selectedItem = useMemo(
     () => options.find(o => o.value === value) ?? null,
@@ -160,10 +161,32 @@ export function SearchableSelect({
     if (!isOpen) openMenu();
   }, [isOpen, openMenu]);
 
-  const handleInputFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    // Select all text so typing replaces the displayed label
-    e.target.select();
+  const handleInputMouseDown = useCallback(() => {
+    clickedRef.current = true;
   }, []);
+
+  const handleInputFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    if (clickedRef.current) {
+      // Mouse click — open dropdown, clear input for searching
+      clickedRef.current = false;
+      setIsEditing(true);
+      setQuery('');
+      openMenu();
+    } else {
+      // Tab — select text so typing replaces it, don't open
+      e.target.select();
+    }
+  }, [openMenu]);
+
+  const handleInputClick = useCallback(() => {
+    // Handle re-click when already focused (focus won't fire again)
+    clickedRef.current = false;
+    if (!isOpen) {
+      setIsEditing(true);
+      setQuery('');
+      openMenu();
+    }
+  }, [isOpen, openMenu]);
 
   const handleToggleClick = useCallback(() => {
     if (!isOpen) setIsEditing(true);
@@ -182,7 +205,9 @@ export function SearchableSelect({
           {...getInputProps({
             ref: triggerRef,
             onChange: handleInputChange,
+            onMouseDown: handleInputMouseDown,
             onFocus: handleInputFocus,
+            onClick: handleInputClick,
           })}
           type="text"
           id={id}

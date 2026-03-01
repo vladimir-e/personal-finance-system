@@ -56,14 +56,23 @@ describe('SearchableSelect', () => {
   });
 
   describe('dropdown opening', () => {
-    it('does NOT open dropdown on focus alone', async () => {
+    it('does NOT open dropdown on tab focus alone', async () => {
+      const user = userEvent.setup();
+      renderSelect();
+
+      await user.tab();
+
+      // The listbox should not show options on keyboard focus
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    });
+
+    it('opens dropdown on click', async () => {
       const user = userEvent.setup();
       renderSelect();
 
       await user.click(screen.getByLabelText('Fruit'));
 
-      // The listbox should not show options
-      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Apple' })).toBeInTheDocument();
     });
 
     it('opens dropdown when typing', async () => {

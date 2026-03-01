@@ -342,7 +342,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
             <label htmlFor="txn-amount" className="sr-only">
               Amount
             </label>
-            <div className="relative rounded-lg border border-edge bg-page transition-colors">
+            <div className={`relative rounded-lg border bg-page transition-colors ${errors.amount ? 'border-negative' : 'border-edge'}`}>
               <span className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs tabular-nums ${prefixColor} transition-colors`}>
                 {signPrefix}$
               </span>
@@ -358,7 +358,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                 aria-label="Amount"
               />
             </div>
-            {errors.amount && <p className="mt-1 text-xs text-negative">{errors.amount}</p>}
+            {errors.amount && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.amount}</p>}
           </div>
 
           {/* ── Row 1, Col 2: Date ────────────────────────── */}
@@ -421,7 +421,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                 anchorRef={calendarBtnRef}
               />
             )}
-            {errors.date && <p className="mt-1 text-xs text-negative">{errors.date}</p>}
+            {errors.date && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.date}</p>}
           </div>
 
           {/* ── Type segmented control (skip tab) ─────────── */}
@@ -466,7 +466,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="From Account"
                   placeholder="Select account"
                 />
-                {errors.fromAccountId && <p className="mt-1 text-xs text-negative">{errors.fromAccountId}</p>}
+                {errors.fromAccountId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.fromAccountId}</p>}
               </div>
               <div className="col-span-2">
                 <label htmlFor="txn-to-account" className="mb-1 block text-sm font-medium text-body">
@@ -481,7 +481,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="To Account"
                   placeholder="Select account"
                 />
-                {errors.toAccountId && <p className="mt-1 text-xs text-negative">{errors.toAccountId}</p>}
+                {errors.toAccountId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.toAccountId}</p>}
               </div>
             </>
           ) : (
@@ -498,7 +498,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="Category"
                   placeholder="Select category"
                 />
-                {errors.categoryId && <p className="mt-1 text-xs text-negative">{errors.categoryId}</p>}
+                {errors.categoryId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.categoryId}</p>}
               </div>
               <div className="col-span-2">
                 <label htmlFor="txn-account" className="mb-1 block text-sm font-medium text-body">
@@ -512,7 +512,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
                   aria-label="Account"
                   placeholder="Select account"
                 />
-                {errors.accountId && <p className="mt-1 text-xs text-negative">{errors.accountId}</p>}
+                {errors.accountId && <p className="mt-1.5 rounded-md bg-negative/10 px-2.5 py-1.5 text-xs font-medium text-negative">{errors.accountId}</p>}
               </div>
             </>
           )}

@@ -60,6 +60,15 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
   // ── Render helpers ──────────────────────────────────────
 
+  const transferLabel = (tx: Transaction): string => {
+    const thisAccount = accountMap.get(tx.accountId) ?? 'Unknown';
+    const pair = state.transactions.find(t => t.id === tx.transferPairId);
+    const otherAccount = pair ? (accountMap.get(pair.accountId) ?? 'Unknown') : 'Unknown';
+    const from = tx.amount < 0 ? thisAccount : otherAccount;
+    const to = tx.amount < 0 ? otherAccount : thisAccount;
+    return `${from} → ${to}`;
+  };
+
   const editInputClass =
     'h-9 w-full rounded border border-accent/50 bg-page px-2 text-sm text-body outline-none focus:border-accent';
 
@@ -168,6 +177,13 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           </td>
         );
       case 'category':
+        if (isTransfer) {
+          return (
+            <td key={field} colSpan={2} className="px-4 py-3 text-muted italic">
+              Transfer: {transferLabel(tx)}
+            </td>
+          );
+        }
         return (
           <td
             key={field}
@@ -178,6 +194,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           </td>
         );
       case 'description':
+        if (isTransfer) return null;
         return (
           <td
             key={field}
@@ -359,7 +376,9 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="truncate font-medium text-body">
-                  {tx.description || '\u2014'}
+                  {tx.type === 'transfer'
+                    ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
+                    : (tx.description || '\u2014')}
                 </span>
                 <div className="flex flex-shrink-0 items-center gap-1">
                   <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>
@@ -376,14 +395,18 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted">
                 <span>{formatDate(tx.date)}</span>
-                {!selectedAccountId && accountMap.has(tx.accountId) && (
+                {tx.type !== 'transfer' && !selectedAccountId && accountMap.has(tx.accountId) && (
                   <>
                     <span aria-hidden="true">&middot;</span>
                     <span className="truncate">{accountMap.get(tx.accountId)}</span>
                   </>
                 )}
-                <span aria-hidden="true">&middot;</span>
-                <span className="truncate">{categoryMap.get(tx.categoryId) ?? '\u2014'}</span>
+                {tx.type !== 'transfer' && (
+                  <>
+                    <span aria-hidden="true">&middot;</span>
+                    <span className="truncate">{categoryMap.get(tx.categoryId) ?? '\u2014'}</span>
+                  </>
+                )}
               </div>
             </div>
           ))}

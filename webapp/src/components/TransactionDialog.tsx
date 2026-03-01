@@ -195,6 +195,15 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
   };
 
   // ── Submit ──────────────────────────────────────────────────
+  const focusField = (key: string) => {
+    if (key === 'amount') { amountRef.current?.focus(); return; }
+    const idMap: Record<string, string> = {
+      date: 'txn-date', fromAccountId: 'txn-from-account',
+      toAccountId: 'txn-to-account', categoryId: 'txn-category', accountId: 'txn-account',
+    };
+    if (idMap[key]) document.getElementById(idMap[key])?.focus();
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -202,6 +211,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
     const parsedDate = parseFlexDate(dateDisplay);
     if (!parsedDate) {
       setErrors({ date: 'Invalid date' });
+      focusField('date');
       return;
     }
 
@@ -210,10 +220,12 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
       parsedAmount = parseMoney(amount, CURRENCY);
     } catch {
       setErrors({ amount: 'Invalid amount' });
+      focusField('amount');
       return;
     }
     if (parsedAmount === 0) {
       setErrors({ amount: 'Amount must not be zero' });
+      focusField('amount');
       return;
     }
 
@@ -221,6 +233,7 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
       if (mode === 'create') {
         if (fromAccountId === toAccountId) {
           setErrors({ toAccountId: 'Must be different from source account' });
+          focusField('toAccountId');
           return;
         }
         createTransfer(fromAccountId, toAccountId, parsedAmount, parsedDate, {
@@ -240,7 +253,9 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           notes: notes.trim(),
         });
         if (!result.success) {
-          setErrors(zodErrors(result.error.issues));
+          const errs = zodErrors(result.error.issues);
+          setErrors(errs);
+          focusField(Object.keys(errs)[0]);
           return;
         }
         updateTransaction(transaction.id, result.data);
@@ -263,7 +278,9 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           source: 'manual',
         });
         if (!result.success) {
-          setErrors(zodErrors(result.error.issues));
+          const errs = zodErrors(result.error.issues);
+          setErrors(errs);
+          focusField(Object.keys(errs)[0]);
           return;
         }
         createTransaction(result.data);
@@ -279,7 +296,9 @@ export function TransactionDialog({ mode, transaction, defaultAccountId, onClose
           notes: notes.trim(),
         });
         if (!result.success) {
-          setErrors(zodErrors(result.error.issues));
+          const errs = zodErrors(result.error.issues);
+          setErrors(errs);
+          focusField(Object.keys(errs)[0]);
           return;
         }
         updateTransaction(transaction.id, result.data);

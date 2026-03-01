@@ -225,6 +225,64 @@ describe('SearchableSelect', () => {
     });
   });
 
+  describe('searchable={false} (select-only mode)', () => {
+    it('renders the input as readOnly', () => {
+      renderSelect({ searchable: false });
+
+      const input = screen.getByLabelText('Fruit') as HTMLInputElement;
+      expect(input.readOnly).toBe(true);
+    });
+
+    it('opens dropdown on click', async () => {
+      const user = userEvent.setup();
+      renderSelect({ searchable: false });
+
+      await user.click(screen.getByLabelText('Fruit'));
+
+      expect(screen.getByRole('option', { name: 'Apple' })).toBeInTheDocument();
+    });
+
+    it('does not filter options when typing', async () => {
+      const user = userEvent.setup();
+      renderSelect({ searchable: false });
+
+      await user.click(screen.getByLabelText('Fruit'));
+      await user.keyboard('ch');
+
+      // All options should still be visible (no filtering)
+      expect(screen.getByRole('option', { name: 'Apple' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Banana' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Cherry' })).toBeInTheDocument();
+    });
+
+    it('allows selecting via click', async () => {
+      const user = userEvent.setup();
+      const { props } = renderSelect({ searchable: false });
+
+      await user.click(screen.getByLabelText('Fruit'));
+      await user.click(screen.getByRole('option', { name: 'Banana' }));
+
+      expect(props.onChange).toHaveBeenCalledWith('banana');
+    });
+
+    it('allows selecting via keyboard', async () => {
+      const user = userEvent.setup();
+      const { props } = renderSelect({ searchable: false });
+
+      await user.click(screen.getByLabelText('Fruit'));
+      await user.keyboard('{ArrowDown}{Enter}');
+
+      expect(props.onChange).toHaveBeenCalledWith('apple');
+    });
+
+    it('shows cursor-pointer on input', () => {
+      renderSelect({ searchable: false });
+
+      const input = screen.getByLabelText('Fruit');
+      expect(input.className).toContain('cursor-pointer');
+    });
+  });
+
   describe('disabled state', () => {
     it('disables the input when disabled is true', () => {
       renderSelect({ disabled: true });

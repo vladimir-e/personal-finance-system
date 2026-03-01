@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDataStore } from '../store';
 import { formatMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
@@ -60,10 +60,16 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
   // ── Render helpers ──────────────────────────────────────
 
+  const txById = useMemo(() => {
+    const map = new Map<string, Transaction>();
+    for (const t of state.transactions) map.set(t.id, t);
+    return map;
+  }, [state.transactions]);
+
   const transferLabel = (tx: Transaction): string => {
-    const thisAccount = accountMap.get(tx.accountId) ?? 'Unknown';
-    const pair = state.transactions.find(t => t.id === tx.transferPairId);
-    const otherAccount = pair ? (accountMap.get(pair.accountId) ?? 'Unknown') : 'Unknown';
+    const thisAccount = accountMap.get(tx.accountId) ?? '\u2014';
+    const pair = txById.get(tx.transferPairId);
+    const otherAccount = pair ? (accountMap.get(pair.accountId) ?? '\u2014') : '\u2014';
     const from = tx.amount < 0 ? thisAccount : otherAccount;
     const to = tx.amount < 0 ? otherAccount : thisAccount;
     return `${from} → ${to}`;

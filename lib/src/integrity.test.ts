@@ -23,16 +23,20 @@ describe('canDeleteAccount', () => {
     expect(canDeleteAccount([], 'acc-1')).toBe(true);
   });
 
-  it('returns false when account has transactions', () => {
-    expect(canDeleteAccount([makeTx()], 'acc-1')).toBe(false);
+  it('returns true when account has only one transaction (opening balance)', () => {
+    expect(canDeleteAccount([makeTx()], 'acc-1')).toBe(true);
+  });
+
+  it('returns false when account has multiple transactions', () => {
+    const txs = [
+      makeTx({ id: '1', accountId: 'acc-1' }),
+      makeTx({ id: '2', accountId: 'acc-1' }),
+    ];
+    expect(canDeleteAccount(txs, 'acc-1')).toBe(false);
   });
 
   it('returns true when other accounts have transactions', () => {
     expect(canDeleteAccount([makeTx({ accountId: 'acc-2' })], 'acc-1')).toBe(true);
-  });
-
-  it('returns false even with a single transaction', () => {
-    expect(canDeleteAccount([makeTx({ id: '1' })], 'acc-1')).toBe(false);
   });
 
   it('handles mixed accounts correctly', () => {
@@ -40,8 +44,8 @@ describe('canDeleteAccount', () => {
       makeTx({ id: '1', accountId: 'acc-1' }),
       makeTx({ id: '2', accountId: 'acc-2' }),
     ];
-    expect(canDeleteAccount(txs, 'acc-1')).toBe(false);
-    expect(canDeleteAccount(txs, 'acc-2')).toBe(false);
+    expect(canDeleteAccount(txs, 'acc-1')).toBe(true);
+    expect(canDeleteAccount(txs, 'acc-2')).toBe(true);
     expect(canDeleteAccount(txs, 'acc-3')).toBe(true);
   });
 });

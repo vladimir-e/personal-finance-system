@@ -22,6 +22,7 @@ export function reduceAccount(state: DataStore, action: AccountAction): DataStor
       return {
         ...state,
         accounts: state.accounts.filter((a) => a.id !== action.id),
+        transactions: state.transactions.filter((tx) => tx.accountId !== action.id),
       };
   }
 }

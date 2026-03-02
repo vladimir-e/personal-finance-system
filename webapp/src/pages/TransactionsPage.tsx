@@ -280,8 +280,16 @@ export function TransactionsPage({ showAddTransaction, onCloseAddTransaction }: 
         );
       })()}
 
-      {/* Add transaction dialog (triggered by AppShell button) */}
-      {showAddTransaction && (
+      {/* Add transaction: show account dialog first if no accounts exist */}
+      {showAddTransaction && state.accounts.length === 0 && (
+        <AccountDialog
+          mode="create"
+          prompt="Create an account first to start logging transactions."
+          onClose={() => onCloseAddTransaction?.()}
+          onCreated={handleAccountCreated}
+        />
+      )}
+      {showAddTransaction && state.accounts.length > 0 && (
         <TransactionDialog
           mode="create"
           defaultAccountId={selectedAccountId ?? undefined}

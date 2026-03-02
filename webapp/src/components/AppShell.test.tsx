@@ -3,6 +3,7 @@ import { render, screen, within } from '../test/render';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from './ThemeProvider';
 import { AppShell } from './AppShell';
+import { makeAccount, makeDataStore } from '../test/factories';
 
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -19,11 +20,14 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-function renderShell() {
+const stateWithAccount = makeDataStore({ accounts: [makeAccount({ id: 'a1' })] });
+
+function renderShell(initialState = stateWithAccount) {
   return render(
     <ThemeProvider>
       <AppShell />
     </ThemeProvider>,
+    { initialState },
   );
 }
 
@@ -120,6 +124,16 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: 'Add transaction' }));
 
     expect(screen.getByRole('dialog', { name: 'Add transaction' })).toBeInTheDocument();
+  });
+
+  it('Add Transaction shows account dialog when no accounts exist', async () => {
+    renderShell(makeDataStore());
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Add transaction' }));
+
+    expect(screen.getByRole('dialog', { name: 'Create account' })).toBeInTheDocument();
+    expect(screen.getByText('Create an account first to start logging transactions.')).toBeInTheDocument();
   });
 
   it('Add Transaction switches to Transactions tab when on Budget', async () => {

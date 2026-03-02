@@ -202,9 +202,24 @@ describe('Account Mutations', () => {
     expect(accounts[0].name).toBe('Updated Name');
   });
 
-  it('deleteAccount fails when account has transactions', async () => {
+  it('deleteAccount succeeds when account has only opening balance', async () => {
     render(<TestHarness />);
     await act(async () => screen.getByTestId('create-account').click());
+    expect(screen.getByTestId('transaction-count')).toHaveTextContent('1');
+
+    await act(async () => screen.getByTestId('delete-account').click());
+
+    expect(screen.getByTestId('account-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('transaction-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('error')).toHaveTextContent('');
+  });
+
+  it('deleteAccount fails when account has additional transactions', async () => {
+    render(<TestHarness />);
+    await act(async () => screen.getByTestId('create-account').click());
+    await act(async () => screen.getByTestId('create-transaction').click());
+    expect(screen.getByTestId('transaction-count')).toHaveTextContent('2');
+
     await act(async () => screen.getByTestId('delete-account').click());
 
     expect(screen.getByTestId('error')).toHaveTextContent('Cannot delete account that has transactions');

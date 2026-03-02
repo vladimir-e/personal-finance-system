@@ -2,7 +2,8 @@ import type { Transaction } from './types/index.js';
 import { computeBalance } from './balance.js';
 
 export function canDeleteAccount(transactions: Transaction[], accountId: string): boolean {
-  return !transactions.some((tx) => tx.accountId === accountId);
+  const accountTxs = transactions.filter((tx) => tx.accountId === accountId);
+  return accountTxs.length <= 1;
 }
 
 export function canArchiveAccount(transactions: Transaction[], accountId: string): boolean {

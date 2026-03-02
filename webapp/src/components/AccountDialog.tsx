@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useDataStore } from '../store';
 import { CreateAccountInput, UpdateAccountInput, parseMoney } from 'pfs-lib';
 import type { Account, AccountType, Currency } from 'pfs-lib';
+import { PillSelect } from './PillSelect';
 
 const CURRENCY: Currency = { code: 'USD', precision: 2 };
 
@@ -18,11 +19,12 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
 export interface AccountDialogProps {
   mode: 'create' | 'edit';
   account?: Account;
+  prompt?: string;
   onClose: () => void;
   onCreated?: (id: string) => void;
 }
 
-export function AccountDialog({ mode, account, onClose, onCreated }: AccountDialogProps) {
+export function AccountDialog({ mode, account, prompt, onClose, onCreated }: AccountDialogProps) {
   const { createAccount, updateAccount } = useDataStore();
 
   const [name, setName] = useState(account?.name ?? '');
@@ -111,10 +113,14 @@ export function AccountDialog({ mode, account, onClose, onCreated }: AccountDial
           {mode === 'create' ? 'Create Account' : 'Edit Account'}
         </h2>
 
+        {prompt && (
+          <p className="mb-4 text-sm text-muted">{prompt}</p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="account-name" className="mb-1 block text-sm font-medium text-body">
-              Name
+              Account Name
             </label>
             <input
               ref={nameRef}
@@ -129,21 +135,15 @@ export function AccountDialog({ mode, account, onClose, onCreated }: AccountDial
           </div>
 
           <div>
-            <label htmlFor="account-type" className="mb-1 block text-sm font-medium text-body">
+            <span className="mb-1 block text-sm font-medium text-body">
               Type
-            </label>
-            <select
-              id="account-type"
+            </span>
+            <PillSelect
+              aria-label="Type"
+              options={ACCOUNT_TYPES}
               value={type}
-              onChange={(e) => setType(e.target.value as AccountType)}
-              className={inputClass}
-            >
-              {ACCOUNT_TYPES.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setType(v as AccountType)}
+            />
           </div>
 
           <div>

@@ -125,6 +125,11 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
     [state.transactions, selectedIds],
   );
 
+  const selectedTotal = useMemo(
+    () => selectedTransactions.reduce((sum, t) => sum + t.amount, 0),
+    [selectedTransactions],
+  );
+
   const handleBulkSetCategory = useCallback((categoryId: string) => {
     const updates: Array<{ id: string; changes: { categoryId: string } }> = [];
     let skipped = 0;
@@ -697,6 +702,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
       {selectedIds.size > 0 && (
         <FloatingActionBar
           selectedCount={selectedIds.size}
+          selectedTotal={selectedTotal}
           categoryOptions={categoryOptions}
           accountOptions={accountOptions}
           onSetCategory={handleBulkSetCategory}

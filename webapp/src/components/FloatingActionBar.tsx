@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { formatMoney } from 'pfs-lib';
+import type { Currency } from 'pfs-lib';
 import { SearchableSelect } from './SearchableSelect';
 import type { SelectOption } from './SearchableSelect';
-import { CloseIcon, TrashIcon } from './icons';
+import { CloseIcon, TrashIcon, ChevronDownIcon } from './icons';
+import { amountClass } from '../utils/amountClass';
+
+const CURRENCY: Currency = { code: 'USD', precision: 2 };
+
+type OpenDropdown = 'category' | 'account' | null;
 
 interface FloatingActionBarProps {
   selectedCount: number;
+  selectedTotal: number;
   categoryOptions: SelectOption[];
   accountOptions: SelectOption[];
   onSetCategory: (categoryId: string) => void;
@@ -17,11 +25,12 @@ interface FloatingActionBarProps {
 }
 
 export function FloatingActionBar({
-  selectedCount, categoryOptions, accountOptions,
+  selectedCount, selectedTotal, categoryOptions, accountOptions,
   onSetCategory, onSetAccount, onDelete, onClear,
   skipNote, isMobile,
 }: FloatingActionBarProps) {
   const [entered, setEntered] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true));
@@ -48,34 +57,61 @@ export function FloatingActionBar({
             <CloseIcon className="h-4 w-4" />
           </button>
 
-          {/* Count */}
-          <span className="whitespace-nowrap text-sm font-medium text-body">
-            {selectedCount} selected
+          {/* Count & total */}
+          <span className="flex flex-col whitespace-nowrap leading-tight">
+            <span className="text-sm font-medium text-body">{selectedCount} selected</span>
+            <span className={`text-xs tabular-nums ${amountClass(selectedTotal)}`}>{formatMoney(selectedTotal, CURRENCY)}</span>
           </span>
 
           <div className="flex-1" />
 
           {/* Category */}
-          <SearchableSelect
-            options={categoryOptions}
-            value=""
-            onChange={onSetCategory}
-            placeholder="Set category…"
-            aria-label="Set category for selected transactions"
-            className="w-40 flex-shrink-0"
-            dropUp
-          />
+          {openDropdown === 'category' ? (
+            <SearchableSelect
+              options={categoryOptions}
+              value=""
+              onChange={(val) => { onSetCategory(val); setOpenDropdown(null); }}
+              placeholder="Search categories…"
+              aria-label="Set category for selected transactions"
+              className="w-44 flex-shrink-0"
+              autoOpen
+              onDismiss={() => setOpenDropdown(null)}
+              dropUp
+            />
+          ) : (
+            <button
+              onClick={() => setOpenDropdown('category')}
+              className="flex h-[44px] flex-shrink-0 items-center gap-1 rounded-lg px-3 text-sm font-medium text-body transition-colors hover:bg-hover"
+              aria-label="Set category for selected transactions"
+            >
+              Categorize
+              <ChevronDownIcon className="h-3.5 w-3.5 text-muted" />
+            </button>
+          )}
 
           {/* Account */}
-          <SearchableSelect
-            options={accountOptions}
-            value=""
-            onChange={onSetAccount}
-            placeholder="Move to account…"
-            aria-label="Move selected transactions to account"
-            className="w-44 flex-shrink-0"
-            dropUp
-          />
+          {openDropdown === 'account' ? (
+            <SearchableSelect
+              options={accountOptions}
+              value=""
+              onChange={(val) => { onSetAccount(val); setOpenDropdown(null); }}
+              placeholder="Search accounts…"
+              aria-label="Move selected transactions to account"
+              className="w-44 flex-shrink-0"
+              autoOpen
+              onDismiss={() => setOpenDropdown(null)}
+              dropUp
+            />
+          ) : (
+            <button
+              onClick={() => setOpenDropdown('account')}
+              className="flex h-[44px] flex-shrink-0 items-center gap-1 rounded-lg px-3 text-sm font-medium text-body transition-colors hover:bg-hover"
+              aria-label="Move selected transactions to account"
+            >
+              Move to account
+              <ChevronDownIcon className="h-3.5 w-3.5 text-muted" />
+            </button>
+          )}
 
           {/* Delete */}
           <button

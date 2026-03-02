@@ -55,7 +55,7 @@ function CheckboxIcon({ checked, indeterminate }: { checked: boolean; indetermin
 // ── Main component ───────────────────────────────────────────
 
 export function TransactionList({ selectedAccountId, onDeleteTransaction }: TransactionListProps) {
-  const { state, updateTransaction, deleteTransaction } = useDataStore();
+  const { state, updateTransaction, bulkUpdateTransactions, bulkDeleteTransactions } = useDataStore();
   const isMobile = useIsMobile();
 
   const {
@@ -95,11 +95,14 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
     if (changed) clear();
   }, [selectedAccountId, search, categoryFilter, sort, page, clear]);
 
-  // Escape to clear selection
+  // Escape to clear selection (skip if a dialog/modal is open)
   useEffect(() => {
     if (selectedIds.size === 0) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { clear(); e.stopPropagation(); }
+      if (e.key !== 'Escape') return;
+      // Don't clear selection if a modal is consuming Escape
+      if (document.querySelector('[role="alertdialog"], [role="dialog"]')) return;
+      clear();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -123,26 +126,30 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
   );
 
   const handleBulkSetCategory = useCallback((categoryId: string) => {
+    const updates: Array<{ id: string; changes: { categoryId: string } }> = [];
     let skipped = 0;
     for (const tx of selectedTransactions) {
       if (tx.type === 'transfer') { skipped++; continue; }
       if (tx.categoryId !== categoryId) {
-        updateTransaction(tx.id, { categoryId });
+        updates.push({ id: tx.id, changes: { categoryId } });
       }
     }
+    bulkUpdateTransactions(updates);
     if (skipped > 0) setSkipNote(`${skipped} transfer${skipped !== 1 ? 's' : ''} skipped`);
-  }, [selectedTransactions, updateTransaction]);
+  }, [selectedTransactions, bulkUpdateTransactions]);
 
   const handleBulkSetAccount = useCallback((accountId: string) => {
+    const updates: Array<{ id: string; changes: { accountId: string } }> = [];
     let skipped = 0;
     for (const tx of selectedTransactions) {
       if (tx.type === 'transfer') { skipped++; continue; }
       if (tx.accountId !== accountId) {
-        updateTransaction(tx.id, { accountId });
+        updates.push({ id: tx.id, changes: { accountId } });
       }
     }
+    bulkUpdateTransactions(updates);
     if (skipped > 0) setSkipNote(`${skipped} transfer${skipped !== 1 ? 's' : ''} skipped`);
-  }, [selectedTransactions, updateTransaction]);
+  }, [selectedTransactions, bulkUpdateTransactions]);
 
   const bulkDeleteInfo = useMemo(() => {
     const transferCount = selectedTransactions.filter(t => t.type === 'transfer').length;
@@ -157,21 +164,10 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
   }, [selectedTransactions, selectedIds]);
 
   const handleBulkDelete = useCallback(() => {
-    // Collect all IDs to delete (including pairs)
-    const toDelete = new Set(selectedIds);
-    for (const tx of selectedTransactions) {
-      if (tx.transferPairId) toDelete.add(tx.transferPairId);
-    }
-    for (const id of toDelete) {
-      // cascadeTransferDelete inside deleteTransaction handles pairs, so skip
-      // if it was already deleted as part of a pair cascade
-      if (state.transactions.some(t => t.id === id)) {
-        deleteTransaction(id);
-      }
-    }
+    bulkDeleteTransactions([...selectedIds]);
     clear();
     setBulkDeleteConfirm(false);
-  }, [selectedIds, selectedTransactions, state.transactions, deleteTransaction, clear]);
+  }, [selectedIds, bulkDeleteTransactions, clear]);
 
   // ── Long-press for mobile ─────────────────────────────────
 

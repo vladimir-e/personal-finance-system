@@ -18,7 +18,9 @@ export type TransactionAction =
   | { type: 'ADD_TRANSACTION'; transaction: Transaction }
   | { type: 'ADD_TRANSACTIONS'; transactions: Transaction[] }
   | { type: 'UPDATE_TRANSACTION'; transactions: Transaction[] }
-  | { type: 'DELETE_TRANSACTION'; transactions: Transaction[] };
+  | { type: 'DELETE_TRANSACTION'; transactions: Transaction[] }
+  | { type: 'BULK_UPDATE_TRANSACTIONS'; updates: Array<{ id: string; changes: Partial<Transaction> }> }
+  | { type: 'BULK_DELETE_TRANSACTIONS'; ids: string[] };
 
 // ── Category actions ────────────────────────────────────────
 

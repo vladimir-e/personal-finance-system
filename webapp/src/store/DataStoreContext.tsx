@@ -41,6 +41,8 @@ export interface DataStoreMutations {
   createTransfer(fromAccountId: string, toAccountId: string, amount: number, date: string, opts?: { description?: string; payee?: string; notes?: string }): [Transaction, Transaction];
   updateTransaction(id: string, input: UpdateTransactionInputType): void;
   deleteTransaction(id: string): void;
+  bulkUpdateTransactions(updates: Array<{ id: string; changes: Partial<Transaction> }>): void;
+  bulkDeleteTransactions(ids: string[]): void;
 
   createCategory(input: CreateCategoryInputType): Category;
   updateCategory(id: string, input: UpdateCategoryInputType): void;
@@ -217,6 +219,16 @@ function createMutations(
       }
       const transactions = cascadeTransferDelete(state.transactions, id);
       dispatch({ type: 'DELETE_TRANSACTION', transactions });
+    },
+
+    bulkUpdateTransactions(updates) {
+      if (updates.length === 0) return;
+      dispatch({ type: 'BULK_UPDATE_TRANSACTIONS', updates });
+    },
+
+    bulkDeleteTransactions(ids) {
+      if (ids.length === 0) return;
+      dispatch({ type: 'BULK_DELETE_TRANSACTIONS', ids });
     },
 
     // ── Categories ────────────────────────────────────────

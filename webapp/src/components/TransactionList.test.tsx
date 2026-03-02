@@ -189,9 +189,10 @@ describe('TransactionList', () => {
       const rows = within(table).getAllByRole('row');
       // Row 0 is header, rows 1+ are data
       // tx2 (Jan 20) should be first, tx1 (Jan 15) second, tx3 (Jan 10) third
+      // Cell 0 = checkbox, 1 = date, 2 = account, 3 = category, 4 = description, 5 = amount
       const cells = rows.slice(1).map(row => within(row).getAllByRole('cell'));
-      expect(cells[0]![4]!.textContent).toContain('5,000.00'); // tx2
-      expect(cells[2]![4]!.textContent).toContain('42.00');     // tx3
+      expect(cells[0]![5]!.textContent).toContain('5,000.00'); // tx2
+      expect(cells[2]![5]!.textContent).toContain('42.00');     // tx3
     });
 
     it('toggles sort direction on same header click', async () => {
@@ -205,8 +206,8 @@ describe('TransactionList', () => {
       const rows = within(table).getAllByRole('row');
       const cells = rows.slice(1).map(row => within(row).getAllByRole('cell'));
       // Now oldest first: tx3 (Jan 10), tx1 (Jan 15), tx2 (Jan 20)
-      expect(cells[0]![4]!.textContent).toContain('42.00');     // tx3
-      expect(cells[2]![4]!.textContent).toContain('5,000.00'); // tx2
+      expect(cells[0]![5]!.textContent).toContain('42.00');     // tx3
+      expect(cells[2]![5]!.textContent).toContain('5,000.00'); // tx2
     });
 
     it('sorts by amount', async () => {
@@ -219,7 +220,7 @@ describe('TransactionList', () => {
       const rows = within(table).getAllByRole('row');
       const cells = rows.slice(1).map(row => within(row).getAllByRole('cell'));
       // Amount desc by default: $5,000.00, -$25.00, -$42.00
-      expect(cells[0]![4]!.textContent).toContain('5,000.00');
+      expect(cells[0]![5]!.textContent).toContain('5,000.00');
     });
   });
 
@@ -396,11 +397,11 @@ describe('TransactionList', () => {
       const table = getTable();
       const rows = within(table).getAllByRole('row');
 
-      // Data rows (skip header). Each transfer row: date + account + transfer(colSpan=2) + amount + actions = 5 cells
-      // A normal row would have 6 cells (date + account + category + description + amount + actions)
+      // Data rows (skip header). Each transfer row: checkbox + date + account + transfer(colSpan=2) + amount + actions = 6 cells
+      // A normal row would have 7 cells (checkbox + date + account + category + description + amount + actions)
       for (const row of rows.slice(1)) {
         const cells = within(row).getAllByRole('cell');
-        expect(cells.length).toBe(5);
+        expect(cells.length).toBe(6);
       }
     });
   });

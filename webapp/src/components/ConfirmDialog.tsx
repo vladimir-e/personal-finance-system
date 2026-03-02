@@ -1,9 +1,9 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, type ReactNode } from 'react';
 import { useFocusTrap } from '../utils/useFocusTrap';
 
 export interface ConfirmDialogProps {
   title: string;
-  message: string;
+  message: ReactNode;
   confirmLabel?: string;
   danger?: boolean;
   onConfirm?: () => void;

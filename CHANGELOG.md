@@ -12,6 +12,12 @@ Newest entries go at the top.
 
 ---
 
+## 2026-03-01 — Transaction table polish, PillSelect, first-launch UX
+- Transfer transactions display direction inline ("Transfer: A → B")
+- PillSelect component for inline option selection (account type, category group)
+- First-launch prompt: "Add Transaction" with no accounts triggers account creation
+- Mobile/desktop breakpoint raised to 1024px
+
 ## 2026-03-01 — Transaction form redesign for speed and clarity
 - Hero amount input with type-aware coloring (red expense, green income, neutral transfer)
 - Calendar popup for touch-friendly date selection

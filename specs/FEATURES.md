@@ -112,6 +112,9 @@ Create, edit, archive, and delete categories and category groups. Deleting a cat
 ### Theme
 Light, dark, and system-preference theme modes. Toggle available in the top navigation bar.
 
+### First-launch experience
+When no accounts exist, clicking "Add Transaction" triggers an account creation dialog with a contextual prompt, guiding the user to create an account before entering transactions.
+
 ### Navigation
 Three navigation tabs, consistent across mobile and desktop:
 - **Transactions** — transaction list + account sidebar/selector. Accounts live within this tab.

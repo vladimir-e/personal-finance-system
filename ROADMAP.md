@@ -30,7 +30,7 @@ Pure function: `computeMonthlySummary(dataStore, month) → MonthlySummary`. Per
 Functions: `createTransferPair(fromAccountId, toAccountId, amount, date, ...) → [Transaction, Transaction]` with mutual transferPairId. `propagateTransferUpdate(transactions, updatedTx) → Transaction[]` syncs amount/date to paired transaction. Cascade delete helper.
 
 ### [x] 8. Referential integrity
-Pure enforcement functions: `canDeleteAccount(transactions, accountId) → boolean` (blocked if any transactions), `canArchiveAccount(transactions, accountId) → boolean` (blocked if non-zero balance), `onDeleteCategory(transactions, categoryId) → Transaction[]` (clears categoryId on affected transactions). Return new data, never mutate.
+Pure enforcement functions: `canDeleteAccount(transactions, accountId) → boolean` (blocked if more than one transaction; opening balance alone is allowed), `canArchiveAccount(transactions, accountId) → boolean` (blocked if non-zero balance), `onDeleteCategory(transactions, categoryId) → Transaction[]` (clears categoryId on affected transactions). Return new data, never mutate.
 
 ### [x] 9. Lib unit tests
 Cover: derived balance, budget math (monthly summary, available to budget, edge cases including month boundaries and refunds in expense categories), transfer pair creation/propagation/cascade, referential integrity rules, money formatting/parsing, Zod schema validation (valid and invalid inputs), default categories.

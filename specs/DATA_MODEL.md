@@ -170,7 +170,7 @@ Use `Intl.NumberFormat` with the currency code for display — never store the f
 
 | Operation | Rule |
 |-----------|------|
-| Delete account | Blocked if account has any transactions |
+| Delete account | Blocked if account has more than one transaction (opening balance alone is allowed) |
 | Archive account | Blocked if derived balance is non-zero |
 | Update transaction | If `transferPairId` is set, propagates `amount` and `date` changes to paired transaction |
 | Delete transaction | If `transferPairId` is set, cascades to delete paired transaction |

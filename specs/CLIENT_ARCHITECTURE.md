@@ -101,7 +101,7 @@ Help screen is accessible from a secondary location (settings/more menu), not a 
 
 **Transaction list:**
 - Mobile: card/row layout — each transaction shows description/payee, amount, date, with category as muted subtext. Tap to open detail.
-- Desktop/tablet (768px+): full table with columns for date, account, category, description, amount.
+- Desktop/tablet (1024px+): full table with columns for date, account, category, description, amount.
 
 **Transaction editing:**
 - Mobile: tap a transaction to open a bottom sheet with editable fields.
@@ -125,13 +125,14 @@ Help screen is accessible from a secondary location (settings/more menu), not a 
 **Confirmation dialogs** for destructive actions:
 - Delete transaction: if transfer, warn "This will also delete the matching transfer in [Account]."
 - Delete category: warn "This will remove the category from N transactions."
-- Delete account: blocked message if account has transactions. Instruct user to bring the balance to 0 and archive instead.
+- Delete account: allowed if the account has only the opening balance transaction (or no transactions). Blocked if real transactions exist beyond the opening balance — instruct user to bring the balance to 0 and archive instead.
 - Archive account: blocked message if balance is non-zero.
 
 **Empty states:** each major view shows a clear empty state with a CTA:
 - No accounts → "Create your first account to start tracking."
 - No transactions → "Record your first transaction."
 - No filter matches → "No transactions match your filters."
+- First-launch UX: clicking "Add Transaction" when no accounts exist triggers an account creation dialog with a contextual prompt, guiding the user to create an account before entering transactions.
 
 **Loading states:** skeleton/spinner during initial DataStore fetch when opening a budget. Individual mutations are optimistic (instant UI update).
 
@@ -139,11 +140,13 @@ Help screen is accessible from a secondary location (settings/more menu), not a 
 
 **Drag-and-drop reordering:** Uses `@dnd-kit` (DndContext, SortableContext, DragOverlay, useSortable, useDroppable). Categories can be reordered within a group, moved across groups, archived (drop on archived section), and unarchived (drag out of archived). A dedicated drag handle (grip icon) initiates the drag. Activation constraints: 8px pointer movement for mouse, 250ms long-press for touch. Keyboard accessible: Tab to handle, Space to grab, Arrow keys to move, Space to drop. A `DragOverlay` renders the dragged item outside the normal flow. Reorder logic lives in `computeReorder` (pure function producing patches) and `useBudgetDnd` (hook managing DnD state and sensors).
 
-**Searchable dropdowns:** Account and category selectors use a shared `SearchableSelect` component built on `downshift`'s `useCombobox` hook. Options support an optional `group` field for visual grouping with non-interactive headers. The dropdown renders via `createPortal` to escape overflow containers and is dismissed on Escape, outside click, or any scroll event. Inline table edits use `autoOpen`/`onDismiss` props to open immediately and cancel on dismiss without selection. A `defaultValue` prop enables a clear (reset) button on the trigger. On focus, the trigger accepts type-to-filter input without opening the dropdown; the dropdown appears once the user starts typing, showing filtered results.
+**Searchable dropdowns:** Account and category selectors use a shared `SearchableSelect` component built on `downshift`'s `useCombobox` hook. Options support an optional `group` field for visual grouping with non-interactive headers. The dropdown renders via `createPortal` to escape overflow containers and is dismissed on Escape, outside click, or any scroll event. Inline table edits use `autoOpen`/`onDismiss` props to open immediately and cancel on dismiss without selection. A `defaultValue` prop enables a clear (reset) button on the trigger. On focus, the trigger accepts type-to-filter input without opening the dropdown; the dropdown appears once the user starts typing, showing filtered results. A `searchable` prop (default `true`) controls whether type-to-filter is enabled; when `false`, the input is read-only with a pointer cursor — the dropdown opens on click but typing is disabled. Used for small option sets where filtering adds no value.
+
+**PillSelect:** A pill-style inline option selector for fields where all options should be visible at once. Uses `radiogroup`/`group` roles with `radio`/`checkbox` aria semantics. Supports single-select and multi-select modes. Used for account type and category group selection.
 
 **Action menus (portal-based):** Triggered by a "..." (More) button on entity rows. Rendered via `createPortal` to `document.body` to escape overflow clipping. Menu is positioned relative to the trigger button's bounding rect, flipping vertically when near the viewport bottom. Dismissed on Escape keydown, backdrop click, or any scroll event (captured via window capture-phase listener). Used in both AccountSidebar and BudgetScreen.
 
-**Mobile horizontal scroll with sticky columns:** Data-dense table-like views (budget groups) use an `overflow-x-auto` container with a `min-w-[540px]` inner div to guarantee column spacing. The first column (drag handle + category name) uses `position: sticky; left: 0` with a surface background to remain visible during horizontal scroll. On desktop (`md:` breakpoint), sticky resets to static layout and the min-width constraint is removed.
+**Mobile horizontal scroll with sticky columns:** Data-dense table-like views (budget groups) use an `overflow-x-auto` container with a `min-w-[540px]` inner div to guarantee column spacing. The first column (drag handle + category name) uses `position: sticky; left: 0` with a surface background to remain visible during horizontal scroll. On desktop (`lg:` breakpoint), sticky resets to static layout and the min-width constraint is removed.
 
 ## Shared Validation
 

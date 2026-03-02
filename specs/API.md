@@ -48,7 +48,7 @@ Request/response shapes match the Account entity in `specs/DATA_MODEL.md`.
 - `GET /api/accounts/:id` — single account
 - `POST /api/accounts` — create account
 - `PUT /api/accounts/:id` — update account (partial)
-- `DELETE /api/accounts/:id` — delete; returns `409` if account has transactions
+- `DELETE /api/accounts/:id` — delete; returns `409` if account has more than one transaction (opening balance alone is allowed)
 - `POST /api/accounts/:id/archive` — toggle archived; returns `409` if derived balance is non-zero
 
 ---

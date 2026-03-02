@@ -65,6 +65,24 @@ View transactions for a selected account or across all accounts.
 
 **Inline editing** — click any field to edit it directly in the table. Delete transactions from the table.
 
+### Multi-select and bulk actions
+Select multiple transactions for batch operations. Follows the Gmail selection model.
+
+**Selection methods:**
+- **Checkbox** — always-visible checkbox on each row (desktop) and card (mobile)
+- **Shift+click** — range selection between anchor and clicked row
+- **Header select-all** — three-state checkbox (none/some/all) for the current page
+- **Long-press** (mobile) — 500ms press to select a card and enter selection mode
+- **Keyboard** — Space to toggle, Shift+Space for range, Escape to clear
+
+When selection is active on mobile, tapping a card body toggles selection instead of opening the edit dialog. Selection clears on account change, filter change, and page navigation.
+
+**Floating action bar** — appears when any transactions are selected:
+- Selection count display
+- **Set category** — applies a category to all selected non-transfer transactions (transfers are skipped with a note)
+- **Move to account** — reassigns all selected non-transfer transactions to a different account
+- **Delete** — bulk delete with a confirmation dialog that warns about transfer pair cascades
+
 ### Filtering
 - **Full-text search** — matches against description, payee, notes, category name, and account name
 - **Category filter** — dropdown to show only a specific category

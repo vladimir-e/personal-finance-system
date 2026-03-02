@@ -12,6 +12,12 @@ Newest entries go at the top.
 
 ---
 
+## 2026-03-01 — Multi-select transactions with bulk actions
+- Checkbox selection on transaction rows (desktop) and cards (mobile)
+- Shift+click range selection and header select-all (three-state)
+- Floating action bar: bulk category assignment, account reassignment, and delete
+- Long-press selection on mobile, keyboard accessibility (Space, Shift+Space, Escape)
+
 ## 2026-03-01 — Transaction table polish, PillSelect, first-launch UX
 - Transfer transactions display direction inline ("Transfer: A → B")
 - PillSelect component for inline option selection (account type, category group)

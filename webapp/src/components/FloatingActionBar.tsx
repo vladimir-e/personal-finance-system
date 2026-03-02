@@ -37,21 +37,23 @@ export function FloatingActionBar({
       }`}
       style={{ bottom: isMobile ? 'calc(64px + env(safe-area-inset-bottom))' : '1.5rem' }}
     >
-      <div className="w-full max-w-lg space-y-1">
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-edge bg-surface p-2 shadow-lg">
+      <div className="w-full max-w-xl space-y-1">
+        <div className="flex items-center gap-2 rounded-xl border border-edge bg-surface p-2 shadow-lg">
           {/* Clear */}
           <button
             onClick={onClear}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-heading"
+            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-heading"
             aria-label="Clear selection"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
 
           {/* Count */}
-          <span className="mr-auto whitespace-nowrap text-sm font-medium text-body">
+          <span className="whitespace-nowrap text-sm font-medium text-body">
             {selectedCount} selected
           </span>
+
+          <div className="flex-1" />
 
           {/* Category */}
           <SearchableSelect
@@ -60,7 +62,8 @@ export function FloatingActionBar({
             onChange={onSetCategory}
             placeholder="Set category…"
             aria-label="Set category for selected transactions"
-            className="w-40"
+            className="w-40 flex-shrink-0"
+            dropUp
           />
 
           {/* Account */}
@@ -70,13 +73,14 @@ export function FloatingActionBar({
             onChange={onSetAccount}
             placeholder="Move to account…"
             aria-label="Move selected transactions to account"
-            className="w-44"
+            className="w-44 flex-shrink-0"
+            dropUp
           />
 
           {/* Delete */}
           <button
             onClick={onDelete}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-negative transition-colors hover:bg-hover"
+            className="flex h-[44px] w-[44px] flex-shrink-0 items-center justify-center rounded-lg text-negative transition-colors hover:bg-hover"
             aria-label="Delete selected transactions"
           >
             <TrashIcon className="h-4 w-4" />

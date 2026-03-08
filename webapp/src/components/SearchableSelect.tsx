@@ -25,6 +25,8 @@ interface SearchableSelectProps {
   onDismiss?: () => void;
   /** When false, disables type-to-search — click-only selection. */
   searchable?: boolean;
+  /** Open dropdown above the trigger instead of below. */
+  dropUp?: boolean;
 }
 
 export function SearchableSelect({
@@ -40,6 +42,7 @@ export function SearchableSelect({
   autoOpen,
   onDismiss,
   searchable = true,
+  dropUp,
 }: SearchableSelectProps) {
   const triggerRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -130,12 +133,17 @@ export function SearchableSelect({
   }, [filtered]);
 
   // Position dropdown relative to wrapper
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const [pos, setPos] = useState({ top: 0, bottom: 0, left: 0, width: 0 });
 
   useEffect(() => {
     if (!isOpen || !wrapperRef.current) return;
     const rect = wrapperRef.current.getBoundingClientRect();
-    setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setPos({
+      top: rect.bottom + 4,
+      bottom: window.innerHeight - rect.top + 4,
+      left: rect.left,
+      width: rect.width,
+    });
   }, [isOpen]);
 
   // Auto-open: enter editing mode immediately
@@ -256,7 +264,7 @@ export function SearchableSelect({
           ref={dropdownRef}
           className="fixed z-[60]"
           style={{
-            top: pos.top,
+            ...(dropUp ? { bottom: pos.bottom } : { top: pos.top }),
             left: pos.left,
             minWidth: pos.width || undefined,
             display: isOpen ? undefined : 'none',

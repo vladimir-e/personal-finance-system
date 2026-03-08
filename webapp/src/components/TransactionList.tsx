@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useDataStore } from '../store';
 import { formatMoney } from 'pfs-lib';
 import type { Transaction, Currency } from 'pfs-lib';
@@ -6,11 +6,14 @@ import { TransactionDialog } from './TransactionDialog';
 import { buildCategoryOptions } from './CategoryOptions';
 import { buildAccountOptions } from './AccountOptions';
 import { SearchableSelect } from './SearchableSelect';
+import { FloatingActionBar } from './FloatingActionBar';
+import { ConfirmDialog } from './ConfirmDialog';
 import { SearchIcon, ChevronUpIcon, ChevronDownIcon, EditIcon, TrashIcon } from './icons';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useTransactionFilters, SORT_LABELS } from '../hooks/useTransactionFilters';
 import type { SortField, SortDir, SortConfig } from '../hooks/useTransactionFilters';
 import { useInlineEdit } from '../hooks/useInlineEdit';
+import { useMultiSelect } from '../hooks/useMultiSelect';
 import { EmptyState } from './EmptyState';
 import { amountClass } from '../utils/amountClass';
 import { formatDate } from '../utils/formatDate';
@@ -31,10 +34,28 @@ function SortIndicator({ field, sort }: { field: SortField; sort: SortConfig }) 
     : <ChevronDownIcon className="ml-1 inline h-3.5 w-3.5" />;
 }
 
+function CheckboxIcon({ checked, indeterminate }: { checked: boolean; indeterminate?: boolean }) {
+  if (indeterminate) {
+    return (
+      <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+        <line x1="2" y1="6" x2="10" y2="6" />
+      </svg>
+    );
+  }
+  if (checked) {
+    return (
+      <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M2.5 6l2.5 2.5 4.5-5" />
+      </svg>
+    );
+  }
+  return null;
+}
+
 // ── Main component ───────────────────────────────────────────
 
 export function TransactionList({ selectedAccountId, onDeleteTransaction }: TransactionListProps) {
-  const { state, updateTransaction } = useDataStore();
+  const { state, updateTransaction, bulkUpdateTransactions, bulkDeleteTransactions } = useDataStore();
   const isMobile = useIsMobile();
 
   const {
@@ -54,6 +75,133 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
     startEdit, cancelEdit, commitEdit,
     updateEditValue, handleEditKeyDown, handleSelectCommit,
   } = useInlineEdit(state.transactions, paginated, updateTransaction);
+
+  // ── Multi-select ──────────────────────────────────────────
+
+  const visibleIds = useMemo(() => paginated.map(t => t.id), [paginated]);
+  const { selectedIds, toggle, selectAll, clear } = useMultiSelect(visibleIds);
+
+  // Clear selection when context changes
+  const prevContextRef = useRef({ selectedAccountId, search, categoryFilter, sort, page });
+  useEffect(() => {
+    const prev = prevContextRef.current;
+    const changed =
+      prev.selectedAccountId !== selectedAccountId ||
+      prev.search !== search ||
+      prev.categoryFilter !== categoryFilter ||
+      prev.sort !== sort ||
+      prev.page !== page;
+    prevContextRef.current = { selectedAccountId, search, categoryFilter, sort, page };
+    if (changed) clear();
+  }, [selectedAccountId, search, categoryFilter, sort, page, clear]);
+
+  // Escape to clear selection (skip if a dialog/modal is open)
+  useEffect(() => {
+    if (selectedIds.size === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      // Don't clear selection if a modal is consuming Escape
+      if (document.querySelector('[role="alertdialog"], [role="dialog"]')) return;
+      clear();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selectedIds.size, clear]);
+
+  // ── Bulk operations ───────────────────────────────────────
+
+  const [skipNote, setSkipNote] = useState('');
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+  // Auto-clear skip note after 3 seconds
+  useEffect(() => {
+    if (!skipNote) return;
+    const timer = setTimeout(() => setSkipNote(''), 3000);
+    return () => clearTimeout(timer);
+  }, [skipNote]);
+
+  const selectedTransactions = useMemo(
+    () => state.transactions.filter(t => selectedIds.has(t.id)),
+    [state.transactions, selectedIds],
+  );
+
+  const selectedTotal = useMemo(
+    () => selectedTransactions.reduce((sum, t) => sum + t.amount, 0),
+    [selectedTransactions],
+  );
+
+  const handleBulkSetCategory = useCallback((categoryId: string) => {
+    const updates: Array<{ id: string; changes: { categoryId: string } }> = [];
+    let skipped = 0;
+    for (const tx of selectedTransactions) {
+      if (tx.type === 'transfer') { skipped++; continue; }
+      if (tx.categoryId !== categoryId) {
+        updates.push({ id: tx.id, changes: { categoryId } });
+      }
+    }
+    bulkUpdateTransactions(updates);
+    if (skipped > 0) setSkipNote(`${skipped} transfer${skipped !== 1 ? 's' : ''} skipped`);
+  }, [selectedTransactions, bulkUpdateTransactions]);
+
+  const handleBulkSetAccount = useCallback((accountId: string) => {
+    const updates: Array<{ id: string; changes: { accountId: string } }> = [];
+    let skipped = 0;
+    for (const tx of selectedTransactions) {
+      if (tx.type === 'transfer') { skipped++; continue; }
+      if (tx.accountId !== accountId) {
+        updates.push({ id: tx.id, changes: { accountId } });
+      }
+    }
+    bulkUpdateTransactions(updates);
+    if (skipped > 0) setSkipNote(`${skipped} transfer${skipped !== 1 ? 's' : ''} skipped`);
+  }, [selectedTransactions, bulkUpdateTransactions]);
+
+  const bulkDeleteInfo = useMemo(() => {
+    const transferCount = selectedTransactions.filter(t => t.type === 'transfer').length;
+    // Count paired transactions NOT already in selection
+    const pairIds = new Set<string>();
+    for (const tx of selectedTransactions) {
+      if (tx.transferPairId && !selectedIds.has(tx.transferPairId)) {
+        pairIds.add(tx.transferPairId);
+      }
+    }
+    return { transferCount, extraPairs: pairIds.size, total: selectedIds.size + pairIds.size };
+  }, [selectedTransactions, selectedIds]);
+
+  const handleBulkDelete = useCallback(() => {
+    bulkDeleteTransactions([...selectedIds]);
+    clear();
+    setBulkDeleteConfirm(false);
+  }, [selectedIds, bulkDeleteTransactions, clear]);
+
+  // ── Long-press for mobile ─────────────────────────────────
+
+  const longPressFiredRef = useRef(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const longPressStartRef = useRef({ x: 0, y: 0 });
+
+  const handleCardPointerDown = useCallback((txId: string, e: React.PointerEvent) => {
+    longPressFiredRef.current = false;
+    longPressStartRef.current = { x: e.clientX, y: e.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      toggle(txId, false);
+    }, 500);
+  }, [toggle]);
+
+  const handleCardPointerMove = useCallback((e: React.PointerEvent) => {
+    const dx = e.clientX - longPressStartRef.current.x;
+    const dy = e.clientY - longPressStartRef.current.y;
+    if (dx * dx + dy * dy > 64) { // 8px threshold squared
+      clearTimeout(longPressTimerRef.current);
+    }
+  }, []);
+
+  const handleCardPointerUp = useCallback(() => {
+    clearTimeout(longPressTimerRef.current);
+  }, []);
+
+  // ── State ─────────────────────────────────────────────────
 
   const [mobileEditTx, setMobileEditTx] = useState<Transaction | null>(null);
   const [desktopEditTx, setDesktopEditTx] = useState<Transaction | null>(null);
@@ -225,6 +373,48 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
 
   const columns: SortField[] = ['date', 'account', 'category', 'description', 'amount'];
 
+  // ── Header checkbox state ─────────────────────────────────
+
+  const headerCheckboxState: 'none' | 'some' | 'all' =
+    selectedIds.size === 0 ? 'none'
+    : visibleIds.every(id => selectedIds.has(id)) ? 'all'
+    : 'some';
+
+  // ── Checkbox render helper ────────────────────────────────
+
+  const renderCheckbox = (
+    checked: boolean,
+    onChange: (e: React.MouseEvent) => void,
+    ariaLabel: string,
+    indeterminate?: boolean,
+  ) => (
+    <button
+      role="checkbox"
+      aria-checked={indeterminate ? 'mixed' : checked}
+      aria-label={ariaLabel}
+      onClick={onChange}
+      className={`flex h-[18px] w-[18px] items-center justify-center rounded border transition-colors ${
+        checked || indeterminate
+          ? 'border-accent bg-accent'
+          : 'border-edge-strong bg-transparent hover:border-accent/50'
+      }`}
+    >
+      <CheckboxIcon checked={checked} indeterminate={indeterminate} />
+    </button>
+  );
+
+  // ── Category/account options for bulk bar ──────────────────
+
+  const categoryOptions = useMemo(
+    () => [{ value: '', label: 'Uncategorized' }, ...buildCategoryOptions(activeCategories)],
+    [activeCategories],
+  );
+
+  const accountOptions = useMemo(
+    () => buildAccountOptions(activeAccounts),
+    [activeAccounts],
+  );
+
   // ── Global empty state ──────────────────────────────────
   if (state.transactions.length === 0) {
     return (
@@ -296,6 +486,7 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
           <div className="overflow-x-auto">
             <table className="w-full table-fixed text-sm">
               <colgroup>
+                <col className="w-10" />{/* checkbox */}
                 <col className="w-[12%]" />{/* date */}
                 <col className="w-[15%]" />{/* account */}
                 <col className="w-[18%]" />{/* category */}
@@ -305,6 +496,16 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
               </colgroup>
               <thead>
                 <tr className="border-b border-edge text-xs font-medium uppercase tracking-wider text-muted">
+                  <th className="p-0">
+                    <div className="flex min-h-[44px] items-center justify-center">
+                      {renderCheckbox(
+                        headerCheckboxState === 'all',
+                        () => selectAll(),
+                        'Select all transactions',
+                        headerCheckboxState === 'some',
+                      )}
+                    </div>
+                  </th>
                   {columns.map(field => (
                     <th key={field} className="p-0">
                       <button
@@ -324,29 +525,41 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                 </tr>
               </thead>
               <tbody className="divide-y divide-edge">
-                {paginated.map(tx => (
-                  <tr key={tx.id} className="group transition-colors hover:bg-hover">
-                    {columns.map(field => renderCell(tx, field))}
-                    <td className="px-1 py-1">
-                      <div className="flex items-center justify-center opacity-0 transition-all group-hover:opacity-100 focus-within:opacity-100">
-                        <button
-                          onClick={e => { e.stopPropagation(); setDesktopEditTx(tx); }}
-                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:text-accent"
-                          aria-label={`Edit transaction: ${tx.description || tx.payee || 'untitled'}`}
-                        >
-                          <EditIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); onDeleteTransaction(tx); }}
-                          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:text-negative"
-                          aria-label={`Delete transaction: ${tx.description || tx.payee || 'untitled'}`}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {paginated.map(tx => {
+                  const isSelected = selectedIds.has(tx.id);
+                  return (
+                    <tr key={tx.id} className={`group transition-colors ${isSelected ? 'bg-accent/5' : 'hover:bg-hover'}`}>
+                      <td className="p-0">
+                        <div className="flex min-h-[44px] items-center justify-center">
+                          {renderCheckbox(
+                            isSelected,
+                            (e) => { e.stopPropagation(); toggle(tx.id, e.shiftKey); },
+                            `Select transaction: ${tx.description || tx.payee || formatMoney(tx.amount, CURRENCY)}`,
+                          )}
+                        </div>
+                      </td>
+                      {columns.map(field => renderCell(tx, field))}
+                      <td className="px-1 py-1">
+                        <div className="flex items-center justify-center opacity-0 transition-all group-hover:opacity-100 focus-within:opacity-100">
+                          <button
+                            onClick={e => { e.stopPropagation(); setDesktopEditTx(tx); }}
+                            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:text-accent"
+                            aria-label={`Edit transaction: ${tx.description || tx.payee || 'untitled'}`}
+                          >
+                            <EditIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); onDeleteTransaction(tx); }}
+                            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted transition-colors hover:text-negative"
+                            aria-label={`Delete transaction: ${tx.description || tx.payee || 'untitled'}`}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -381,68 +594,100 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
       {/* ── Mobile cards ─────────────────────────────────── */}
       {filtered.length > 0 && (
         <div className="space-y-2 lg:hidden">
-          {paginated.map(tx => (
-            <div
-              key={tx.id}
-              onClick={() => setMobileEditTx(tx)}
-              className="cursor-pointer overflow-hidden rounded-lg border border-edge bg-surface px-4 py-3 transition-colors active:bg-hover"
-            >
-              {/* Line 1: primary — category (+ payee) or transfer label | amount + delete */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-body">
-                    {tx.type === 'transfer'
-                      ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
-                      : (<>
-                          {categoryMap.get(tx.categoryId) ?? 'Uncategorized'}
-                          {tx.payee && (
-                            <span className="text-muted">
-                              {' \u00b7 '}{tx.payee}
-                            </span>
-                          )}
-                        </>)}
-                  </span>
-                  {/* Line 2: description (secondary, only if present) */}
-                  {tx.type !== 'transfer' && tx.description && (
-                    <p className="truncate text-sm text-body">{tx.description}</p>
-                  )}
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-1">
-                  <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>
-                    {formatMoney(tx.amount, CURRENCY)}
-                  </span>
-                  <button
-                    onClick={e => { e.stopPropagation(); onDeleteTransaction(tx); }}
-                    className="flex min-h-[44px] min-w-[44px] items-center justify-center text-muted transition-colors hover:text-negative"
-                    aria-label={`Delete transaction: ${tx.description || tx.payee || 'untitled'}`}
+          {paginated.map(tx => {
+            const isSelected = selectedIds.has(tx.id);
+            const hasSelection = selectedIds.size > 0;
+            return (
+              <div
+                key={tx.id}
+                onPointerDown={e => handleCardPointerDown(tx.id, e)}
+                onPointerMove={handleCardPointerMove}
+                onPointerUp={handleCardPointerUp}
+                onClick={() => {
+                  if (longPressFiredRef.current) { longPressFiredRef.current = false; return; }
+                  if (hasSelection) { toggle(tx.id, false); }
+                  else { setMobileEditTx(tx); }
+                }}
+                className={`cursor-pointer overflow-hidden rounded-lg border bg-surface px-4 py-3 transition-colors active:bg-hover ${
+                  isSelected ? 'border-accent/40 bg-accent/5' : 'border-edge'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {/* Checkbox */}
+                  <div
+                    className={`flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center -ml-2 ${
+                      isSelected ? '' : 'opacity-60'
+                    }`}
+                    onClick={e => e.stopPropagation()}
                   >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
+                    {renderCheckbox(
+                      isSelected,
+                      (e) => { e.stopPropagation(); toggle(tx.id, false); },
+                      `Select transaction: ${tx.description || tx.payee || formatMoney(tx.amount, CURRENCY)}`,
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    {/* Line 1: primary — category (+ payee) or transfer label | amount + delete */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-body">
+                          {tx.type === 'transfer'
+                            ? <span className="italic text-muted">Transfer: {transferLabel(tx)}</span>
+                            : (<>
+                                {categoryMap.get(tx.categoryId) ?? 'Uncategorized'}
+                                {tx.payee && (
+                                  <span className="text-muted">
+                                    {' \u00b7 '}{tx.payee}
+                                  </span>
+                                )}
+                              </>)}
+                        </span>
+                        {/* Line 2: description (secondary, only if present) */}
+                        {tx.type !== 'transfer' && tx.description && (
+                          <p className="truncate text-sm text-body">{tx.description}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-1">
+                        <span className={`font-medium tabular-nums ${amountClass(tx.amount)}`}>
+                          {formatMoney(tx.amount, CURRENCY)}
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); onDeleteTransaction(tx); }}
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center text-muted transition-colors hover:text-negative"
+                          aria-label={`Delete transaction: ${tx.description || tx.payee || 'untitled'}`}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Line 3: meta — date · account · notes indicator */}
+                    <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                      <span>{formatDate(tx.date)}</span>
+                      {tx.type !== 'transfer' && !selectedAccountId && accountMap.has(tx.accountId) && (
+                        <>
+                          <span aria-hidden="true">&middot;</span>
+                          <span className="truncate">{accountMap.get(tx.accountId)}</span>
+                        </>
+                      )}
+                      {tx.notes && (
+                        <>
+                          <span aria-hidden="true">&middot;</span>
+                          <svg className="inline h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Has notes">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                          </svg>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-              {/* Line 3: meta — date · account · notes indicator */}
-              <div className="mt-1 flex items-center gap-2 text-xs text-muted">
-                <span>{formatDate(tx.date)}</span>
-                {tx.type !== 'transfer' && !selectedAccountId && accountMap.has(tx.accountId) && (
-                  <>
-                    <span aria-hidden="true">&middot;</span>
-                    <span className="truncate">{accountMap.get(tx.accountId)}</span>
-                  </>
-                )}
-                {tx.notes && (
-                  <>
-                    <span aria-hidden="true">&middot;</span>
-                    <svg className="inline h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-label="Has notes">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                    </svg>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Infinite scroll sentinel */}
           {hasMore && (
@@ -451,6 +696,43 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Floating action bar ──────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <FloatingActionBar
+          selectedCount={selectedIds.size}
+          selectedTotal={selectedTotal}
+          categoryOptions={categoryOptions}
+          accountOptions={accountOptions}
+          onSetCategory={handleBulkSetCategory}
+          onSetAccount={handleBulkSetAccount}
+          onDelete={() => setBulkDeleteConfirm(true)}
+          onClear={clear}
+          skipNote={skipNote}
+          isMobile={isMobile}
+        />
+      )}
+
+      {/* ── Bulk delete confirmation ─────────────────────────── */}
+      {bulkDeleteConfirm && (
+        <ConfirmDialog
+          title={`Delete ${selectedIds.size} transaction${selectedIds.size !== 1 ? 's' : ''}?`}
+          message={
+            <>
+              This will permanently delete {selectedIds.size} transaction{selectedIds.size !== 1 ? 's' : ''}.
+              {bulkDeleteInfo.transferCount > 0 && (
+                <span className="mt-2 block text-xs text-muted">
+                  {'\u26a0\ufe0f'} {bulkDeleteInfo.transferCount} of these are transfers. Their paired transactions will also be deleted ({bulkDeleteInfo.total} transactions total).
+                </span>
+              )}
+            </>
+          }
+          confirmLabel={`Delete ${bulkDeleteInfo.total}`}
+          danger
+          onConfirm={handleBulkDelete}
+          onClose={() => setBulkDeleteConfirm(false)}
+        />
       )}
 
       {/* ── Edit dialog (desktop + mobile) ─────────────────── */}

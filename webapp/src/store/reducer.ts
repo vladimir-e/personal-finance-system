@@ -15,8 +15,6 @@ export function storeReducer(state: DataStore, action: StoreAction): DataStore {
     case 'ADD_TRANSACTIONS':
     case 'UPDATE_TRANSACTION':
     case 'DELETE_TRANSACTION':
-    case 'BULK_UPDATE_TRANSACTIONS':
-    case 'BULK_DELETE_TRANSACTIONS':
       return reduceTransaction(state, action);
 
     case 'ADD_CATEGORY':

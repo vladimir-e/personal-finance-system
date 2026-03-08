@@ -41,7 +41,7 @@ export interface DataStoreMutations {
   createTransfer(fromAccountId: string, toAccountId: string, amount: number, date: string, opts?: { description?: string; payee?: string; notes?: string }): [Transaction, Transaction];
   updateTransaction(id: string, input: UpdateTransactionInputType): void;
   deleteTransaction(id: string): void;
-  bulkUpdateTransactions(updates: Array<{ id: string; changes: Partial<Transaction> }>): void;
+  bulkUpdateTransactions(updates: Array<{ id: string; changes: UpdateTransactionInputType }>): void;
   bulkDeleteTransactions(ids: string[]): void;
 
   createCategory(input: CreateCategoryInputType): Category;
@@ -223,12 +223,44 @@ function createMutations(
 
     bulkUpdateTransactions(updates) {
       if (updates.length === 0) return;
-      dispatch({ type: 'BULK_UPDATE_TRANSACTIONS', updates });
+
+      const state = getState();
+      let txs = state.transactions;
+
+      for (const { id, changes } of updates) {
+        const parsed = UpdateTransactionInput.parse(changes);
+        if (Object.keys(parsed).length === 0) continue;
+
+        const existing = txs.find((t) => t.id === id);
+        if (!existing) throw new Error(`Transaction not found: ${id}`);
+
+        if (parsed.type !== undefined && parsed.type !== existing.type) {
+          if (existing.type === 'transfer' || parsed.type === 'transfer') {
+            throw new Error('Cannot change transaction type to or from transfer');
+          }
+        }
+
+        const updated = { ...existing, ...parsed };
+        txs = existing.transferPairId
+          ? propagateTransferUpdate(txs, updated)
+          : txs.map((t) => (t.id === id ? updated : t));
+      }
+
+      dispatch({ type: 'UPDATE_TRANSACTION', transactions: txs });
     },
 
     bulkDeleteTransactions(ids) {
       if (ids.length === 0) return;
-      dispatch({ type: 'BULK_DELETE_TRANSACTIONS', ids });
+
+      const state = getState();
+      let txs = state.transactions;
+
+      for (const id of ids) {
+        if (!txs.some((t) => t.id === id)) continue;
+        txs = cascadeTransferDelete(txs, id);
+      }
+
+      dispatch({ type: 'DELETE_TRANSACTION', transactions: txs });
     },
 
     // ── Categories ────────────────────────────────────────

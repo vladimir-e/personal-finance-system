@@ -618,13 +618,13 @@ export function TransactionList({ selectedAccountId, onDeleteTransaction }: Tran
                     className={`flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center -ml-2 ${
                       isSelected ? '' : 'opacity-60'
                     }`}
-                    onClick={e => { e.stopPropagation(); toggle(tx.id, false); }}
+                    onClick={e => e.stopPropagation()}
                   >
-                    <div className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
-                      isSelected ? 'border-accent bg-accent' : 'border-edge-strong'
-                    }`}>
-                      <CheckboxIcon checked={isSelected} />
-                    </div>
+                    {renderCheckbox(
+                      isSelected,
+                      (e) => { e.stopPropagation(); toggle(tx.id, false); },
+                      `Select transaction: ${tx.description || tx.payee || formatMoney(tx.amount, CURRENCY)}`,
+                    )}
                   </div>
 
                   {/* Content */}
